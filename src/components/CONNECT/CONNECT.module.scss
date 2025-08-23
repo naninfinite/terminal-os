@@ -1,7 +1,8 @@
 @use '../../styles/variables' as *;
 
 .root {
-  /* Inherit global typography; no overrides here */
+  /* Center ASCII banner */
+  text-align: center;
 }
 
 
