@@ -1,0 +1,68 @@
+// Base variables provided by user
+$bg-black: #000000;
+$bg-deep-navy: #0a0f0a;
+
+$phosphor-green: #00ff66;
+$phosphor-cyan: #00fff7;
+$phosphor-amber: #ffb300;
+
+$text-dim: #66ffcc;
+$text-muted: #335544;
+
+$scanline: rgba(0, 255, 102, 0.1);
+$glow: 0 0 4px #00ff66, 0 0 10px #00ff66;
+
+$font-mono: 'IBM Plex Mono', 'Iosevka Term', 'Courier New', monospace;
+
+$font-xs: 10px;
+$font-sm: 12px;
+$font-md: 14px;
+$font-lg: 16px;
+
+$letter-spacing: 0.05em;
+
+$border-thin: 1px;
+$border-thick: 2px;
+$border: $border-thick solid $phosphor-green;
+
+$panel-padding: 8px;
+$border-radius: 0;
+
+$grid-gap: 12px;
+$panel-min-width: 300px;
+$panel-min-height: 200px;
+
+$typewriter-speed: 50ms;
+
+$scanline-gradient: repeating-linear-gradient(
+  to bottom,
+  rgba(0, 255, 102, 0.05) 0px,
+  rgba(0, 255, 102, 0.05) 1px,
+  transparent 2px,
+  transparent 4px
+);
+
+@keyframes crt-flicker {
+  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; }
+  20%, 24%, 55% { opacity: 0.9; }
+  22% { opacity: 0.7; }
+}
+
+$status-bg: #001100;
+$status-border: 1px solid $phosphor-green;
+$status-height: 28px;
+$status-padding: 0 10px;
+
+// Aliases for existing code tokens (to avoid refactors in Phase 0)
+$color-bg: $bg-deep-navy;
+$color-fg: $phosphor-green;
+$color-fg-dim: $text-dim;
+$color-accent: $phosphor-green;
+
+// Spacing aliases used in current components
+$space-3: 12px;
+$space-5: 24px;
+$space-6: 32px;
+
+
+

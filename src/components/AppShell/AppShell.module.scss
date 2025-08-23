@@ -1,0 +1,15 @@
+@use '../../styles/variables' as *;
+
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: $color-bg;
+  color: $color-fg;
+  font-family: $font-mono;
+  position: relative;
+  overflow: hidden;
+}
+
+
+

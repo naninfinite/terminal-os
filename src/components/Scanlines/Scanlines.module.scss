@@ -1,0 +1,17 @@
+@use '../../styles/variables' as *;
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: $scanline-gradient;
+  opacity: 0.2;
+  z-index: 9999;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay { opacity: 0.08; }
+}
+
+
+

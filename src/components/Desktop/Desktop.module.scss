@@ -1,0 +1,13 @@
+@use '../../styles/variables' as *;
+
+.desktop {
+  flex: 1;
+  padding: $grid-gap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: minmax(260px, 1fr) minmax(260px, 1fr);
+  gap: $grid-gap;
+}
+
+
+
