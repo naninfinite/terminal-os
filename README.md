@@ -49,4 +49,10 @@ Recent updates:
 - Added custom retro green mouse cursor (monospace glyph) with hover-enlarge behavior and reduced-motion support.
 - Fixed landing responsiveness (video box clamp) and enter transition timer cleanup.
 
+## Phase 2 — Panel placeholders
+
+Phase 2 completes the panel placeholder work and core behaviors. See `docs/phase-2.md` for a detailed, text-heavy explanation of the codebase and components.
+
+Detailed docs: `docs/phase-2.md`
+
 

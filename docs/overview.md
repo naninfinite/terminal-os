@@ -9,6 +9,7 @@ Phases:
 Current Status:
 - Phase 0 implemented. Replace assets in `public/assets/` as needed.
 - Phase 1 skeleton implemented (App shell, Desktop layout, StatusBar, scanlines overlay).
+- Phase 2 implemented: panel placeholders and core behaviors. See `docs/phase-2.md` for details.
 
 Recent updates:
 - Implemented custom retro green mouse cursor with larger-on-hover behavior; hidden on touch devices; respects `prefers-reduced-motion`.
