@@ -30,6 +30,14 @@ html, body {
 /* Hide native cursor when custom cursor is active */
 .custom-cursor-enabled, .custom-cursor-enabled * { cursor: none !important; }
 
+/* Ensure form controls inherit global typography */
+input, button, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
 /* Visible focus ring for keyboard accessibility */
 :focus-visible {
   outline: 2px dashed $phosphor-green;

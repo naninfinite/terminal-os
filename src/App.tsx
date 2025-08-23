@@ -80,7 +80,7 @@ const App: React.FC = () => {
                     }}
                     aria-label="Enter Terminal-OS"
                   >
-                    [ ENTER ]
+                    ENTER
                   </button>
                 </div>
               </div>

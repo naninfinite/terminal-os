@@ -21,9 +21,8 @@ const ME: React.FC = () => {
         }}
       />
       <div className={styles.text}>
-        TERMINAL-OS // CURATOR: A.A
-        <br /> ARCHIVE // SIGNALS // NOTES
-        <br /> "SEVERANCE-INSPIRED INTERFACE STUDY"
+        TERMINAL-OS <br/> aaronakrong
+
       </div>
     </div>
   );

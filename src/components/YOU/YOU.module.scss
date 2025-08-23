@@ -2,7 +2,8 @@
 
 .root { display: grid; gap: 8px; }
 .input { border: $border; background: $bg-black; color: $phosphor-green; padding: 6px 8px; width: 100%; }
-.save { border: $border; background: $bg-black; color: $phosphor-green; padding: 4px 10px; justify-self: start; }
+.save { border: $border; background: $bg-black; color: $phosphor-green; padding: 4px 10px; justify-self: start; transition: background 160ms ease, color 160ms ease; }
+.saved { background: $phosphor-green; color: $bg-black; }
 .status { font-size: $font-xs; opacity: 0.9; }
 
 
