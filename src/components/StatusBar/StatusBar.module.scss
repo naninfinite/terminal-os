@@ -1,0 +1,25 @@
+@use '../../styles/variables' as *;
+
+.statusBar {
+  background-color: $status-bg;
+  border-top: $status-border;
+  height: $status-height;
+  padding: $status-padding;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: $font-sm;
+}
+
+.left { display: flex; gap: 12px; }
+.right { opacity: 0.9; }
+
+.btn {
+  border: $border;
+  padding: 2px 10px;
+  background: $bg-black;
+  color: $phosphor-green;
+}
+
+
+

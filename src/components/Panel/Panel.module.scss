@@ -1,0 +1,30 @@
+@use '../../styles/variables' as *;
+
+.panel {
+  border: $border;
+  padding: $panel-padding;
+  background-color: $bg-black;
+  min-width: $panel-min-width;
+  min-height: $panel-min-height;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  width: 100%;
+  border-bottom: $border-thin solid $phosphor-green;
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+  font-size: $font-sm;
+  letter-spacing: $letter-spacing;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+

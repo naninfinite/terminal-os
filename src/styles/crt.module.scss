@@ -1,0 +1,32 @@
+@use './variables' as *;
+
+.crt {
+  position: relative;
+}
+
+.crt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(0,0,0,0.06) 50%, rgba(0,0,0,0.0) 50%) 0 0 / 100% 2px,
+    radial-gradient(transparent 60%, rgba(0,0,0,0.25));
+  mix-blend-mode: overlay;
+}
+
+.crt::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: $scanline-gradient;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crt::before { opacity: 0.1; }
+  .crt::after { opacity: 0.1; }
+}
+
+

@@ -1,0 +1,37 @@
+@use '../../styles/variables' as *;
+
+.root {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10000;
+}
+
+.cursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(-9999px, -9999px);
+  will-change: transform;
+}
+
+.cursor.hover .glyph {
+  transform: scale(1.35);
+}
+
+.glyph {
+  display: inline-block;
+  color: $phosphor-green;
+  font-family: $font-mono;
+  font-size: 22px;
+  line-height: 1;
+  text-shadow: none;
+  filter: drop-shadow(0 0 2px rgba(0, 255, 102, 0.4));
+  transition: transform 120ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glyph { filter: none; }
+}
+
+

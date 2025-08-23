@@ -1,0 +1,9 @@
+@use '../../styles/variables' as *;
+
+.root { display: grid; grid-template-columns: 96px 1fr; gap: 12px; }
+.img { width: 96px; height: 96px; border: $border; object-fit: cover; background: $bg-black; }
+.text { font-size: $font-sm; line-height: 1.4; }
+
+
+
+
