@@ -1,7 +1,7 @@
 @use '../../styles/variables' as *;
 
-.root { font-size: $font-sm; white-space: pre; line-height: 1.1; }
-
-
+.root {
+  /* Inherit global typography; no overrides here */
+}
 
 

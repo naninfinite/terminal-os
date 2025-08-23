@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './YOU.module.scss';
 import { getItemSafe, setItemSafe } from '../../utils/storage';
 
@@ -8,6 +8,15 @@ const YOU: React.FC = () => {
   const initial = useMemo(() => getItemSafe<string>(STORAGE_KEY, ''), []);
   const [text, setText] = useState(initial);
   const [saved, setSaved] = useState(false);
+  const saveTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current != null) {
+        window.clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className={styles.root}>
@@ -27,13 +36,17 @@ const YOU: React.FC = () => {
       />
       <button
         type="button"
-        className={styles.save}
-        onClick={() => { setItemSafe(STORAGE_KEY, text); setSaved(true); }}
+        className={`${styles.save} ${saved ? styles.saved : ''}`}
+        onClick={() => {
+          setItemSafe(STORAGE_KEY, text);
+          setSaved(true);
+          if (saveTimeoutRef.current != null) window.clearTimeout(saveTimeoutRef.current);
+          saveTimeoutRef.current = window.setTimeout(() => setSaved(false), 3000) as unknown as number;
+        }}
         aria-label="Save input"
       >
-        [ SAVE ]
+        {saved ? 'SAVED' : 'SAVE'}
       </button>
-      <div className={styles.status} aria-live="polite" aria-atomic="true">{saved ? 'SAVED' : 'READY'}</div>
     </div>
   );
 };
