@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useMemo, useRef, useState } from 'react';
 import type { WindowId, WindowManagerContextValue, WindowState } from './WindowTypes';
 import { Window } from './Window';
-import { Dock } from './Dock';
+// import { Dock } from './Dock';
 
 export const WindowManagerContext = createContext<WindowManagerContextValue | null>(null);
 
@@ -77,7 +77,6 @@ export const WindowManagerProvider: React.FC<{ children: React.ReactNode }>
         {windows.map(w => (
           <Window key={w.id} win={w} />
         ))}
-        <Dock />
       </div>
     </WindowManagerContext.Provider>
   );

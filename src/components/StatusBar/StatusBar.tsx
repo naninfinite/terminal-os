@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import styles from './StatusBar.module.scss';
+import { WindowManagerContext } from '../Windowing/WindowManager';
 
 // StatusBar displays basic system status and a live clock.
 // Self-contained; no props required at this time.
@@ -18,11 +19,24 @@ const StatusBar: React.FC = () => {
     hour12: false,
   }).format(now);
 
+  const ctx = useContext(WindowManagerContext);
+  const minimized = ctx?.windows.filter(w => w.minimized) ?? [];
+
   return (
-    <div className={styles.statusBar} role="contentinfo" aria-label="System status bar">
+    <div className={styles.statusBar} role="contentinfo" aria-label="System dock and status bar">
       <div className={styles.left}>
         <button type="button" className={styles.btn} aria-label="Open menu">[ MENU ]</button>
-        <span>SYS: READY</span>
+        {minimized.map(w => (
+          <button
+            key={w.id}
+            type="button"
+            onClick={() => { ctx?.restoreWindow(w.id); ctx?.focusWindow(w.id); }}
+            className={styles.btn}
+            aria-label={`Restore ${w.title}`}
+          >
+            [{w.title}]
+          </button>
+        ))}
       </div>
       <div className={styles.right} aria-live="polite" aria-atomic="true">
         {timeString}

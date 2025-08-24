@@ -6,7 +6,7 @@
   pointer-events: none;
   background: $scanline-gradient;
   opacity: 0.2;
-  z-index: 9999;
+  z-index: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -13,6 +13,8 @@ const STORAGE_KEY = 'terminal_os_home_items_v1';
 export const DEFAULT_HOME_ITEMS: HomeItem[] = [
   { id: 'notes', name: 'NOTES.EXE', kind: 'app', preview: 'Write notes...', data: { text: 'Notes app placeholder' } },
   { id: 'terminal', name: 'TERMINAL.EXE', kind: 'app', preview: 'Run commands', data: { text: 'Terminal placeholder' } },
+  { id: 'browser', name: 'BROWSER.EXE', kind: 'app', preview: 'Browse files' },
+  { id: 'recents', name: 'RECENTS.EXE', kind: 'app', preview: 'Recently opened' },
   { id: 'about', name: 'ABOUT.TXT', kind: 'doc', preview: 'Read me', data: { text: 'Terminal-OS Home' } },
   { id: 'home', name: 'HOME.EXE', kind: 'app', preview: 'Reorder items' },
 ];

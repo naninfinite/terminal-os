@@ -39,11 +39,13 @@ export const commands: Record<string, CommandHandler> = {
   },
   cd: (args, ctx) => {
     const target = (args[0] || '').toLowerCase();
-    if (!target) { ctx.out('usage: cd <home|notes|terminal|dimension|connect>'); return; }
+    if (!target) { ctx.out('usage: cd <home|notes|terminal|dimension|connect|about|browser>'); return; }
     switch (target) {
       case 'home': ctx.api.openApp('home', { maximize: true }); break;
       case 'notes': ctx.api.openApp('notes', { maximize: true }); break;
       case 'terminal': ctx.api.openApp('terminal', { maximize: true }); break;
+      case 'about': ctx.api.openApp('about', { maximize: true }); break;
+      case 'browser': ctx.api.openApp('browser', { maximize: true }); break;
       case 'dimension': ctx.api.openApp('dimension', { maximize: true }); break;
       case 'connect': ctx.api.openApp('connect', { maximize: true }); break;
       default: ctx.out(`unknown: ${target}`);

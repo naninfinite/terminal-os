@@ -6,6 +6,7 @@ import { loadWindowRect } from '../../utils/windowRectStorage';
 import NotesWindow from './NotesWindow';
 import HomeWindow from './HomeWindow';
 import AboutWindow from './AboutWindow';
+import FileBrowser from './FileBrowser';
 import THIRD from '../THIRD/THIRD';
 import YOU from '../YOU/YOU';
 
@@ -48,6 +49,8 @@ const TerminalApp: React.FC = () => {
       <div>Terminal</div>
     ) : id === 'about' ? (
       <AboutWindow />
+    ) : id === 'browser' ? (
+      <FileBrowser />
     ) : id === 'dimension' ? (
       <THIRD />
     ) : id === 'connect' ? (
