@@ -26,17 +26,21 @@ const StatusBar: React.FC = () => {
     <div className={styles.statusBar} role="contentinfo" aria-label="System dock and status bar">
       <div className={styles.left}>
         <button type="button" className={styles.btn} aria-label="Open menu">[ MENU ]</button>
-        {minimized.map(w => (
-          <button
-            key={w.id}
-            type="button"
-            onClick={() => { ctx?.restoreWindow(w.id); ctx?.focusWindow(w.id); }}
-            className={styles.btn}
-            aria-label={`Restore ${w.title}`}
-          >
-            [{w.title}]
-          </button>
-        ))}
+        <div className={styles.dockScroll} role="navigation" aria-label="Minimized windows">
+          <div className={styles.dockWrap}>
+            {minimized.map(w => (
+              <button
+                key={w.id}
+                type="button"
+                onClick={() => { ctx?.restoreWindow(w.id); ctx?.focusWindow(w.id); }}
+                className={styles.btn}
+                aria-label={`Restore ${w.title}`}
+              >
+                [{w.title}]
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
       <div className={styles.right} aria-live="polite" aria-atomic="true">
         {timeString}
