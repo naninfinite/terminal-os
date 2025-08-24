@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './YOU.module.scss';
 import { getItemSafe, setItemSafe } from '../../utils/storage';
 
+// keep backward-compatible storage key; new name for panel is CONNECT
 const STORAGE_KEY = 'terminal_os_you_input_v1';
 
 const YOU: React.FC = () => {

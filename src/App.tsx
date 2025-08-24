@@ -7,6 +7,7 @@ import shell from './components/AppShell/AppShell.module.scss';
 import Scanlines from './components/Scanlines/Scanlines';
 import Panel from './components/Panel/Panel';
 import Cursor from './components/Cursor/Cursor';
+import { readFlags, subscribeFlags } from './utils/debugFlags';
 
 const App: React.FC = () => {
   const [entered, setEntered] = useState(false);
@@ -47,12 +48,19 @@ const App: React.FC = () => {
     }
   }, [exiting, entered]);
 
+  // Debug flags integration
+  const [flagsVersion, setFlagsVersion] = useState(0);
+  useEffect(() => {
+    return subscribeFlags(() => setFlagsVersion(v => v + 1));
+  }, []);
+  const flags = readFlags();
+
   return (
     <>
-      <Cursor />
+      {flags.showCursor ? <Cursor /> : null}
       {!entered ? (
         <div
-          className={`${landingStyles.landing} ${crt.crt}`}
+          className={`${landingStyles.landing} ${flags.showScanlines ? crt.crt : ''}`.trim()}
           data-state={exiting ? 'exiting' : 'idle'}
         >
           <div className={landingStyles.center}>
@@ -89,10 +97,19 @@ const App: React.FC = () => {
         </div>
       ) : (
         <div className={shell.shell}>
-          <Cursor />
-          <Scanlines />
+          {flags.showScanlines ? <Scanlines /> : null}
           <Desktop />
           <StatusBar />
+          {flags.showOverlay ? (
+            <div
+              aria-hidden
+              style={{
+                position: 'absolute', inset: 0, pointerEvents: 'none',
+                backgroundImage: 'linear-gradient(rgba(0,255,102,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,102,0.08) 1px, transparent 1px)',
+                backgroundSize: '20px 20px, 20px 20px',
+              }}
+            />
+          ) : null}
         </div>
       )}
     </>

@@ -3,6 +3,12 @@
 .root {
   /* Center ASCII banner */
   text-align: center;
+  white-space: pre;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: auto;
+  font-size: 28px;
+  line-height: 1.05;
 }
 
 

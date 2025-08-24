@@ -69,7 +69,9 @@ const THIRD: React.FC = () => {
     };
   }, []);
 
-  return <div ref={mountRef} className={styles.root} />;
+  // return <div ref={mountRef} className={styles.root}><div className={styles.label}>TEXT CAN BE ENTERED HERE</div></div>;
+  return <div ref={mountRef} className={styles.root}><div className={styles.label}></div></div>;
+
 };
 
 export default THIRD;

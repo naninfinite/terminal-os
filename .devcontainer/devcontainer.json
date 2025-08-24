@@ -1,0 +1,19 @@
+{
+  "name": "terminal-os (devcontainer)",
+  "image": "mcr.microsoft.com/vscode/devcontainers/typescript-node:0-20",
+  "forwardPorts": [5173],
+  "postCreateCommand": "npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-typescript-next",
+        "eamodio.gitlens"
+      ]
+    }
+  },
+  "remoteUser": "vscode"
+}
+
+

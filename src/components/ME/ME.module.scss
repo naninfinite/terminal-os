@@ -1,1 +1,16 @@
+@use '../../styles/variables' as *;
+
+.root { display: grid; gap: 8px; place-items: center; text-align: center; }
+.img { width: 96px; height: 96px; object-fit: cover; border: $border; background: $bg-black; }
+.text { font-size: $font-sm; opacity: 0.9; }
+.btn { border: $border; background: $bg-black; color: $phosphor-green; padding: 4px 10px; }
+
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; max-width: 360px; }
+.item { border: $border-thin solid $phosphor-green; background: $bg-black; padding: 6px; display: flex; gap: 8px; align-items: center; }
+.thumb { width: 56px; height: 40px; border: $border-thin solid rgba(0,255,102,0.2); display: flex; align-items: center; justify-content: center; font-size: $font-xs; }
+.meta { display: flex; flex-direction: column; align-items: flex-start; }
+.name { font-weight: 700; font-size: $font-sm; }
+.preview { font-size: $font-xs; opacity: 0.85; }
+.itemButton { background: transparent; border: none; padding: 0; width: 100%; text-align: left; color: inherit; }
+
 

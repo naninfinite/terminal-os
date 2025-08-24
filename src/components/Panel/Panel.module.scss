@@ -24,6 +24,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden; /* prevent children from stretching grid tracks */
+  position: relative;
+}
+
+/* subtle fading gradient to indicate scrollable overflow */
+.body::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 32px;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%);
 }
 
 
