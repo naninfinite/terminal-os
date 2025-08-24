@@ -55,11 +55,4 @@ Phase 2 completes the panel placeholder work and core behaviors. See `docs/phase
 
 Detailed docs: `docs/phase-2.md`
 
-## Codespaces / Devcontainer
-
-This repo includes a `.devcontainer` with a Node/TypeScript image. To use it in Codespaces or VS Code Remote:
-
-- Open in Codespaces or `Remote-Containers: Open Folder in Container...`.
-- The container runs `npm install` automatically on create.
-
 
