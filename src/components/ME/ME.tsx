@@ -6,6 +6,7 @@ import { loadWindowRect } from '../../utils/windowRectStorage';
 import NotesWindow from './NotesWindow';
 import TerminalWindow from './TerminalWindow';
 import HomeWindow from './HomeWindow';
+import AboutWindow from './AboutWindow';
 
 const ME: React.FC = () => {
   const ctx = useContext(WindowManagerContext);
@@ -59,7 +60,7 @@ const ME: React.FC = () => {
                 const rect = loadWindowRect(windowId, defaultRect as any);
                 ctx.openWindow({ id: windowId, title: it.name, rect: rect as any,
                   content: (
-                    it.id === 'notes' ? <NotesWindow /> : it.id === 'terminal' ? <TerminalWindow /> : it.id === 'home' ? <HomeWindow /> : (<div><p>{it.preview ?? '—'}</p></div>)
+                    it.id === 'notes' ? <NotesWindow /> : it.id === 'terminal' ? <TerminalWindow /> : it.id === 'home' ? <HomeWindow /> : it.id === 'about' ? <AboutWindow /> : (<div><p>{it.preview ?? '—'}</p></div>)
                   )
                 });
               }}
@@ -68,7 +69,7 @@ const ME: React.FC = () => {
                 const windowId = `home_${it.id}`;
                 const defaultRect = { x: 0, y: 0, width: 800, height: 600 } as const;
                 const rect = loadWindowRect(windowId, defaultRect as any);
-                ctx.openWindow({ id: windowId, title: it.name, rect: rect as any, content: (it.id === 'notes' ? <NotesWindow /> : it.id === 'terminal' ? <TerminalWindow /> : it.id === 'home' ? <HomeWindow /> : (<div><p>{it.preview ?? '—'}</p></div>)) });
+                ctx.openWindow({ id: windowId, title: it.name, rect: rect as any, content: (it.id === 'notes' ? <NotesWindow /> : it.id === 'terminal' ? <TerminalWindow /> : it.id === 'home' ? <HomeWindow /> : it.id === 'about' ? <AboutWindow /> : (<div><p>{it.preview ?? '—'}</p></div>)) });
                 ctx.toggleMaximize(`home_${it.id}`);
               }}
               onKeyDown={(e) => {
