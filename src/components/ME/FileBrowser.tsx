@@ -17,6 +17,7 @@ const renderIcon = (node: FsNode) => {
 };
 
 import { getItemSafe, setItemSafe } from '../../utils/storage';
+import styles from './FileBrowser.module.scss';
 const LB_KEY = 'terminal_os_filebrowser_last_path_v1';
 const RECENTS_KEY = 'terminal_os_filebrowser_recents_v1';
 
@@ -106,29 +107,19 @@ const FileBrowser: React.FC<{ startPathIds?: string[] }> = ({ startPathIds }) =>
   useEffect(() => { setItemSafe(LB_KEY, pathIds); }, [pathIds]);
 
   return (
-    <div>
-      <nav aria-label="Breadcrumb" style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
-        <button type="button" onClick={goUp} aria-label="Up" style={{ background: 'transparent', color: 'inherit', border: '1px solid #00ff66', padding: '2px 8px' }}>UP</button>
+    <div className={styles.root}>
+      <nav className={styles.breadcrumbs} aria-label="Breadcrumb">
+        <div className={styles.controls}>
+          <button type="button" onClick={goUp} aria-label="Up" className={styles.btn}>UP</button>
+        </div>
         {path.map((p, i) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => setPath(path.slice(0, i + 1))}
-            style={{ background: 'transparent', color: 'inherit', border: 'none', padding: 0, textDecoration: i === path.length - 1 ? 'none' : 'underline' }}
-            aria-current={i === path.length - 1 ? 'page' : undefined}
-          >
-            {p.name}
-          </button>
+          <button key={p.id} type="button" onClick={() => setPath(path.slice(0, i + 1))} aria-current={i === path.length - 1 ? 'page' : undefined}>{p.name}</button>
         ))}
       </nav>
-      <ul role="listbox" aria-label="Files" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
+      <div className={styles.grid} role="listbox" aria-label="Files">
         {entries.map((e, idx) => (
-          <li key={e.id} role="option" aria-selected={focusedIdx === idx} style={{ border: '1px solid rgba(0,255,102,0.12)', padding: 6, display: 'flex', gap: 8, alignItems: 'center', position: 'relative' }}>
-            <button
-              ref={(el) => { itemRefs.current[idx] = el; }}
-              type="button"
-              onClick={() => openNode(e)}
-              onContextMenu={(cmEv) => {
+          <div key={e.id} className={styles.entry} role="option" aria-selected={focusedIdx === idx}>
+            <button ref={(el) => { itemRefs.current[idx] = el; }} type="button" onClick={() => openNode(e)} onContextMenu={(cmEv) => {
                 cmEv.preventDefault();
                 const menu = document.createElement('div');
                 menu.style.position = 'fixed';
@@ -150,8 +141,7 @@ const FileBrowser: React.FC<{ startPathIds?: string[] }> = ({ startPathIds }) =>
                 const cleanup = () => { try { document.body.removeChild(menu); } catch {} document.removeEventListener('click', cleanup); };
                 document.addEventListener('click', cleanup, { once: true });
                 document.body.appendChild(menu);
-              }}
-              onKeyDown={(ev) => {
+              }} onKeyDown={(ev) => {
                 if (ev.key === 'Enter' && ev.shiftKey && e.type === 'folder') { ev.preventDefault(); openFolderInNewWindow(e); return; }
                 if (ev.key === 'Enter') { openNode(e); return; }
                 if (ev.key === 'F2') { ev.preventDefault(); renameEntry(idx); return; }
@@ -162,17 +152,16 @@ const FileBrowser: React.FC<{ startPathIds?: string[] }> = ({ startPathIds }) =>
                 if (next !== focusedIdx) {
                   ev.preventDefault(); setFocusedIdx(next); itemRefs.current[next]?.focus();
                 }
-              }}
-              onFocus={() => setFocusedIdx(idx)}
-              style={{ background: 'transparent', color: 'inherit', border: 'none', display: 'flex', gap: 8, alignItems: 'center', width: '100%', textAlign: 'left' }}
-              aria-label={`Open ${e.name}`}
-            >
-              <span style={{ width: 28 }}>{renderIcon(e)}</span>
-              <span style={{ fontWeight: 700 }}>{e.name}</span>
+              }} onFocus={() => setFocusedIdx(idx)} aria-label={`Open ${e.name}`} style={{ background: 'transparent', color: 'inherit', border: 'none', display: 'flex', gap: 8, alignItems: 'center', width: '100%', textAlign: 'left' }}>
+              <div className={styles.icon}>{renderIcon(e)}</div>
+              <div>
+                <div className={styles.name}>{e.name}</div>
+                <div className={styles.meta}>{e.fileType ?? ''}</div>
+              </div>
             </button>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 };
