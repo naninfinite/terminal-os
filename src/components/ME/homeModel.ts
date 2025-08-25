@@ -27,6 +27,33 @@ export function saveHomeItems(items: HomeItem[]): boolean {
   return setItemSafe(STORAGE_KEY, items);
 }
 
+// Simple in-browser filesystem persistence for FileBrowser
+export type FileNode = {
+  id: string;
+  name: string;
+  type: 'file' | 'folder';
+  fileType?: 'notes' | 'about' | 'terminal' | 'text';
+  children?: FileNode[];
+};
+
+const FS_KEY = 'terminal_os_fs_v1';
+
+export const DEFAULT_FS_NODE: FileNode = {
+  id: 'root', name: '/', type: 'folder', children: [
+    { id: 'docs', name: 'docs', type: 'folder', children: [ { id: 'about', name: 'ABOUT.TXT', type: 'file', fileType: 'about' } ] },
+    { id: 'notes', name: 'NOTES.EXE', type: 'file', fileType: 'notes' },
+    { id: 'terminal', name: 'TERMINAL.EXE', type: 'file', fileType: 'terminal' },
+  ],
+};
+
+export function loadFileSystem(): FileNode {
+  return getItemSafe<FileNode>(FS_KEY, DEFAULT_FS_NODE);
+}
+
+export function saveFileSystem(root: FileNode): boolean {
+  return setItemSafe(FS_KEY, root);
+}
+
 export const ITEMS_UPDATED_EVENT = 'terminal_os_home_items_updated';
 export function emitHomeItemsUpdated(): void {
   try { window.dispatchEvent(new Event(ITEMS_UPDATED_EVENT)); } catch {}

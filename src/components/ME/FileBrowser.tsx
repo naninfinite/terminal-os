@@ -3,24 +3,11 @@ import { WindowManagerContext } from '../Windowing/WindowManager';
 import NotesWindow from './NotesWindow';
 import AboutWindow from './AboutWindow';
 import TerminalApp from './TerminalApp';
+import { FileNode, loadFileSystem, saveFileSystem } from './homeModel';
 
-type FsNode = {
-  id: string;
-  name: string;
-  type: 'file' | 'folder';
-  fileType?: 'notes' | 'about' | 'terminal' | 'text';
-  children?: FsNode[];
-};
+type FsNode = FileNode;
 
-const DEFAULT_FS: FsNode = {
-  id: 'root', name: '/', type: 'folder', children: [
-    { id: 'docs', name: 'docs', type: 'folder', children: [
-      { id: 'about', name: 'ABOUT.TXT', type: 'file', fileType: 'about' },
-    ] },
-    { id: 'notes', name: 'NOTES.EXE', type: 'file', fileType: 'notes' },
-    { id: 'terminal', name: 'TERMINAL.EXE', type: 'file', fileType: 'terminal' },
-  ],
-};
+// root FS is loaded from persisted storage via loadFileSystem()
 
 const renderIcon = (node: FsNode) => {
   if (node.type === 'folder') return '▢';
@@ -35,17 +22,19 @@ const RECENTS_KEY = 'terminal_os_filebrowser_recents_v1';
 
 const FileBrowser: React.FC<{ startPathIds?: string[] }> = ({ startPathIds }) => {
   const ctx = useContext(WindowManagerContext);
+  const persistedRoot = loadFileSystem();
+  const [root, setRoot] = useState<FsNode>(() => persistedRoot);
   const [path, setPath] = useState<FsNode[]>(() => {
     const saved = getItemSafe<string[]>(LB_KEY, []);
     const ids = (startPathIds && startPathIds.length > 0) ? startPathIds : saved;
-    if (!ids || ids.length === 0) return [DEFAULT_FS];
-    const collected: FsNode[] = [DEFAULT_FS];
-    let cur: FsNode | undefined = DEFAULT_FS;
+    if (!ids || ids.length === 0) return [root];
+    const collected: FsNode[] = [root];
+    let cur: FsNode | undefined = root;
     for (const id of ids) {
-      const next = cur?.children?.find(c => c.id === id);
-      if (!next) break;
-      collected.push(next);
-      cur = next;
+      const nextNode: FsNode | undefined = cur?.children?.find((c: FsNode) => c.id === id);
+      if (!nextNode) break;
+      collected.push(nextNode);
+      cur = nextNode;
     }
     return collected;
   });
@@ -54,11 +43,6 @@ const FileBrowser: React.FC<{ startPathIds?: string[] }> = ({ startPathIds }) =>
 
   const node = path[path.length - 1];
 
-  const openNode = (n: FsNode) => {
-    if (n.type === 'folder') {
-      setPath(p => [...p, n]);
-      return;
-    }
   const openFolderInNewWindow = (n: FsNode) => {
     if (!ctx || n.type !== 'folder') return;
     const winId = `folder_${n.id}`;
@@ -67,6 +51,12 @@ const FileBrowser: React.FC<{ startPathIds?: string[] }> = ({ startPathIds }) =>
     const rect = { x: 80, y: 80, width: 420, height: 300 };
     ctx.openWindow({ id: winId, title: n.name, rect, content: <FileBrowser startPathIds={[n.id]} /> });
   };
+
+  const openNode = (n: FsNode) => {
+    if (n.type === 'folder') {
+      setPath(p => [...p, n]);
+      return;
+    }
     if (!ctx) return;
     const winId = `file_${n.id}`;
     const existing = ctx.windows.find(w => w.id === winId);
@@ -79,9 +69,9 @@ const FileBrowser: React.FC<{ startPathIds?: string[] }> = ({ startPathIds }) =>
     else if (n.fileType === 'about') content = <AboutWindow />;
     else if (n.fileType === 'terminal') content = <TerminalApp />;
     ctx.openWindow({ id: winId, title: n.name, rect, content });
-    const rec = getItemSafe<string[]>(RECENTS_KEY, []);
-    const next = [n.id, ...rec.filter(id => id !== n.id)].slice(0, 10);
-    setItemSafe(RECENTS_KEY, next);
+    const recents = getItemSafe<string[]>(RECENTS_KEY, []);
+    const updatedRecents = [n.id, ...recents.filter(rid => rid !== n.id)].slice(0, 10);
+    setItemSafe(RECENTS_KEY, updatedRecents);
   };
 
   const goUp = () => {
@@ -94,6 +84,8 @@ const FileBrowser: React.FC<{ startPathIds?: string[] }> = ({ startPathIds }) =>
     if (!nextName || nextName === cur.name) return;
     if (!node.children) return;
     node.children = node.children.map((c) => c.id === cur.id ? { ...c, name: nextName } : c);
+    setRoot({ ...root });
+    saveFileSystem(root);
     setPath([...path]);
   };
 
@@ -103,6 +95,8 @@ const FileBrowser: React.FC<{ startPathIds?: string[] }> = ({ startPathIds }) =>
     const ok = window.confirm(`Delete ${cur.name}?`);
     if (!ok) return;
     node.children = node.children.filter(c => c.id !== cur.id);
+    setRoot({ ...root });
+    saveFileSystem(root);
     setFocusedIdx(Math.max(0, Math.min(focusedIdx, (node.children?.length || 1) - 1)));
     setPath([...path]);
   };
