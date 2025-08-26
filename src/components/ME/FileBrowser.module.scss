@@ -14,4 +14,17 @@
   .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
 }
 
+.contextMenu {
+  position: fixed;
+  background: #000;
+  border: 1px solid $phosphor-green;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 9999;
+}
+.contextMenu button { background: transparent; color: $phosphor-green; border: none; text-align: left; padding: 4px 8px; }
+.contextMenu button:focus { outline: 2px dashed $phosphor-green; outline-offset: 2px; }
+
 

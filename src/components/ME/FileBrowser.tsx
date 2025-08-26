@@ -131,16 +131,44 @@ const FileBrowser: React.FC<{ startPathIds?: string[] }> = ({ startPathIds }) =>
                 menu.style.zIndex = '2';
                 const addItem = (label: string, onClick: () => void) => {
                   const btn = document.createElement('button');
-                  btn.textContent = label; btn.style.display = 'block'; btn.style.background = 'transparent'; btn.style.color = '#00ff66'; btn.style.border = 'none'; btn.style.width = '100%'; btn.style.textAlign = 'left'; btn.onclick = () => { onClick(); document.body.removeChild(menu); };
+                  btn.setAttribute('role', 'menuitem');
+                  btn.tabIndex = 0;
+                  btn.textContent = label;
+                  btn.style.display = 'block';
+                  btn.style.background = 'transparent';
+                  btn.style.color = '#00ff66';
+                  btn.style.border = 'none';
+                  btn.style.width = '100%';
+                  btn.style.textAlign = 'left';
+                  btn.onclick = () => { onClick(); cleanup(); };
                   menu.appendChild(btn);
+                  return btn;
                 };
-                addItem('Open', () => openNode(e));
+                menu.setAttribute('role', 'menu');
+                const firstBtn = addItem('Open', () => openNode(e));
                 if (e.type === 'folder') addItem('Open in new window', () => openFolderInNewWindow(e));
                 addItem('Rename', () => renameEntry(idx));
                 addItem('Delete', () => deleteEntry(idx));
-                const cleanup = () => { try { document.body.removeChild(menu); } catch {} document.removeEventListener('click', cleanup); };
+                const cleanup = () => { try { document.body.removeChild(menu); } catch {} document.removeEventListener('click', cleanup); document.removeEventListener('keydown', onKeyDown); };
+                const onKeyDown = (ev: KeyboardEvent) => {
+                  if (ev.key === 'Escape') { ev.preventDefault(); cleanup(); return; }
+                  if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+                    ev.preventDefault();
+                    const buttons = Array.from(menu.querySelectorAll('button')) as HTMLButtonElement[];
+                    if (buttons.length === 0) return;
+                    const active = document.activeElement as HTMLElement | null;
+                    const idxBtn = buttons.indexOf(active as HTMLButtonElement);
+                    let next = 0;
+                    if (ev.key === 'ArrowDown') next = (idxBtn + 1) % buttons.length;
+                    else next = (idxBtn - 1 + buttons.length) % buttons.length;
+                    buttons[next].focus();
+                  }
+                };
                 document.addEventListener('click', cleanup, { once: true });
+                document.addEventListener('keydown', onKeyDown);
                 document.body.appendChild(menu);
+                // focus first menu item
+                setTimeout(() => { try { firstBtn.focus(); } catch {} }, 0);
               }} onKeyDown={(ev) => {
                 if (ev.key === 'Enter' && ev.shiftKey && e.type === 'folder') { ev.preventDefault(); openFolderInNewWindow(e); return; }
                 if (ev.key === 'Enter') { openNode(e); return; }
