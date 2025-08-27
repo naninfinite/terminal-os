@@ -7,6 +7,7 @@ Retro terminal-inspired UI (Severance Lumon terminals) built with React, Vite, T
 - Styling: SCSS modules
 
 ## Development
+Requires Node.js 20.19+ (or 22.12+) to run Vite. If using `nvm`, run `nvm use` to load the version from `.nvmrc`.
 ```bash
 npm install
 npm run dev
