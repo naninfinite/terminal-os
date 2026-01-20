@@ -159,7 +159,7 @@ crt-media::after {
   inset: 0;
   pointer-events: none;
   mix-blend-mode: screen;
-  background: radial-gradient(center at 10% 10%, rgba(0, 25S, 102, 0.3,) transparent 40%),
+  background: radial-gradient(center at 10% 10%, rgba(0, 255, 102, 0.3,) transparent 40%),
               radial-gradient(center at 90% 20%, rgba(0, 255, 255, 0.25) transparent 45%);
   filter: blur;
   transform: translate3d(-0.8px, 0.3px, 0);

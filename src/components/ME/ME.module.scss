@@ -119,6 +119,60 @@
   padding: 10px;
 }
 
+.experienceBar {
+  border: $border;
+  background: $bg-black;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.experienceLeft {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.experienceBtn {
+  border: $border;
+  padding: 4px 10px;
+  background: $bg-black;
+  color: $phosphor-green;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.experienceBtn:hover,
+.experienceBtn:focus-visible {
+  background: $phosphor-green;
+  color: $bg-black;
+}
+
+.experienceBtnActive {
+  box-shadow: $glow;
+}
+
+.experienceRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: right;
+}
+
+.experienceHint {
+  font-size: $font-xs;
+  color: $color-fg-dim;
+  opacity: 0.95;
+}
+
+.experienceKeys {
+  font-size: $font-xs;
+  border: $border-thin solid $phosphor-green;
+  padding: 2px 8px;
+  opacity: 0.9;
+}
+
 .preview {
   display: grid;
   grid-template-columns: 1.35fr 1fr;
@@ -273,6 +327,109 @@
 @media (max-width: 900px) {
   .preview { grid-template-columns: 1fr; }
   .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.carousel {
+  border: $border;
+  background: $bg-black;
+  padding: 10px;
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+}
+
+.carouselStrip {
+  display: flex;
+  gap: 10px;
+  overflow: auto;
+  padding-bottom: 6px;
+  scroll-snap-type: x mandatory;
+}
+
+.carouselItem {
+  border: $border;
+  background: $bg-black;
+  color: $phosphor-green;
+  padding: 8px;
+  min-width: 240px;
+  display: grid;
+  gap: 8px;
+  text-align: left;
+  scroll-snap-align: start;
+}
+
+.carouselItem:hover,
+.carouselItem:focus-visible {
+  box-shadow: $glow;
+}
+
+.carouselItemActive {
+  box-shadow: $glow;
+}
+
+.carouselThumb {
+  border: $border-thin solid $phosphor-green;
+  height: 140px;
+  background: rgba(0, 255, 102, 0.04);
+  overflow: hidden;
+}
+
+.carouselMedia {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.carouselLabel {
+  font-size: $font-xs;
+  color: $color-fg-dim;
+}
+
+.carouselDots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  opacity: 0.9;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border: $border-thin solid $phosphor-green;
+  background: transparent;
+}
+
+.dotOn {
+  background: $phosphor-green;
+}
+
+.signal {
+  border: $border;
+  background: $bg-black;
+  padding: 10px;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 8px;
+}
+
+.signalHeader {
+  font-size: $font-sm;
+  border-bottom: $border-thin solid $phosphor-green;
+  padding-bottom: 6px;
+}
+
+.signalBody {
+  overflow: auto;
+  padding-right: 6px;
+  display: grid;
+  gap: 4px;
+}
+
+.signalLine {
+  font-size: $font-xs;
+  color: $color-fg-dim;
 }
 
 .card {

@@ -18,6 +18,8 @@ export type MEProps = {
   variant?: 'compact' | 'full';
 };
 
+type ExperienceId = 'gallery' | 'carousel' | 'signal';
+
 function requestOpenApp(app: 'ME' | 'YOU' | 'THIRD' | 'CONNECT') {
   try {
     window.dispatchEvent(new CustomEvent('terminalos:open-app', { detail: { app } }));
@@ -51,12 +53,23 @@ const ME: React.FC<MEProps> = ({ variant = 'compact' }) => {
   );
 
   const [activeId, setActiveId] = useState(items[0]?.id ?? '');
+  const [experience, setExperience] = useState<ExperienceId>('gallery');
   const [videoTime, setVideoTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
   const [videoPlaying, setVideoPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const active = useMemo(() => items.find((x) => x.id === activeId) ?? items[0], [activeId, items]);
+
+  const experiences = useMemo(
+    () =>
+      [
+        { id: 'gallery' as const, label: 'GALLERY', hint: 'BROWSE ITEMS' },
+        { id: 'carousel' as const, label: 'CAROUSEL', hint: 'SCRUB / PLAY' },
+        { id: 'signal' as const, label: 'SIGNAL', hint: 'SYSTEM FEED' },
+      ] as const,
+    []
+  );
 
   const formatTime = (sec: number) => {
     const s = Math.max(0, Math.floor(sec));
@@ -145,23 +158,57 @@ const ME: React.FC<MEProps> = ({ variant = 'compact' }) => {
     );
   }
 
+  const activeExperience = experiences.find((x) => x.id === experience) ?? experiences[0];
+
+  const selectNextByDir = (dir: -1 | 1) => {
+    const idx = items.findIndex((x) => x.id === activeId);
+    if (idx < 0) return;
+    const next = items[(idx + dir + items.length) % items.length];
+    if (next) setActiveId(next.id);
+  };
+
   return (
     <div
       className={styles.root}
       tabIndex={0}
       onKeyDown={(e) => {
+        // Experience switching
+        if (e.key === 'g' || e.key === 'G') setExperience('gallery');
+        if (e.key === 'c' || e.key === 'C') setExperience('carousel');
+        if (e.key === 's' || e.key === 'S') setExperience('signal');
+
         if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
           e.preventDefault();
-          const idx = items.findIndex((x) => x.id === activeId);
-          if (idx < 0) return;
           const dir = e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : 1;
-          const next = items[(idx + dir + items.length) % items.length];
-          if (next) setActiveId(next.id);
+          selectNextByDir(dir);
         }
       }}
       aria-label="ME portfolio"
     >
       <div className={styles.content}>
+        <div className={styles.experienceBar} aria-label="ME experiences">
+          <div className={styles.experienceLeft}>
+            {experiences.map((x) => (
+              <button
+                key={x.id}
+                type="button"
+                className={`${styles.experienceBtn} ${x.id === experience ? styles.experienceBtnActive : ''}`}
+                onClick={() => setExperience(x.id)}
+                aria-current={x.id === experience ? 'page' : undefined}
+                aria-label={`Switch to ${x.label} experience`}
+              >
+                [{x.label}]
+              </button>
+            ))}
+          </div>
+          <div className={styles.experienceRight}>
+            <span className={styles.experienceHint}>
+              MODE: {activeExperience.label} • {activeExperience.hint}
+            </span>
+            <span className={styles.experienceKeys}>G/C/S</span>
+          </div>
+        </div>
+
         <div className={styles.preview}>
           <div className={`${styles.previewFrame} crt-media-frame`} aria-label="Active media preview">
             {active?.type === 'image' ? (
@@ -259,39 +306,91 @@ const ME: React.FC<MEProps> = ({ variant = 'compact' }) => {
                 {active.linkLabel ?? 'OPEN LINK'}
               </a>
             ) : null}
-            <div className={styles.hint}>ARROWS: SWITCH • 1–4: DOCK • ESC: CLOSE</div>
+            <div className={styles.hint}>ARROWS: ITEM • G/C/S: MODE • 1–4: DOCK • ESC: CLOSE</div>
           </div>
         </div>
 
-        <div className={styles.gallery} aria-label="Portfolio media gallery">
-          {items.map((it) => (
-            <button
-              key={it.id}
-              type="button"
-              className={`${styles.card} ${it.id === activeId ? styles.cardActive : ''}`}
-              onClick={() => setActiveId(it.id)}
-              aria-label={`Select ${it.title}`}
-              aria-current={it.id === activeId ? 'true' : undefined}
-            >
-              <div className={styles.cardTop}>
-                <span className={styles.cardTitle}>{`> ${it.title}`}</span>
-                <span className={styles.cardType}>{it.type === 'video' ? '[VID]' : '[IMG]'}</span>
-              </div>
-              <div className={`${styles.cardThumb} crt-media-frame`}>
-                {it.type === 'image' ? (
-                  <img className={`${styles.cardThumbMedia} crt-media`} src={it.src} alt="" aria-hidden="true" />
-                ) : it.poster ? (
-                  <img className={`${styles.cardThumbMedia} crt-media`} src={it.poster} alt="" aria-hidden="true" />
-                ) : (
-                  <div className={styles.cardThumbVid} aria-hidden="true">
-                    VIDEO
+        {experience === 'gallery' ? (
+          <div className={styles.gallery} aria-label="Portfolio media gallery">
+            {items.map((it) => (
+              <button
+                key={it.id}
+                type="button"
+                className={`${styles.card} ${it.id === activeId ? styles.cardActive : ''}`}
+                onClick={() => setActiveId(it.id)}
+                aria-label={`Select ${it.title}`}
+                aria-current={it.id === activeId ? 'true' : undefined}
+              >
+                <div className={styles.cardTop}>
+                  <span className={styles.cardTitle}>{`> ${it.title}`}</span>
+                  <span className={styles.cardType}>{it.type === 'video' ? '[VID]' : '[IMG]'}</span>
+                </div>
+                <div className={`${styles.cardThumb} crt-media-frame`}>
+                  {it.type === 'image' ? (
+                    <img className={`${styles.cardThumbMedia} crt-media`} src={it.src} alt="" aria-hidden="true" />
+                  ) : it.poster ? (
+                    <img className={`${styles.cardThumbMedia} crt-media`} src={it.poster} alt="" aria-hidden="true" />
+                  ) : (
+                    <div className={styles.cardThumbVid} aria-hidden="true">
+                      VIDEO
+                    </div>
+                  )}
+                </div>
+                {it.description ? <div className={styles.cardDesc}>{it.description}</div> : null}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {experience === 'carousel' ? (
+          <div className={styles.carousel} aria-label="Portfolio carousel">
+            <div className={styles.carouselStrip}>
+              {items.map((it) => (
+                <button
+                  key={it.id}
+                  type="button"
+                  className={`${styles.carouselItem} ${it.id === activeId ? styles.carouselItemActive : ''}`}
+                  onClick={() => setActiveId(it.id)}
+                  aria-label={`Open ${it.title}`}
+                  aria-current={it.id === activeId ? 'true' : undefined}
+                >
+                  <div className={`${styles.carouselThumb} crt-media-frame`} aria-hidden="true">
+                    {it.type === 'image' ? (
+                      <img className={`${styles.carouselMedia} crt-media`} src={it.src} alt="" aria-hidden="true" />
+                    ) : it.poster ? (
+                      <img className={`${styles.carouselMedia} crt-media`} src={it.poster} alt="" aria-hidden="true" />
+                    ) : (
+                      <div className={styles.cardThumbVid}>VIDEO</div>
+                    )}
                   </div>
-                )}
-              </div>
-              {it.description ? <div className={styles.cardDesc}>{it.description}</div> : null}
-            </button>
-          ))}
-        </div>
+                  <div className={styles.carouselLabel}>{`> ${it.title}`}</div>
+                </button>
+              ))}
+            </div>
+            <div className={styles.carouselDots} aria-hidden="true">
+              {items.map((it) => (
+                <span key={it.id} className={`${styles.dot} ${it.id === activeId ? styles.dotOn : ''}`} />
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {experience === 'signal' ? (
+          <div className={styles.signal} aria-label="Signal feed">
+            <div className={styles.signalHeader}>[ FEED.LOG ]</div>
+            <div className={styles.signalBody}>
+              <div className={styles.signalLine}>00:00:01  SYS READY</div>
+              <div className={styles.signalLine}>00:00:03  DOCK ONLINE  [1..4]</div>
+              <div className={styles.signalLine}>00:00:05  MODE {activeExperience.label} ARMED</div>
+              {items.map((it, i) => (
+                <div key={it.id} className={styles.signalLine}>
+                  {String(10 + i).padStart(2, '0')}:00:{String((i * 7) % 60).padStart(2, '0')}  INDEX {it.type.toUpperCase()} :: {it.title}
+                </div>
+              ))}
+              <div className={styles.signalLine}>-- END --</div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );
