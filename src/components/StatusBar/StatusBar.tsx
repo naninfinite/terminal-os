@@ -21,7 +21,20 @@ const StatusBar: React.FC = () => {
   return (
     <div className={styles.statusBar} role="contentinfo" aria-label="System status bar">
       <div className={styles.left}>
-        <button type="button" className={styles.btn} aria-label="Open menu">[ MENU ]</button>
+        <button
+          type="button"
+          className={styles.btn}
+          aria-label="Open app dock (fullscreen)"
+          onClick={() => {
+            try {
+              window.dispatchEvent(new CustomEvent('terminalos:open-app', { detail: { app: 'ME' } }));
+            } catch {
+              // ignore
+            }
+          }}
+        >
+          [ MENU ]
+        </button>
         <span>SYS: READY</span>
       </div>
       <div className={styles.right} aria-live="polite" aria-atomic="true">

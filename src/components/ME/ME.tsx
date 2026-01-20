@@ -14,7 +14,19 @@ type PortfolioItem = {
   linkLabel?: string;
 };
 
-const ME: React.FC = () => {
+export type MEProps = {
+  variant?: 'compact' | 'full';
+};
+
+function requestOpenApp(app: 'ME' | 'YOU' | 'THIRD' | 'CONNECT') {
+  try {
+    window.dispatchEvent(new CustomEvent('terminalos:open-app', { detail: { app } }));
+  } catch {
+    // ignore
+  }
+}
+
+const ME: React.FC<MEProps> = ({ variant = 'compact' }) => {
   const items: PortfolioItem[] = useMemo(
     () => [
       {
@@ -95,6 +107,43 @@ const ME: React.FC = () => {
       v.removeEventListener('pause', onPause);
     };
   }, [active?.type, activeId]);
+
+  if (variant === 'compact') {
+    return (
+      <div className={styles.panelView} aria-label="ME portfolio (compact)">
+        <img
+          className={styles.thumb}
+          src="/assets/me.png"
+          alt="Profile"
+          onError={(e) => {
+            const el = e.currentTarget;
+            if (el.dataset.fallback === '1') return;
+            el.dataset.fallback = '1';
+            el.src =
+              'data:image/svg+xml;utf8,' +
+              encodeURIComponent(
+                `<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128'>
+                  <rect width='100%' height='100%' fill='black'/>
+                  <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='#00ff66' font-family='monospace' font-size='10'>NO IMAGE</text>
+                </svg>`
+              );
+          }}
+        />
+        <div className={styles.panelMeta}>
+          <div className={styles.label}>PORTFOLIO</div>
+          <div className={styles.subLabel}>OPEN IN FULLSCREEN FOR COMFORT</div>
+          <button
+            type="button"
+            className={styles.openBtn}
+            onClick={() => requestOpenApp('ME')}
+            aria-label="Open ME.EXE fullscreen"
+          >
+            OPEN
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -210,7 +259,7 @@ const ME: React.FC = () => {
                 {active.linkLabel ?? 'OPEN LINK'}
               </a>
             ) : null}
-            <div className={styles.hint}>ARROWS: SWITCH</div>
+            <div className={styles.hint}>ARROWS: SWITCH • 1–4: DOCK • ESC: CLOSE</div>
           </div>
         </div>
 

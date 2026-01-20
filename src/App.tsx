@@ -20,6 +20,31 @@ const App: React.FC = () => {
   const [activeApp, setActiveApp] = useState<AppKey | null>(null);
   const enterTimeoutRef = useRef<number | null>(null);
 
+  useEffect(() => {
+    if (!entered) return;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (activeApp) return;
+      if (e.key === '1') setActiveApp('ME');
+      if (e.key === '2') setActiveApp('YOU');
+      if (e.key === '3') setActiveApp('THIRD');
+      if (e.key === '4') setActiveApp('CONNECT');
+    };
+
+    const onOpenApp = (e: Event) => {
+      const ce = e as CustomEvent<{ app?: AppKey }>;
+      const app = ce.detail?.app;
+      if (app === 'ME' || app === 'YOU' || app === 'THIRD' || app === 'CONNECT') setActiveApp(app);
+    };
+
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('terminalos:open-app', onOpenApp as EventListener);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('terminalos:open-app', onOpenApp as EventListener);
+    };
+  }, [activeApp, entered]);
+
   // Listen for Enter key to start exiting
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -97,11 +122,7 @@ const App: React.FC = () => {
         <div className={shell.shell}>
           <Cursor />
           <Scanlines />
-          <Desktop
-            onOpenApp={(key) => {
-              setActiveApp(key);
-            }}
-          />
+          <Desktop />
           <StatusBar />
           {activeApp ? (
             <WindowOverlay
@@ -109,7 +130,7 @@ const App: React.FC = () => {
               onClose={() => setActiveApp(null)}
               onSelectApp={(key) => setActiveApp(key)}
             >
-              {activeApp === 'ME' ? <ME /> : null}
+              {activeApp === 'ME' ? <ME variant="full" /> : null}
               {activeApp === 'YOU' ? <YOU /> : null}
               {activeApp === 'THIRD' ? <THIRD /> : null}
               {activeApp === 'CONNECT' ? <CONNECT /> : null}

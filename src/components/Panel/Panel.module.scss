@@ -19,38 +19,11 @@
   letter-spacing: $letter-spacing;
 }
 
-.headerRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.headerTitle {
-  min-width: 0;
-}
-
-.headerActions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .body {
   flex: 1;
   display: flex;
-  min-height: 0;
-}
-
-.bodyCenter {
   align-items: center;
   justify-content: center;
-}
-
-.bodyStretch {
-  align-items: stretch;
-  justify-content: stretch;
-  overflow: auto;
 }
 
 

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import styles from './WindowOverlay.module.scss';
 import crt from '../../styles/crt.module.scss';
-import Panel from '../Panel/Panel';
 
 export type AppKey = 'ME' | 'YOU' | 'THIRD' | 'CONNECT';
 
@@ -104,11 +103,9 @@ const WindowOverlay: React.FC<WindowOverlayProps> = ({ activeApp, onClose, onSel
       data-reduce-motion={reduceMotion ? '1' : '0'}
     >
       <div className={styles.window}>
-        <Panel
-          title={`${activeTitle} :: FULLSCREEN`}
-          bodyLayout="stretch"
-          className={styles.panel}
-          headerActions={
+        <div className={styles.frame} aria-label="Fullscreen window frame">
+          <div className={styles.titlebar}>
+            <div className={styles.title}>[{activeTitle} :: FULLSCREEN]</div>
             <button
               ref={closeBtnRef}
               type="button"
@@ -118,10 +115,9 @@ const WindowOverlay: React.FC<WindowOverlayProps> = ({ activeApp, onClose, onSel
             >
               CLOSE
             </button>
-          }
-        >
+          </div>
           <div className={styles.appArea}>{children}</div>
-        </Panel>
+        </div>
 
         <nav className={styles.dock} aria-label="App dock">
           {APPS.map((a) => (

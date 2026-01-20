@@ -26,8 +26,26 @@
   grid-template-rows: 1fr auto;
 }
 
-.panel {
+.frame {
+  border: $border;
+  background: $bg-black;
   min-height: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-bottom: $border-thin solid $phosphor-green;
+  background: $bg-black;
+}
+
+.title {
+  font-size: $font-sm;
 }
 
 .closeBtn {
@@ -48,6 +66,7 @@
   min-height: 0;
   height: 100%;
   width: 100%;
+  padding: 10px;
 }
 
 .dock {

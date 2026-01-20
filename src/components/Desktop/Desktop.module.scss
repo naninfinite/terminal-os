@@ -9,19 +9,5 @@
   gap: $grid-gap;
 }
 
-.maxBtn {
-  border: $border;
-  padding: 2px 8px;
-  background: $bg-black;
-  color: $phosphor-green;
-  transition: background 160ms ease, color 160ms ease;
-}
-
-.maxBtn:hover,
-.maxBtn:focus-visible {
-  background: $phosphor-green;
-  color: $bg-black;
-}
-
 
 
