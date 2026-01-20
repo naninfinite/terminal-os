@@ -1,0 +1,96 @@
+@use './variables' as *;
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  background-color: $bg-black;
+  color: $phosphor-green;
+  font-family: $font-mono;
+  font-size: $font-md;
+  letter-spacing: $letter-spacing;
+  text-transform: uppercase;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* scanlines moved to component */
+
+/* Remove global text-shadow for uniform typography across the app. Individual
+   elements may opt into glow using the $glow variable where needed. */
+* { text-shadow: none; }
+
+/* Hide native cursor when custom cursor is active */
+.custom-cursor-enabled, .custom-cursor-enabled * { cursor: none !important; }
+
+/* Ensure form controls inherit global typography */
+input, button, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
+/* Visible focus ring for keyboard accessibility */
+:focus-visible {
+  outline: 2px dashed $phosphor-green;
+  outline-offset: 2px;
+}
+
+.panel {
+  border: $border;
+  padding: $panel-padding;
+  background-color: $bg-black;
+  min-width: $panel-min-width;
+  min-height: $panel-min-height;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-header {
+  width: 100%;
+  border-bottom: $border-thin solid $phosphor-green;
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+  font-size: $font-sm;
+}
+
+.status-bar {
+  background-color: $status-bg;
+  border-top: $status-border;
+  height: $status-height;
+  padding: $status-padding;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: $font-sm;
+}
+
+.button {
+  border: $border;
+  padding: 4px 12px;
+  background: $bg-black;
+  color: $phosphor-green;
+  cursor: pointer;
+  &:hover, &:focus {
+    background: $phosphor-green;
+    color: $bg-black;
+  }
+}
+
+.typewriter {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typing steps(40, end) $typewriter-speed forwards;
+}
+
+@keyframes typing { from { width: 0; } to { width: 100%; } }
+
+

@@ -1,0 +1,258 @@
+@use '../../styles/variables' as *;
+
+.root {
+  width: 100%;
+  height: 100%;
+}
+
+.panelView {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.thumb {
+  width: 84px;
+  height: 84px;
+  border: $border;
+  object-fit: cover;
+  background: $bg-black;
+}
+
+.panelMeta {
+  display: grid;
+  gap: 6px;
+}
+
+.label {
+  font-size: $font-sm;
+}
+
+.subLabel {
+  font-size: $font-xs;
+  opacity: 0.85;
+  color: $color-fg-dim;
+}
+
+.openBtn {
+  border: $border;
+  padding: 4px 10px;
+  background: $bg-black;
+  color: $phosphor-green;
+  justify-self: start;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.openBtn:hover,
+.openBtn:focus-visible {
+  background: $phosphor-green;
+  color: $bg-black;
+}
+
+.overlay {
+  position: fixed;
+  inset: 10px;
+  z-index: 9000;
+  background: rgba(0, 0, 0, 0.92);
+  border: $border;
+  display: grid;
+  place-items: stretch;
+  animation: me-open 180ms ease-out;
+}
+
+@keyframes me-open {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay { animation: none; }
+}
+
+.window {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+}
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-bottom: $border-thin solid $phosphor-green;
+  background: $bg-black;
+}
+
+.title {
+  font-size: $font-sm;
+}
+
+.titleActions {
+  display: flex;
+  gap: 8px;
+}
+
+.actionBtn {
+  border: $border;
+  padding: 4px 10px;
+  background: $bg-black;
+  color: $phosphor-green;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.actionBtn:hover,
+.actionBtn:focus-visible {
+  background: $phosphor-green;
+  color: $bg-black;
+}
+
+.content {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 10px;
+  padding: 10px;
+}
+
+.preview {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 10px;
+  align-items: stretch;
+  min-height: 220px;
+}
+
+.previewFrame {
+  border: $border;
+  background: $bg-black;
+  position: relative;
+  overflow: hidden;
+}
+
+.previewMedia {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(1.05) contrast(1.05);
+}
+
+.previewEmpty {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: $color-fg-dim;
+}
+
+.previewInfo {
+  border: $border;
+  background: $bg-black;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.previewTitle {
+  font-size: $font-sm;
+}
+
+.previewBlurb {
+  font-size: $font-xs;
+  color: $color-fg-dim;
+  line-height: 1.4;
+}
+
+.videoControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ctrlBtn {
+  border: $border;
+  padding: 4px 10px;
+  background: $bg-black;
+  color: $phosphor-green;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.ctrlBtn:hover,
+.ctrlBtn:focus-visible {
+  background: $phosphor-green;
+  color: $bg-black;
+}
+
+.hint {
+  font-size: $font-xs;
+  opacity: 0.9;
+}
+
+.gallery {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  overflow: auto;
+  padding-right: 6px;
+}
+
+@media (max-width: 900px) {
+  .preview { grid-template-columns: 1fr; }
+  .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.card {
+  border: $border;
+  background: $bg-black;
+  color: $phosphor-green;
+  padding: 8px;
+  display: grid;
+  gap: 8px;
+  text-align: left;
+}
+
+.cardActive {
+  box-shadow: $glow;
+}
+
+.cardTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: $font-xs;
+}
+
+.cardType {
+  opacity: 0.9;
+  color: $color-fg-dim;
+}
+
+.cardThumb {
+  border: $border-thin solid $phosphor-green;
+  height: 86px;
+  background: rgba(0, 255, 102, 0.04);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.cardThumbMedia {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cardThumbVid {
+  font-size: $font-xs;
+  opacity: 0.9;
+  color: $color-fg-dim;
+  letter-spacing: $letter-spacing;
+}
+

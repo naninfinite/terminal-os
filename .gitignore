@@ -1,0 +1,44 @@
+node_modules/
+dist/
+.cache/
+.vite/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+
+# Build artifacts
+coverage/
+.nyc_output/
+.turbo/
+
+# TypeScript
+*.tsbuildinfo
+
+# React / Vite / general
+/public/assets/*.cache
+.pnp.*
+/tmp
+
+# React Three.js cache/assets
+/.r3f-cache/
+.gltf-cache/
+*.glb
+
+# Misc
+*.log
