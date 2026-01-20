@@ -10,7 +10,9 @@ type PortfolioItem = {
   type: MediaType;
   src: string;
   poster?: string;
-  blurb?: string;
+  description?: string;
+  linkHref?: string;
+  linkLabel?: string;
 };
 
 const ME: React.FC = () => {
@@ -27,14 +29,16 @@ const ME: React.FC = () => {
         type: 'video',
         src: '/assets/landing-bg.mp4',
         poster: '/assets/landing-poster.jpg',
-        blurb: 'SHORT REEL / PLACEHOLDER. REPLACE WITH YOUR OWN VIDEO.',
+        description: 'SHORT REEL / PLACEHOLDER. REPLACE WITH YOUR OWN VIDEO.',
       },
       {
         id: 'portrait',
         title: 'PORTRAIT.PNG',
         type: 'image',
         src: '/assets/me.png',
-        blurb: 'PROFILE IMAGE / PLACEHOLDER.',
+        description: 'PROFILE IMAGE / PLACEHOLDER.',
+        linkHref: 'https://github.com/naninfinite',
+        linkLabel: 'OPEN SOURCE',
       },
     ],
     []
@@ -182,7 +186,7 @@ const ME: React.FC = () => {
 
                 <div className={styles.previewInfo}>
                   <div className={styles.previewTitle}>{active?.title ?? '—'}</div>
-                  {active?.blurb ? <div className={styles.previewBlurb}>{active.blurb}</div> : null}
+                  {active?.description ? <div className={styles.previewBlurb}>{active.description}</div> : null}
 
                   {active?.type === 'video' ? (
                     <div className={styles.videoControls}>
@@ -230,6 +234,17 @@ const ME: React.FC = () => {
                       </button>
                     </div>
                   ) : null}
+                  {active?.linkHref ? (
+                    <a
+                      className={styles.linkBtn}
+                      href={active.linkHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={active.linkLabel ? `Open link: ${active.linkLabel}` : 'Open link'}
+                    >
+                      {active.linkLabel ?? 'OPEN LINK'}
+                    </a>
+                  ) : null}
                   <div className={styles.hint}>ARROWS: SWITCH • ESC: CLOSE</div>
                 </div>
               </div>
@@ -245,18 +260,23 @@ const ME: React.FC = () => {
                     aria-current={it.id === activeId ? 'true' : undefined}
                   >
                     <div className={styles.cardTop}>
-                      <span className={styles.cardTitle}>{it.title}</span>
-                      <span className={styles.cardType}>{it.type === 'video' ? 'VID' : 'IMG'}</span>
+                      <span className={styles.cardTitle}>{`> ${it.title}`}</span>
+                      <span className={styles.cardType}>{it.type === 'video' ? '[VID]' : '[IMG]'}</span>
                     </div>
                     <div className={styles.cardThumb}>
                       {it.type === 'image' ? (
                         <img className={styles.cardThumbMedia} src={it.src} alt="" aria-hidden="true" />
                       ) : (
-                        <div className={styles.cardThumbVid} aria-hidden="true">
-                          VIDEO
-                        </div>
+                        it.poster ? (
+                          <img className={styles.cardThumbMedia} src={it.poster} alt="" aria-hidden="true" />
+                        ) : (
+                          <div className={styles.cardThumbVid} aria-hidden="true">
+                            VIDEO
+                          </div>
+                        )
                       )}
                     </div>
+                    {it.description ? <div className={styles.cardDesc}>{it.description}</div> : null}
                   </button>
                 ))}
               </div>
