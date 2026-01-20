@@ -134,6 +134,28 @@
   overflow: hidden;
 }
 
+/* Inset CRT treatment (reuses existing scanline token; avoids native video chrome) */
+.previewFrame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: $scanline-gradient;
+  opacity: 0.22;
+  mix-blend-mode: overlay;
+}
+
+.previewFrame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(transparent 55%, rgba(0, 0, 0, 0.55)),
+    linear-gradient(to right, rgba(0, 0, 0, 0.35), transparent 22%, transparent 78%, rgba(0, 0, 0, 0.35));
+  opacity: 0.55;
+}
+
 .previewMedia {
   width: 100%;
   height: 100%;
@@ -174,6 +196,58 @@
   gap: 8px;
 }
 
+/* VLC-ish transport bar (visual only; controls are the buttons below) */
+.transportBar {
+  width: 100%;
+  border: $border-thin solid $phosphor-green;
+  background: rgba(0, 255, 102, 0.03);
+  padding: 6px 8px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.transportLabel {
+  font-size: $font-xs;
+  color: $phosphor-green;
+}
+
+.transportTime {
+  font-size: $font-xs;
+  color: $color-fg-dim;
+}
+
+.meter {
+  height: 8px;
+  border: $border-thin solid $phosphor-green;
+  background: rgba(0, 0, 0, 0.75);
+  position: relative;
+  overflow: hidden;
+}
+
+.meter::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to right,
+    rgba(0, 255, 102, 0.12) 0px,
+    rgba(0, 255, 102, 0.12) 1px,
+    transparent 2px,
+    transparent 6px
+  );
+  opacity: 0.25;
+}
+
+.meterFill {
+  height: 100%;
+  width: 0%;
+  background: $phosphor-green;
+  box-shadow: $glow;
+}
+
 .ctrlBtn {
   border: $border;
   padding: 4px 10px;
@@ -184,6 +258,23 @@
 
 .ctrlBtn:hover,
 .ctrlBtn:focus-visible {
+  background: $phosphor-green;
+  color: $bg-black;
+}
+
+.linkBtn {
+  display: inline-block;
+  border: $border;
+  padding: 4px 10px;
+  background: $bg-black;
+  color: $phosphor-green;
+  text-decoration: none;
+  justify-self: start;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.linkBtn:hover,
+.linkBtn:focus-visible {
   background: $phosphor-green;
   color: $bg-black;
 }
@@ -217,6 +308,11 @@
   text-align: left;
 }
 
+.card:hover,
+.card:focus-visible {
+  box-shadow: $glow;
+}
+
 .cardActive {
   box-shadow: $glow;
 }
@@ -240,6 +336,27 @@
   overflow: hidden;
   display: grid;
   place-items: center;
+  position: relative;
+}
+
+/* Light inset CRT treatment for thumbnails */
+.cardThumb::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: $scanline-gradient;
+  opacity: 0.16;
+  mix-blend-mode: overlay;
+}
+
+.cardThumb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(transparent 60%, rgba(0, 0, 0, 0.55));
+  opacity: 0.35;
 }
 
 .cardThumbMedia {
@@ -254,5 +371,12 @@
   opacity: 0.9;
   color: $color-fg-dim;
   letter-spacing: $letter-spacing;
+}
+
+.cardDesc {
+  font-size: $font-xs;
+  color: $color-fg-dim;
+  line-height: 1.35;
+  opacity: 0.95;
 }
 

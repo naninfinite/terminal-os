@@ -46,12 +46,22 @@ const ME: React.FC = () => {
 
   const [isOpen, setIsOpen] = useState(false);
   const [activeId, setActiveId] = useState(items[0]?.id ?? '');
+  const [videoTime, setVideoTime] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [videoPlaying, setVideoPlaying] = useState(false);
   const openBtnRef = useRef<HTMLButtonElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const lastFocusedElRef = useRef<HTMLElement | null>(null);
 
   const active = useMemo(() => items.find((x) => x.id === activeId) ?? items[0], [activeId, items]);
+
+  const formatTime = (sec: number) => {
+    const s = Math.max(0, Math.floor(sec));
+    const mm = Math.floor(s / 60);
+    const ss = s % 60;
+    return `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -101,6 +111,35 @@ const ME: React.FC = () => {
       }
     }
   }, [active?.type, isOpen]);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (!isOpen || active?.type !== 'video') return;
+
+    const onLoaded = () => {
+      setVideoDuration(Number.isFinite(v.duration) ? v.duration : 0);
+      setVideoTime(Number.isFinite(v.currentTime) ? v.currentTime : 0);
+    };
+    const onTime = () => setVideoTime(Number.isFinite(v.currentTime) ? v.currentTime : 0);
+    const onPlay = () => setVideoPlaying(true);
+    const onPause = () => setVideoPlaying(false);
+
+    v.addEventListener('loadedmetadata', onLoaded);
+    v.addEventListener('timeupdate', onTime);
+    v.addEventListener('play', onPlay);
+    v.addEventListener('pause', onPause);
+    // Prime state (in case metadata is already available)
+    onLoaded();
+    onPause();
+
+    return () => {
+      v.removeEventListener('loadedmetadata', onLoaded);
+      v.removeEventListener('timeupdate', onTime);
+      v.removeEventListener('play', onPlay);
+      v.removeEventListener('pause', onPause);
+    };
+  }, [active?.type, isOpen, activeId]);
 
   return (
     <div className={styles.root}>
@@ -189,7 +228,22 @@ const ME: React.FC = () => {
                   {active?.description ? <div className={styles.previewBlurb}>{active.description}</div> : null}
 
                   {active?.type === 'video' ? (
-                    <div className={styles.videoControls}>
+                    <div className={styles.videoControls} aria-label="Video transport controls">
+                      <div className={styles.transportBar} aria-hidden="true">
+                        <span className={styles.transportLabel}>{videoPlaying ? '||' : '▶'}</span>
+                        <div className={styles.meter}>
+                          <div
+                            className={styles.meterFill}
+                            style={{
+                              width:
+                                videoDuration > 0 ? `${Math.min(100, Math.max(0, (videoTime / videoDuration) * 100))}%` : '0%',
+                            }}
+                          />
+                        </div>
+                        <span className={styles.transportTime}>
+                          {formatTime(videoTime)} / {formatTime(videoDuration)}
+                        </span>
+                      </div>
                       <button
                         type="button"
                         className={styles.ctrlBtn}
