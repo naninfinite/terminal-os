@@ -7,11 +7,17 @@ import shell from './components/AppShell/AppShell.module.scss';
 import Scanlines from './components/Scanlines/Scanlines';
 import Panel from './components/Panel/Panel';
 import Cursor from './components/Cursor/Cursor';
+import WindowOverlay, { type AppKey } from './components/WindowOverlay/WindowOverlay';
+import ME from './components/ME/ME';
+import YOU from './components/YOU/YOU';
+import THIRD from './components/THIRD/THIRD';
+import CONNECT from './components/CONNECT/CONNECT';
 
 const App: React.FC = () => {
   const [entered, setEntered] = useState(false);
   const [exiting, setExiting] = useState(false);
   const [videoError, setVideoError] = useState(false);
+  const [activeApp, setActiveApp] = useState<AppKey | null>(null);
   const enterTimeoutRef = useRef<number | null>(null);
 
   // Listen for Enter key to start exiting
@@ -91,8 +97,24 @@ const App: React.FC = () => {
         <div className={shell.shell}>
           <Cursor />
           <Scanlines />
-          <Desktop />
+          <Desktop
+            onOpenApp={(key) => {
+              setActiveApp(key);
+            }}
+          />
           <StatusBar />
+          {activeApp ? (
+            <WindowOverlay
+              activeApp={activeApp}
+              onClose={() => setActiveApp(null)}
+              onSelectApp={(key) => setActiveApp(key)}
+            >
+              {activeApp === 'ME' ? <ME /> : null}
+              {activeApp === 'YOU' ? <YOU /> : null}
+              {activeApp === 'THIRD' ? <THIRD /> : null}
+              {activeApp === 'CONNECT' ? <CONNECT /> : null}
+            </WindowOverlay>
+          ) : null}
         </div>
       )}
     </>

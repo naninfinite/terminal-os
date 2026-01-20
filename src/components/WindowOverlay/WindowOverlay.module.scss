@@ -1,0 +1,79 @@
+@use '../../styles/variables' as *;
+
+.overlay {
+  position: fixed;
+  inset: 10px;
+  z-index: 9000;
+  background: rgba(0, 0, 0, 0.92);
+  border: $border;
+  display: grid;
+  place-items: stretch;
+  animation: win-open 180ms ease-out;
+}
+
+@keyframes win-open {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay { animation: none; }
+}
+
+.window {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 1fr auto;
+}
+
+.panel {
+  min-height: 0;
+}
+
+.closeBtn {
+  border: $border;
+  padding: 4px 10px;
+  background: $bg-black;
+  color: $phosphor-green;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.closeBtn:hover,
+.closeBtn:focus-visible {
+  background: $phosphor-green;
+  color: $bg-black;
+}
+
+.appArea {
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.dock {
+  border-top: $border-thin solid $phosphor-green;
+  background: rgba(0, 255, 102, 0.03);
+  padding: 8px 10px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dockBtn {
+  border: $border;
+  padding: 4px 10px;
+  background: $bg-black;
+  color: $phosphor-green;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.dockBtn:hover,
+.dockBtn:focus-visible {
+  background: $phosphor-green;
+  color: $bg-black;
+}
+
+.dockBtnActive {
+  box-shadow: $glow;
+}
+

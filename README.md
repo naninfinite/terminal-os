@@ -1,7 +1,7 @@
 # TERMINAL-OS
 
 Retro terminal-inspired UI (Severance Lumon terminals) built with React, Vite, TypeScript, and SCSS Modules.
- 
+
 
 ## Stack
 - React + Vite + TypeScript

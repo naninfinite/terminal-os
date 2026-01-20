@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './ME.module.scss';
-import crt from '../../styles/crt.module.scss';
 
 type MediaType = 'image' | 'video';
 
@@ -16,11 +15,6 @@ type PortfolioItem = {
 };
 
 const ME: React.FC = () => {
-  const reduceMotion = useMemo(
-    () => typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-    []
-  );
-
   const items: PortfolioItem[] = useMemo(
     () => [
       {
@@ -44,15 +38,11 @@ const ME: React.FC = () => {
     []
   );
 
-  const [isOpen, setIsOpen] = useState(false);
   const [activeId, setActiveId] = useState(items[0]?.id ?? '');
   const [videoTime, setVideoTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
   const [videoPlaying, setVideoPlaying] = useState(false);
-  const openBtnRef = useRef<HTMLButtonElement | null>(null);
-  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const lastFocusedElRef = useRef<HTMLElement | null>(null);
 
   const active = useMemo(() => items.find((x) => x.id === activeId) ?? items[0], [activeId, items]);
 
@@ -64,45 +54,10 @@ const ME: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!isOpen) return;
-
-    // Save/restore focus
-    lastFocusedElRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const t = window.setTimeout(() => closeBtnRef.current?.focus(), 0);
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        setIsOpen(false);
-        return;
-      }
-
-      // Simple keyboard navigation through items (Up/Down, Left/Right)
-      if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
-        e.preventDefault();
-        const idx = items.findIndex((x) => x.id === activeId);
-        if (idx < 0) return;
-        const dir = e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : 1;
-        const next = items[(idx + dir + items.length) % items.length];
-        if (next) setActiveId(next.id);
-      }
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    return () => {
-      window.clearTimeout(t);
-      window.removeEventListener('keydown', onKeyDown);
-      const el = lastFocusedElRef.current;
-      if (el) el.focus();
-      else openBtnRef.current?.focus();
-    };
-  }, [activeId, isOpen, items]);
-
-  useEffect(() => {
-    // Stop playback when switching away from video or closing overlay.
+    // Stop playback when switching away from video.
     const v = videoRef.current;
     if (!v) return;
-    if (!isOpen || active?.type !== 'video') {
+    if (active?.type !== 'video') {
       try {
         v.pause();
         v.currentTime = 0;
@@ -110,12 +65,12 @@ const ME: React.FC = () => {
         // ignore
       }
     }
-  }, [active?.type, isOpen]);
+  }, [active?.type]);
 
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    if (!isOpen || active?.type !== 'video') return;
+    if (active?.type !== 'video') return;
 
     const onLoaded = () => {
       setVideoDuration(Number.isFinite(v.duration) ? v.duration : 0);
@@ -139,205 +94,156 @@ const ME: React.FC = () => {
       v.removeEventListener('play', onPlay);
       v.removeEventListener('pause', onPause);
     };
-  }, [active?.type, isOpen, activeId]);
+  }, [active?.type, activeId]);
 
   return (
-    <div className={styles.root}>
-      <div className={styles.panelView}>
-        <img
-          className={styles.thumb}
-          src="/assets/me.png"
-          alt="Profile"
-          onError={(e) => {
-            const el = e.currentTarget;
-            if (el.dataset.fallback === '1') return;
-            el.dataset.fallback = '1';
-            el.src =
-              'data:image/svg+xml;utf8,' +
-              encodeURIComponent(
-                `<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128'>
-                  <rect width='100%' height='100%' fill='black'/>
-                  <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='#00ff66' font-family='monospace' font-size='10'>NO IMAGE</text>
-                </svg>`
-              );
-          }}
-        />
-        <div className={styles.panelMeta}>
-          <div className={styles.label}>PORTFOLIO WINDOW</div>
-          <div className={styles.subLabel}>OPEN FOR MEDIA / PROJECTS</div>
-          <button
-            ref={openBtnRef}
-            type="button"
-            className={styles.openBtn}
-            onClick={() => setIsOpen(true)}
-            aria-label="Open ME portfolio window"
-          >
-            OPEN
-          </button>
-        </div>
-      </div>
+    <div
+      className={styles.root}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          const idx = items.findIndex((x) => x.id === activeId);
+          if (idx < 0) return;
+          const dir = e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : 1;
+          const next = items[(idx + dir + items.length) % items.length];
+          if (next) setActiveId(next.id);
+        }
+      }}
+      aria-label="ME portfolio"
+    >
+      <div className={styles.content}>
+        <div className={styles.preview}>
+          <div className={styles.previewFrame} aria-label="Active media preview">
+            {active?.type === 'image' ? (
+              <img className={styles.previewMedia} src={active.src} alt={active.title} />
+            ) : active?.type === 'video' ? (
+              <video
+                ref={videoRef}
+                className={styles.previewMedia}
+                playsInline
+                muted
+                loop
+                preload="metadata"
+                poster={active.poster}
+              >
+                <source src={active.src} />
+              </video>
+            ) : (
+              <div className={styles.previewEmpty}>NO MEDIA</div>
+            )}
+          </div>
 
-      {isOpen ? (
-        <div
-          className={`${styles.overlay} ${crt.crt}`}
-          role="dialog"
-          aria-modal="true"
-          aria-label="ME portfolio window"
-          data-reduce-motion={reduceMotion ? '1' : '0'}
-        >
-          <div className={styles.window}>
-            <div className={styles.titlebar}>
-              <div className={styles.title}>[ ME.EXE :: PORTFOLIO ]</div>
-              <div className={styles.titleActions}>
+          <div className={styles.previewInfo}>
+            <div className={styles.previewTitle}>{active?.title ?? '—'}</div>
+            {active?.description ? <div className={styles.previewBlurb}>{active.description}</div> : null}
+
+            {active?.type === 'video' ? (
+              <div className={styles.videoControls} aria-label="Video transport controls">
+                <div className={styles.transportBar} aria-hidden="true">
+                  <span className={styles.transportLabel}>{videoPlaying ? '||' : '▶'}</span>
+                  <div className={styles.meter}>
+                    <div
+                      className={styles.meterFill}
+                      style={{
+                        width:
+                          videoDuration > 0 ? `${Math.min(100, Math.max(0, (videoTime / videoDuration) * 100))}%` : '0%',
+                      }}
+                    />
+                  </div>
+                  <span className={styles.transportTime}>
+                    {formatTime(videoTime)} / {formatTime(videoDuration)}
+                  </span>
+                </div>
                 <button
-                  ref={closeBtnRef}
                   type="button"
-                  className={styles.actionBtn}
-                  onClick={() => setIsOpen(false)}
-                  aria-label="Close ME portfolio window"
+                  className={styles.ctrlBtn}
+                  onClick={() => {
+                    const v = videoRef.current;
+                    if (!v) return;
+                    if (v.paused) void v.play();
+                    else v.pause();
+                  }}
+                  aria-label="Play or pause video"
                 >
-                  CLOSE
+                  PLAY/PAUSE
+                </button>
+                <button
+                  type="button"
+                  className={styles.ctrlBtn}
+                  onClick={() => {
+                    const v = videoRef.current;
+                    if (!v) return;
+                    v.muted = !v.muted;
+                  }}
+                  aria-label="Mute or unmute video"
+                >
+                  MUTE
+                </button>
+                <button
+                  type="button"
+                  className={styles.ctrlBtn}
+                  onClick={() => {
+                    const v = videoRef.current;
+                    if (!v) return;
+                    try {
+                      v.pause();
+                      v.currentTime = 0;
+                    } catch {
+                      // ignore
+                    }
+                  }}
+                  aria-label="Restart video"
+                >
+                  RESTART
                 </button>
               </div>
-            </div>
-
-            <div className={styles.content}>
-              <div className={styles.preview}>
-                <div className={styles.previewFrame} aria-label="Active media preview">
-                  {active?.type === 'image' ? (
-                    <img className={styles.previewMedia} src={active.src} alt={active.title} />
-                  ) : active?.type === 'video' ? (
-                    <video
-                      ref={videoRef}
-                      className={styles.previewMedia}
-                      playsInline
-                      muted
-                      loop
-                      preload="metadata"
-                      poster={active.poster}
-                    >
-                      <source src={active.src} />
-                    </video>
-                  ) : (
-                    <div className={styles.previewEmpty}>NO MEDIA</div>
-                  )}
-                </div>
-
-                <div className={styles.previewInfo}>
-                  <div className={styles.previewTitle}>{active?.title ?? '—'}</div>
-                  {active?.description ? <div className={styles.previewBlurb}>{active.description}</div> : null}
-
-                  {active?.type === 'video' ? (
-                    <div className={styles.videoControls} aria-label="Video transport controls">
-                      <div className={styles.transportBar} aria-hidden="true">
-                        <span className={styles.transportLabel}>{videoPlaying ? '||' : '▶'}</span>
-                        <div className={styles.meter}>
-                          <div
-                            className={styles.meterFill}
-                            style={{
-                              width:
-                                videoDuration > 0 ? `${Math.min(100, Math.max(0, (videoTime / videoDuration) * 100))}%` : '0%',
-                            }}
-                          />
-                        </div>
-                        <span className={styles.transportTime}>
-                          {formatTime(videoTime)} / {formatTime(videoDuration)}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        className={styles.ctrlBtn}
-                        onClick={() => {
-                          const v = videoRef.current;
-                          if (!v) return;
-                          if (v.paused) void v.play();
-                          else v.pause();
-                        }}
-                        aria-label="Play or pause video"
-                      >
-                        PLAY/PAUSE
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.ctrlBtn}
-                        onClick={() => {
-                          const v = videoRef.current;
-                          if (!v) return;
-                          v.muted = !v.muted;
-                        }}
-                        aria-label="Mute or unmute video"
-                      >
-                        MUTE
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.ctrlBtn}
-                        onClick={() => {
-                          const v = videoRef.current;
-                          if (!v) return;
-                          try {
-                            v.pause();
-                            v.currentTime = 0;
-                          } catch {
-                            // ignore
-                          }
-                        }}
-                        aria-label="Restart video"
-                      >
-                        RESTART
-                      </button>
-                    </div>
-                  ) : null}
-                  {active?.linkHref ? (
-                    <a
-                      className={styles.linkBtn}
-                      href={active.linkHref}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label={active.linkLabel ? `Open link: ${active.linkLabel}` : 'Open link'}
-                    >
-                      {active.linkLabel ?? 'OPEN LINK'}
-                    </a>
-                  ) : null}
-                  <div className={styles.hint}>ARROWS: SWITCH • ESC: CLOSE</div>
-                </div>
-              </div>
-
-              <div className={styles.gallery} aria-label="Portfolio media gallery">
-                {items.map((it) => (
-                  <button
-                    key={it.id}
-                    type="button"
-                    className={`${styles.card} ${it.id === activeId ? styles.cardActive : ''}`}
-                    onClick={() => setActiveId(it.id)}
-                    aria-label={`Select ${it.title}`}
-                    aria-current={it.id === activeId ? 'true' : undefined}
-                  >
-                    <div className={styles.cardTop}>
-                      <span className={styles.cardTitle}>{`> ${it.title}`}</span>
-                      <span className={styles.cardType}>{it.type === 'video' ? '[VID]' : '[IMG]'}</span>
-                    </div>
-                    <div className={styles.cardThumb}>
-                      {it.type === 'image' ? (
-                        <img className={styles.cardThumbMedia} src={it.src} alt="" aria-hidden="true" />
-                      ) : (
-                        it.poster ? (
-                          <img className={styles.cardThumbMedia} src={it.poster} alt="" aria-hidden="true" />
-                        ) : (
-                          <div className={styles.cardThumbVid} aria-hidden="true">
-                            VIDEO
-                          </div>
-                        )
-                      )}
-                    </div>
-                    {it.description ? <div className={styles.cardDesc}>{it.description}</div> : null}
-                  </button>
-                ))}
-              </div>
-            </div>
+            ) : null}
+            {active?.linkHref ? (
+              <a
+                className={styles.linkBtn}
+                href={active.linkHref}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={active.linkLabel ? `Open link: ${active.linkLabel}` : 'Open link'}
+              >
+                {active.linkLabel ?? 'OPEN LINK'}
+              </a>
+            ) : null}
+            <div className={styles.hint}>ARROWS: SWITCH</div>
           </div>
         </div>
-      ) : null}
+
+        <div className={styles.gallery} aria-label="Portfolio media gallery">
+          {items.map((it) => (
+            <button
+              key={it.id}
+              type="button"
+              className={`${styles.card} ${it.id === activeId ? styles.cardActive : ''}`}
+              onClick={() => setActiveId(it.id)}
+              aria-label={`Select ${it.title}`}
+              aria-current={it.id === activeId ? 'true' : undefined}
+            >
+              <div className={styles.cardTop}>
+                <span className={styles.cardTitle}>{`> ${it.title}`}</span>
+                <span className={styles.cardType}>{it.type === 'video' ? '[VID]' : '[IMG]'}</span>
+              </div>
+              <div className={styles.cardThumb}>
+                {it.type === 'image' ? (
+                  <img className={styles.cardThumbMedia} src={it.src} alt="" aria-hidden="true" />
+                ) : it.poster ? (
+                  <img className={styles.cardThumbMedia} src={it.poster} alt="" aria-hidden="true" />
+                ) : (
+                  <div className={styles.cardThumbVid} aria-hidden="true">
+                    VIDEO
+                  </div>
+                )}
+              </div>
+              {it.description ? <div className={styles.cardDesc}>{it.description}</div> : null}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
