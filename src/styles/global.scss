@@ -140,13 +140,32 @@ input, button, select, textarea {
 
 .crt-media {
   display: block;
+  position: relative;
   width: 100%;
   height: 100%;
   object-fit: cover;
   /* Keep originals high-res but “screen-like” */
-  filter: saturate(1.08) contrast(1.1) brightness(0.98);
+  /*filter: saturate(1.08) contrast(1.1) brightness(0.98);*/
+ 
+  /*degraded filter test*/
+  /* filter ramp up - phosphorous tube */
+  filter: grayscale(0.2), brightness(0.95), contrast(1.25), saturate(1.2);
   transform: translateZ(0);
 }
+
+crt-media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background: radial-gradient(center at 10% 10%, rgba(0, 25S, 102, 0.3,) transparent 40%),
+              radial-gradient(center at 90% 20%, rgba(0, 255, 255, 0.25) transparent 45%);
+  filter: blur;
+  transform: translate3d(-0.8px, 0.3px, 0);
+  opacity: 0.55;
+
+} 
 
 @media (prefers-reduced-motion: reduce) {
   .crt-media-frame::before { opacity: 0.12; }
