@@ -163,13 +163,13 @@ const ME: React.FC<MEProps> = ({ variant = 'compact' }) => {
     >
       <div className={styles.content}>
         <div className={styles.preview}>
-          <div className={styles.previewFrame} aria-label="Active media preview">
+          <div className={`${styles.previewFrame} crt-media-frame`} aria-label="Active media preview">
             {active?.type === 'image' ? (
-              <img className={styles.previewMedia} src={active.src} alt={active.title} />
+              <img className={`${styles.previewMedia} crt-media`} src={active.src} alt={active.title} />
             ) : active?.type === 'video' ? (
               <video
                 ref={videoRef}
-                className={styles.previewMedia}
+                className={`${styles.previewMedia} crt-media`}
                 playsInline
                 muted
                 loop
@@ -277,11 +277,11 @@ const ME: React.FC<MEProps> = ({ variant = 'compact' }) => {
                 <span className={styles.cardTitle}>{`> ${it.title}`}</span>
                 <span className={styles.cardType}>{it.type === 'video' ? '[VID]' : '[IMG]'}</span>
               </div>
-              <div className={styles.cardThumb}>
+              <div className={`${styles.cardThumb} crt-media-frame`}>
                 {it.type === 'image' ? (
-                  <img className={styles.cardThumbMedia} src={it.src} alt="" aria-hidden="true" />
+                  <img className={`${styles.cardThumbMedia} crt-media`} src={it.src} alt="" aria-hidden="true" />
                 ) : it.poster ? (
-                  <img className={styles.cardThumbMedia} src={it.poster} alt="" aria-hidden="true" />
+                  <img className={`${styles.cardThumbMedia} crt-media`} src={it.poster} alt="" aria-hidden="true" />
                 ) : (
                   <div className={styles.cardThumbVid} aria-hidden="true">
                     VIDEO
