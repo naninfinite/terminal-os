@@ -3,8 +3,10 @@
 .root { 
     display: grid; 
     gap: 8px; 
+    width: min(320px, 80vw);
+    margin: 0 auto;
     place-self: center; /* center the whole block inside the panel */
-    width: min(420px, 100%); /* keep it readable on large panels, responive on small */
+    // width: min(420px, 100%); /* keep it readable on large panels, responive on small */
 }
 .input { 
     border: $border; 
@@ -30,6 +32,10 @@
     opacity: 0.9; 
 }
 
-
+// @media (max-width: 600px) {
+//     .root {
+//         max-width: 100%;
+//     }
+// }
 
 
