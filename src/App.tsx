@@ -56,8 +56,9 @@ const App: React.FC = () => {
           data-state={exiting ? 'exiting' : 'idle'}
         >
           <div className={landingStyles.center}>
-            <Panel title="ENTER.EXE">
-              <div className={landingStyles.panelContent}>
+            <section className={landingStyles.landingFrame} aria-label="ENTER.EXE">
+              <header className={landingStyles.landingHeader}>[ENTER.EXE]</header>
+              <div className={landingStyles.landingBody}>
                 <div className={landingStyles.videoBox} data-video={videoError ? 'error' : 'ok'}>
                   {!videoError ? (
                     <video
@@ -84,7 +85,7 @@ const App: React.FC = () => {
                   </button>
                 </div>
               </div>
-            </Panel>
+            </section>
           </div>
         </div>
       ) : (

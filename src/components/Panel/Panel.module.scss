@@ -41,10 +41,22 @@
   box-sizing: border-box;
 }
 
+.hiddenHeader {
+  display: none;
+}
+
 .panel:hover,
 .panel:focus-visible {
   transform: translateY(-3px) translate(1px) translateZ(0);
   box-shadow: 0 14px 35px rgba(0, 0, 0, 0.45);
+}
+
+.noHover {
+  &:hover,
+  &:focus-visible {
+    transform: none !important;
+    box-shadow: none !important;
+  }
 }
 
 .header {

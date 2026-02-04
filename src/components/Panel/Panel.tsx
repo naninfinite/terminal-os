@@ -6,16 +6,34 @@ export type PanelProps = {
   children?: React.ReactNode;
   className?: string;
   stretchBody?: boolean;
+  disableHover?: boolean;
+  hideHeader?: boolean;
+  bodyClassName?: string;
 };
 
-const Panel: React.FC<PanelProps> = ({ title, children, className, stretchBody }) => {
-  return (
-    <section className={`${styles.panel} ${className ?? ''}`.trim()} aria-label={title}>
-      <header className={styles.header}>[{title}]</header>
-      <div className={`${styles.body} ${stretchBody ? styles.bodyStretch : ''}`.trim()}>{children}</div>
-    </section>
-  );
-};
+const Panel: React.FC<PanelProps> = ({
+  title,
+  children,
+  className,
+  stretchBody,
+  disableHover,
+  hideHeader,
+  bodyClassName,
+}) => (
+  <section
+    className={`${styles.panel} ${className ?? ''} ${disableHover ? styles.noHover : ''}`.trim()}
+    aria-label={title}
+  >
+    <header className={`${styles.header} ${hideHeader ? styles.hiddenHeader : ''}`.trim()}>
+      [{title}]
+    </header>
+    <div
+      className={`${styles.body} ${stretchBody ? styles.bodyStretch : ''} ${bodyClassName ?? ''}`.trim()}
+    >
+      {children}
+    </div>
+  </section>
+);
 
 export default Panel;
 

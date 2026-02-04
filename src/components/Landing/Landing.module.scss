@@ -3,7 +3,7 @@
 .landing {
   position: fixed;
   inset: 0;
-  background: $color-bg;
+  background: $bg-black;
   color: $color-fg;
   font-family: $font-mono;
   text-transform: uppercase;
@@ -34,18 +34,43 @@
 
 .panelContent { display: grid; }
 
+.landingFrame {
+  width: min(92vw, 960px);
+  max-width: 100%;
+  border: $border;
+  padding: $panel-padding;
+  background: $bg-black;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-height: 360px;
+}
+
+.landingHeader {
+  width: 100%;
+  border-bottom: $border-thin solid $phosphor-green;
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+  font-size: $font-sm;
+  letter-spacing: $letter-spacing;
+}
+
+.landingBody {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
 .videoBox {
   position: relative;
-  width: clamp(280px, 92vw, 960px);
+  width: 100%;
   aspect-ratio: 16 / 9;
-  background: $bg-black; // black fallback when no video
+  background: $bg-black;
   border: $border;
   display: grid;
   place-items: center;
-}
-
-.videoBox[data-video='error'] {
-  // keep black background only; no <video> rendered
 }
 
 .video {
@@ -68,30 +93,19 @@
   z-index: 1;
 }
 
+.enterBtn {
+  border: $border;
+  background: rgba(0,0,0,0.65);
+  color: $phosphor-green;
+  padding: 6px 12px;
+}
+
 /* Ensure button text matches site typography and sizing */
 .enterBtn, .enterBtn * {
   font-family: $font-mono;
   font-size: $font-sm;
   letter-spacing: $letter-spacing;
   text-transform: uppercase;
-}
-
-.bgVideo {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.25;
-  background: radial-gradient(circle at 50% 50%, #0a0f1a, #000);
-}
-
-.landing[data-video='error'] {
-  background: radial-gradient(circle at 50% 50%, #0a0f1a, #000);
-}
-
-.landing[data-video='error'] .bgVideo {
-  display: none;
 }
 
 .overlay {

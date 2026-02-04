@@ -11,7 +11,7 @@ const Desktop: React.FC = () => {
     <div className={styles.desktop} role="main">
       <Panel title="ME.EXE"><ME /></Panel>
       <Panel title="YOU.EXE"><YOU /></Panel>
-      <Panel title="THIRD.EXE" stretchBody><THIRD /></Panel>
+      <Panel title="THIRD.EXE" disableHover><THIRD /></Panel>
       <Panel title="CONNECT.EXE"><CONNECT /></Panel>
     </div>
   );
