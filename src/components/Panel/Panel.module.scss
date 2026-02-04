@@ -14,11 +14,16 @@
   flex: 1;
   display: flex;
 
-  align-items: stretch;
-  justify-content: stretch;
+  align-items: center;
+  justify-content: center;
 
   min-height: 0;
   min-width: 0;
+}
+
+.bodyStretch {
+  align-items: stretch;
+  justify-content: stretch;
 }
 
 .panel {
