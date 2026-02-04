@@ -37,6 +37,8 @@ const THIRD: React.FC = () => {
     const resize = () => {
       if (!mount) return;
       const { clientWidth: w, clientHeight: h } = mount;
+      if (w === 0 || h === 0) return;
+      
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
