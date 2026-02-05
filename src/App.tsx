@@ -1,3 +1,8 @@
+/**
+ * `App` controls the top-level flow:
+ * - Landing screen (`ENTER.EXE`) with an enter transition.
+ * - Desktop shell with scanlines, panels, and status bar once entered.
+ */
 import React, { useEffect, useRef, useState } from 'react';
 import landingStyles from './components/Landing/Landing.module.scss';
 import crt from './styles/crt.module.scss';
@@ -14,7 +19,7 @@ const App: React.FC = () => {
   const [videoError, setVideoError] = useState(false);
   const enterTimeoutRef = useRef<number | null>(null);
 
-  // Listen for Enter key to start exiting
+  // Listen for Enter key to start exiting from the landing screen.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
@@ -29,7 +34,7 @@ const App: React.FC = () => {
     };
   }, [entered, exiting]);
 
-  // When exiting starts, schedule transition to entered after delay
+  // When exiting starts, schedule transition to the desktop after a short delay.
   useEffect(() => {
     if (exiting && !entered) {
       const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;

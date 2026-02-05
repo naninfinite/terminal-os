@@ -14,6 +14,7 @@
   right: 0;
   bottom: 0;
   width: 100%;
+  /* iOS Safari can treat `100%` as wider than the visual viewport; clamp to viewport width. */
   max-width: 100vw;
   box-sizing: border-box;
   z-index: 5;

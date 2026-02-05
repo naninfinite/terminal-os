@@ -1,3 +1,7 @@
+/**
+ * `ME` is the "about/profile" panel.
+ * It shows an image with a small inline SVG fallback if the asset fails to load.
+ */
 import React from 'react';
 import styles from './ME.module.scss';
 

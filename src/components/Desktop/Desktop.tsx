@@ -1,3 +1,7 @@
+/**
+ * `Desktop` lays out the main set of panels (ME/YOU/THIRD/CONNECT) in a grid.
+ * Responsive behavior is handled by `Desktop.module.scss`; this component just composes panels.
+ */
 import React from 'react';
 import Panel from '../Panel/Panel';
 import ME from '../ME/ME';
@@ -11,6 +15,7 @@ const Desktop: React.FC = () => {
     <div className={styles.desktop} role="main">
       <Panel title="ME.EXE"><ME /></Panel>
       <Panel title="YOU.EXE"><YOU /></Panel>
+      {/* Canvas needs the body to stretch so it can resize with the panel. */}
       <Panel title="THIRD.EXE" stretchBody><THIRD /></Panel>
       <Panel title="CONNECT.EXE"><CONNECT /></Panel>
     </div>

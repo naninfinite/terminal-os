@@ -1,3 +1,7 @@
+/**
+ * `StatusBar` is the bottom dock/taskbar shown on the desktop view.
+ * It renders system status text plus a live-updating clock.
+ */
 import React, { useEffect, useState } from 'react';
 import styles from './StatusBar.module.scss';
 

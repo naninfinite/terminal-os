@@ -1,3 +1,7 @@
+/**
+ * `THIRD` mounts a minimal Three.js scene into a div.
+ * The renderer resizes with the panel via `ResizeObserver` and uses a lightweight wireframe scene.
+ */
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import styles from './THIRD.module.scss';
@@ -10,12 +14,14 @@ const THIRD: React.FC = () => {
     const mount = mountRef.current;
     if (!mount) return;
 
+    // Scene + camera are created once. We only mutate camera aspect on resize.
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
 
     const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
     camera.position.z = 3;
 
+    // Renderer DOM element is appended to the mount div and cleaned up on unmount.
     const renderer = new THREE.WebGLRenderer({ antialias: false });
     rendererRef.current = renderer;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -63,6 +69,7 @@ const THIRD: React.FC = () => {
     }
 
     return () => {
+      // Full cleanup: stop raf, disconnect observers, dispose GPU resources, and remove canvas.
       cancelAnimationFrame(raf);
       obs.disconnect();
       material.dispose();

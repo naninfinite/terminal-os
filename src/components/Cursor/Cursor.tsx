@@ -1,3 +1,7 @@
+/**
+ * `Cursor` implements the custom CRT cursor.
+ * It tracks pointer position and renders an overlay element that follows the mouse.
+ */
 import React, { useEffect, useRef, useState } from 'react';
 import styles from './Cursor.module.scss';
 

@@ -1,3 +1,7 @@
+/**
+ * `CONNECT` is the contact/social panel.
+ * It renders the stylized CONNECT text/graphics (see `CONNECT.module.scss`).
+ */
 import React from 'react';
 import styles from './CONNECT.module.scss';
 

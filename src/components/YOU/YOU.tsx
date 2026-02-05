@@ -1,3 +1,7 @@
+/**
+ * `YOU` is a tiny "input + save" panel.
+ * It persists the visitor's text in localStorage so refreshes don't wipe it.
+ */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './YOU.module.scss';
 import { getItemSafe, setItemSafe } from '../../utils/storage';
@@ -5,6 +9,7 @@ import { getItemSafe, setItemSafe } from '../../utils/storage';
 const STORAGE_KEY = 'terminal_os_you_input_v1';
 
 const YOU: React.FC = () => {
+  // Read once on mount; keeps initial render stable.
   const initial = useMemo(() => getItemSafe<string>(STORAGE_KEY, ''), []);
   const [text, setText] = useState(initial);
   const [saved, setSaved] = useState(false);
@@ -12,6 +17,7 @@ const YOU: React.FC = () => {
 
   useEffect(() => {
     return () => {
+      // Cleanup any pending "SAVED" reset to avoid setting state after unmount.
       if (saveTimeoutRef.current != null) {
         window.clearTimeout(saveTimeoutRef.current);
       }
