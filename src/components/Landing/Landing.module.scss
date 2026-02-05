@@ -30,12 +30,13 @@
   max-width: 100%;
   display: grid;
   place-items: center;
+  padding: 0 12px;
 }
 
 .panelContent { display: grid; }
 
 .landingFrame {
-  width: min(92vw, 960px);
+  width: 100%;
   max-width: 100%;
   border: $border;
   padding: $panel-padding;
@@ -44,6 +45,19 @@
   flex-direction: column;
   box-sizing: border-box;
   min-height: 360px;
+}
+
+@media (max-width: 520px) {
+  .center {
+    width: 100%;
+    padding: 0 8px;
+  }
+
+  .landingFrame {
+    min-width: auto;
+    min-height: auto;
+    padding: $panel-padding;
+  }
 }
 
 .landingHeader {
