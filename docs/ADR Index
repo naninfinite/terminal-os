@@ -1,0 +1,166 @@
+ADR Index — website-os (Terminal-OS / NEOS)
+
+Scope: Phases 0 → 3
+Purpose: Single entry point for architectural decisions, constraints, and future intent.
+
+⸻
+
+Phase 0 — Foundations
+
+ADR-0001 — Project Structure & Tech Stack
+
+Summary
+	•	React 18 + Vite + TypeScript
+	•	SCSS modules with theme tokens
+	•	OS metaphor (shell, apps, services)
+
+Notes
+	•	All later ADRs assume this stack.
+	•	No framework churn without a new ADR.
+
+⸻
+
+Phase 1 — Engine & Determinism
+
+ADR-0010 — Deterministic Engines & Testability
+
+Summary
+	•	Arcade engines must be deterministic.
+	•	Fixed timesteps, seeded randomness where applicable.
+
+Downstream impact
+	•	Establishes the expectation that stateful systems must be testable.
+	•	Influences VFS testing in Phase 3.
+
+⸻
+
+Phase 2 — Shell, Windowing, and Stability
+
+ADR-0020 — Shell / App / Service Separation
+
+Summary
+	•	Shell manages windows and layout.
+	•	Apps render content only.
+	•	Services own state and persistence.
+
+Downstream impact
+	•	VFS introduced in Phase 3 must live as a service.
+	•	FileMan.EXE consumes VFS; never owns it.
+
+⸻
+
+ADR-0021 — Desktop Layering Model
+
+Summary
+	•	HomeDashboard renders inside WindowManager, beneath windows.
+	•	Fixes provider/layering errors.
+
+Downstream impact
+	•	FileMan.EXE must not assume it owns the desktop.
+	•	All system apps behave as windows.
+
+⸻
+
+ADR-0022 — Mobile Terminal Independence
+
+Summary
+	•	Terminal.EXE on mobile is full-height.
+	•	Not dependent on WindowManager.
+
+Downstream impact
+	•	System apps must tolerate multiple shell contexts.
+	•	FileMan.EXE cannot rely on desktop-only affordances.
+
+⸻
+
+ADR-0023 — DOM Guards & Defensive Rendering
+
+Summary
+	•	Guard all DOM access.
+	•	No assumptions about environment presence.
+
+Downstream impact
+	•	Phase 3 persistence and reset must not cause lifecycle crashes.
+
+⸻
+
+Phase 3 — File System, Persistence, Hardening
+
+ADR-0030 — VFS Persistence & Schema Versioning
+
+Summary
+	•	Introduces persistent VFS service.
+	•	localStorage-backed, versioned schema.
+	•	Deterministic seed overlay.
+
+Status
+	•	Accepted for Phase 3 only.
+
+⸻
+
+ADR-0031 — Reset Semantics
+
+Summary
+	•	Reset is destructive and first-class.
+	•	Always restores seeded state.
+	•	Requires explicit confirmation.
+
+⸻
+
+ADR-0032 — FileMan.EXE Action Model
+
+Summary
+	•	Create / rename / delete / reset.
+	•	Inline rename, keyboard-friendly.
+	•	FileMan is the reference VFS consumer.
+
+⸻
+
+ADR-0033 — Testing Boundaries for Stateful Services
+
+Summary
+	•	VFS: unit tests only.
+	•	FileMan: integration tests.
+	•	No snapshot or E2E testing.
+
+⸻
+
+⚠️ Forward-Looking Intent (Important)
+
+ADR-0090 — File System Evolution (Intent Record)
+
+Status: Intentional / Not Implemented
+Phase: Post-Phase 3 (future)
+
+Statement of intent
+
+The current Phase 3 VFS design is not final.
+The file system model is expected to change in a future phase.
+
+Reasons (non-exhaustive)
+	•	Possible move away from simple tree storage
+	•	Potential support for:
+	•	richer metadata
+	•	alternative backends
+	•	virtual mounts
+	•	app-scoped storage
+	•	Desire to avoid over-engineering the Phase 3 VFS
+
+Constraints
+	•	Phase 3 decisions must:
+	•	be replaceable
+	•	avoid leaking VFS internals into apps
+	•	keep migration paths possible
+
+Rule
+	•	No later ADR may assume the Phase 3 VFS structure is permanent.
+	•	Any future redesign must reference this intent ADR.
+
+⸻
+
+How to Use This Index
+	•	Every new ADR must be added here.
+	•	Phase 3 work should reference ADR-0030 → ADR-0033.
+	•	Any future file system redesign must:
+	1.	Reference ADR-0090
+	2.	Explicitly state what is being replaced
