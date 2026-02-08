@@ -172,7 +172,7 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
           <span className={styles.chromeTitle}>[ME.EXE]</span>
           <div className={styles.chromeActions}>
             <button type="button" className={styles.chromeBtn} onClick={closeFullscreen} aria-label="Close ME.EXE fullscreen">
-              CLOSE
+              X
             </button>
           </div>
         </header>
@@ -182,8 +182,13 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
         <div className={styles.stage}>
           {visibleWindows.length === 0 ? (
             <div className={styles.emptyState}>
-              <p>NO WINDOWS OPEN</p>
-              <button type="button" className={styles.launchBtn} onClick={() => openApp('home')}>RESTORE HOME</button>
+              <p>DESKTOP READY</p>
+              <div className={styles.launchGrid}>
+                <button type="button" className={styles.launchBtn} onClick={() => openApp('fileman')}>FILEMAN</button>
+                <button type="button" className={styles.launchBtn} onClick={() => openApp('about')}>ABOUT</button>
+                <button type="button" className={styles.launchBtn} onClick={() => openApp('projects')}>PROJECTS</button>
+                <button type="button" className={styles.launchBtn} onClick={() => openApp('media')}>MEDIA</button>
+              </div>
             </div>
           ) : (
             visibleWindows.map((w) => <MeOsWindowCard key={w.id} win={w} mode={mode} />)

@@ -71,7 +71,7 @@ const WINDOW_TEMPLATES: Record<MeOsFixedAppId, MeOsWindowTemplate> = {
 };
 
 const createDefaultWindows = (): MeOsWindow[] => [
-  { ...WINDOW_TEMPLATES.home, zIndex: 1, minimized: false },
+  // Start with a clean desktop surface; windows open on demand.
 ];
 
 const VIEWER_APP_BY_KIND: Record<MeOsViewerKind, MeOsAppId> = {
@@ -129,13 +129,6 @@ const sortByZ = (windows: MeOsWindow[]): MeOsWindow[] => [...windows].sort((a, b
 
 const getMaxZ = (windows: MeOsWindow[]): number => windows.reduce((max, w) => Math.max(max, w.zIndex), 1);
 
-const ensureHomeWindow = (windows: MeOsWindow[]): MeOsWindow[] => {
-  const hasHome = windows.some((w) => w.appId === 'home');
-  if (hasHome) return windows;
-  const maxZ = getMaxZ(windows);
-  return [...windows, { ...WINDOW_TEMPLATES.home, zIndex: maxZ + 1, minimized: false }];
-};
-
 const loadPersistedWindows = (): MeOsWindow[] => {
   const snapshot = getItemSafe<MeOsPersistedSnapshot | null>(STORAGE_KEY, null);
   if (!snapshot || snapshot.version !== STORAGE_VERSION || !Array.isArray(snapshot.windows)) {
@@ -145,7 +138,7 @@ const loadPersistedWindows = (): MeOsWindow[] => {
     .map(sanitizeWindow)
     .filter((w): w is MeOsWindow => w != null);
   if (parsed.length === 0) return createDefaultWindows();
-  return ensureHomeWindow(sortByZ(parsed));
+  return sortByZ(parsed);
 };
 
 type MeOsContextValue = {
@@ -296,10 +289,7 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const closeWindow = useCallback((id: string) => {
     setWindows((prev) => {
       const next = prev.filter((w) => w.id !== id);
-      if (next.length === 0) {
-        zRef.current = 1;
-        return createDefaultWindows();
-      }
+      if (next.length === 0) zRef.current = 1;
       return next;
     });
   }, []);
