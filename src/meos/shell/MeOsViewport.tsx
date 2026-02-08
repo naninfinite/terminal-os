@@ -158,7 +158,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
 };
 
 export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
-  const { windows, closeFullscreen } = useMeOs();
+  const { windows, closeFullscreen, openApp } = useMeOs();
   const [selectedLauncher, setSelectedLauncher] = useState<MeOsFixedAppId | null>(null);
   const interactive = mode === 'fullscreen';
   const launchers: Array<{ id: MeOsFixedAppId; label: string }> = [
@@ -200,6 +200,11 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
                     onClick={() => {
                       if (!interactive) return;
                       setSelectedLauncher(launcher.id);
+                    }}
+                    onDoubleClick={() => {
+                      if (!interactive) return;
+                      setSelectedLauncher(launcher.id);
+                      openApp(launcher.id);
                     }}
                     aria-pressed={selectedLauncher === launcher.id}
                   >
