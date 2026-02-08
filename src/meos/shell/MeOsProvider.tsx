@@ -224,7 +224,15 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
         zRef.current = nextZ;
         return prev.map((w) => (
           w.id === viewerId
-            ? { ...w, zIndex: nextZ, minimized: false, title }
+            ? {
+              ...w,
+              zIndex: nextZ,
+              minimized: false,
+              title,
+              appId: viewerAppId,
+              nodeId,
+              viewerKind: kind,
+            }
             : w
         ));
       }

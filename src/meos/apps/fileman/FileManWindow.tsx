@@ -87,6 +87,14 @@ const getQuickAccess = (snapshot: VfsSnapshot): VfsNode[] => (
 
 const isEnter = (event: React.KeyboardEvent): boolean => event.key === 'Enter';
 
+const getNodeIcon = (node: VfsNode): string => {
+  if (node.type === 'folder') return 'FOLDER';
+  if (node.kind === 'image') return 'IMG';
+  if (node.kind === 'video') return 'VID';
+  if (node.kind === 'project') return 'PRJ';
+  return 'TXT';
+};
+
 const FileManWindow: React.FC = () => {
   const { snapshot, listChildren, createFolder, createFile, rename, deleteNode, reset } = useMeOsVfs();
   const { openViewer } = useMeOs();
@@ -97,7 +105,7 @@ const FileManWindow: React.FC = () => {
   const [editingValue, setEditingValue] = useState('');
   const [pathInput, setPathInput] = useState('/');
   const [menu, setMenu] = useState<ContextMenuState>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [gridColumns, setGridColumns] = useState(1);
   const listRef = useRef<HTMLDivElement | null>(null);
 
@@ -377,7 +385,10 @@ const FileManWindow: React.FC = () => {
                     setMenu({ nodeId: node.id, x: event.clientX, y: event.clientY });
                   }}
                 >
-                  <span className={styles.icon}>{node.type === 'folder' ? '[DIR]' : '[FILE]'}</span>
+                  <span className={styles.icon}>
+                    <span className={styles.iconGlyph}>{getNodeIcon(node)}</span>
+                    <span className={styles.iconType}>{node.type === 'folder' ? 'DIR' : 'FILE'}</span>
+                  </span>
                   {editing ? (
                     <input
                       className={styles.renameInput}

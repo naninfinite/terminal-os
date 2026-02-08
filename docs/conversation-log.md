@@ -277,3 +277,18 @@ Why it matters:
 Risks / Notes:
 - Repository currently has no bundled binary media assets, so image/video viewers include graceful fallback surfaces when `assetSrc` is empty.
 - Full media polish and asset pipeline can be layered in later without changing viewer architecture.
+
+---
+
+## Entry 16 - M4 Step 2 Viewer Reuse + Icon-First FileMan
+
+Summary:
+- Improved viewer-window reopen behavior so existing windows refresh `appId`, `viewerKind`, and `nodeId` while being focused and restored.
+- Shifted FileMan to icon-first browsing by defaulting to grid view and introducing file-type glyph labels (`FOLDER`, `IMG`, `VID`, `PRJ`, `TXT`).
+
+Why it matters:
+- Hardens the “same target reuses existing window” contract when metadata evolves.
+- Moves user-facing navigation away from backend-like rows toward a more visual desktop/file-browser feel.
+
+Risks / Notes:
+- Icon language is intentionally textual/minimal right now to match terminal aesthetics; polished icon art can come later without behavior changes.

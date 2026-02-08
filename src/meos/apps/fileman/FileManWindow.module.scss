@@ -116,7 +116,7 @@
   grid-template-columns: 1fr;
   align-content: start;
   gap: 6px;
-  min-height: 92px;
+  min-height: 108px;
 }
 
 .rowGrid .renameInput {
@@ -125,6 +125,10 @@
 
 .rowList .kind {
   justify-self: end;
+}
+
+.rowList .icon {
+  min-width: 42px;
 }
 
 .rowGrid .icon,
@@ -137,7 +141,20 @@
 }
 
 .icon {
-  font-size: $font-xs;
+  display: inline-grid;
+  gap: 2px;
+}
+
+.iconGlyph {
+  font-size: $font-sm;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.iconType {
+  font-size: 10px;
+  opacity: 0.75;
+  letter-spacing: 0.06em;
 }
 
 .name {
