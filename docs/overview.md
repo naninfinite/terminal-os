@@ -45,3 +45,4 @@ Related docs:
 - `docs/ADR Index`
 - `docs/conversation-log.md`
 - `docs/fileman-v2-build-spec.md`
+- `docs/subsystem-expansion-roadmap.md`

@@ -186,6 +186,26 @@ Rule
 
 ⸻
 
+ADR-0091 — Subsystem Parity Expansion (Intent Record)
+
+Status: Intentional / Not Implemented
+Phase: Post-Phase 3 (future)
+
+Summary
+	•	Non-ME panels (`YOU`, `THIRD`, `CONNECT`) are intended to adopt the same live panel + fullscreen shared-instance model used by `ME.OS`.
+	•	Each subsystem should preserve state between panel and fullscreen modes.
+	•	Mode-aware performance remains required for panel previews.
+
+Additional intent
+	•	`YOU`: forum/message-board direction with moderation constraints.
+	•	`THIRD`: interactive 3D dimension with panel-mode pause/throttle behavior.
+	•	`CONNECT`: game-hub direction, including future multiplayer support.
+
+Reference
+	•	`docs/subsystem-expansion-roadmap.md`
+
+⸻
+
 How to Use This Index
 	•	Every new ADR must be added here.
 	•	Phase 3 work should reference ADR-0030 → ADR-0033.

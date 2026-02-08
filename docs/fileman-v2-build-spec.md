@@ -222,3 +222,13 @@ When implementation changes this spec:
 - Update this file in the same PR.
 - Add a short entry to `docs/conversation-log.md`.
 - If behavior-level change: reflect in `docs/phase-3.md` and `docs/ADR Index`.
+
+---
+
+## 14) Future Panel Expansion Context
+
+Future subsystem parity notes for `YOU`, `THIRD`, and `CONNECT` are captured in:
+
+- `docs/subsystem-expansion-roadmap.md`
+
+Use that roadmap as directional context when expanding non-ME panels to shared panel/fullscreen runtime behavior.

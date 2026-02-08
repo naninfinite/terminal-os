@@ -226,3 +226,20 @@ Why it matters:
 Risks / Notes:
 - Viewer content is currently lightweight/placeholder-backed for M3.
 - Fullscreen ME.OS still overlays status bar; layout polish is tracked for later shell pass.
+
+---
+
+## Entry 13 - Cloud Planning Notes Imported
+
+Summary:
+- User shared a full planning discussion from cloud chat covering future behavior for `YOU`, `THIRD`, and `CONNECT`.
+- Added a dedicated roadmap doc to preserve those notes as long-term implementation context.
+- Linked roadmap doc from overview/spec/phase docs so it remains discoverable during future milestone work.
+
+Why it matters:
+- Captures subsystem direction in-project instead of relying on external chat memory.
+- Keeps current implementation track intact while preserving richer future requirements.
+
+Risks / Notes:
+- This import is directional and not a commitment to immediate implementation order changes.
+- Fullscreen/status-bar overlap remains a tracked shell polish item.

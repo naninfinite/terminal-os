@@ -238,6 +238,7 @@ Notes
 	•	This update reflects product-direction decisions and should guide implementation order.
 	•	Conversation source: `docs/conversation-log.md`.
 	•	Execution spec: `docs/fileman-v2-build-spec.md`.
+	•	Future subsystem parity context: `docs/subsystem-expansion-roadmap.md`.
 	•	M1 status: implemented (shared ME.OS shell state + panel/fullscreen mode + persisted shell windows).
 	•	M2 status: implemented (VFS service + versioned key + legacy migration + reset + unit tests).
 	•	M3 status: implemented (FileMan window app + navigation/actions + viewer-window launch routing).
