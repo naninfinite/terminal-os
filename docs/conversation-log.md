@@ -398,3 +398,20 @@ Why it matters:
 Risks / Notes:
 - Internal identifiers and storage keys still use ME.OS naming for technical stability.
 - If panel text scales too small on very large displays, clamp tuning can be adjusted without logic changes.
+
+---
+
+## Entry 23 - FileMan UX Polish (Scrollbar Uniformity + Launch Position)
+
+Summary:
+- Fixed dual-scroll behavior in `FILEMAN.EXE` by disabling outer shell body scrolling for FileMan windows and keeping scrolling inside FileMan regions.
+- Styled FileMan sidebar/list scrollbars to match terminal-green block styling and keep scrollbar visuals consistent.
+- Normalized default FileMan window template position to align with core shell window origin (removed extra open offset).
+
+Why it matters:
+- Removes visual noise and interaction confusion caused by nested scroll containers.
+- Improves consistency with the broader terminal UI language.
+- Makes FileMan feel anchored/predictable when launched.
+
+Risks / Notes:
+- Existing persisted window positions can still reflect older offsets until users reopen/reset those saved states.

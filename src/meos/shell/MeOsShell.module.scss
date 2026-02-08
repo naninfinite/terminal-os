@@ -120,6 +120,10 @@
   overflow: auto;
 }
 
+.windowBodyNoScroll {
+  overflow: hidden;
+}
+
 .homeContent {
   display: grid;
   gap: 8px;

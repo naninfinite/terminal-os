@@ -150,7 +150,9 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
           </div>
         ) : null}
       </div>
-      <div className={styles.windowBody}>{renderContent()}</div>
+      <div className={`${styles.windowBody} ${win.appId === 'fileman' ? styles.windowBodyNoScroll : ''}`.trim()}>
+        {renderContent()}
+      </div>
     </article>
   );
 };
