@@ -39,7 +39,7 @@
   display: flex;
   flex-direction: column;
   cursor: pointer;
-  transition: transform 220ms ease, box-shadow 220ms ease;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
   box-sizing: border-box;
 }
 
@@ -50,16 +50,16 @@
 
 .panel:hover,
 .panel:focus-visible {
-  /* Subtle lift to suggest "active window" affordance. */
-  transform: translateY(-3px) translate(1px) translateZ(0);
-  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.45);
+  /* Match ME hover treatment: brighter frame + subtle inset glow. */
+  border-color: rgba(0, 255, 102, 0.5);
+  box-shadow: 0 0 0 1px rgba(0, 255, 102, 0.2) inset;
 }
 
 .noHover {
   /* Explicitly disable interactive lift when desired by parent component. */
   &:hover,
   &:focus-visible {
-    transform: none !important;
+    border-color: inherit !important;
     box-shadow: none !important;
   }
 }
@@ -73,5 +73,4 @@
   font-size: $font-sm;
   letter-spacing: $letter-spacing;
 }
-
 
