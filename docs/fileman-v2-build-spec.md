@@ -232,3 +232,13 @@ Future subsystem parity notes for `YOU`, `THIRD`, and `CONNECT` are captured in:
 - `docs/subsystem-expansion-roadmap.md`
 
 Use that roadmap as directional context when expanding non-ME panels to shared panel/fullscreen runtime behavior.
+
+---
+
+## 15) Styling and Iteration Guardrail
+
+For ME.EXE evolution guardrails (styling baseline + micro-iteration policy), see:
+
+- `docs/me-exe-evolution-plan.md`
+
+This build spec assumes that document is the visual/process constraint source of truth for future ME.EXE UX passes.

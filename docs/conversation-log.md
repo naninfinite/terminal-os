@@ -415,3 +415,20 @@ Why it matters:
 
 Risks / Notes:
 - Existing persisted window positions can still reflect older offsets until users reopen/reset those saved states.
+
+---
+
+## Entry 24 - Styling Baseline + Slow Iteration Lock
+
+Summary:
+- User confirmed current in-repo Terminal-OS styling is closer to the target than recent broad redesign attempts.
+- Decision: preserve current styling as primary baseline and iterate ME.EXE behavior slowly in small, concise steps.
+- Added a dedicated plan doc capturing the visual references, locked constraints, and iteration method.
+
+Why it matters:
+- Prevents disruptive one-shot UI rewrites that drift from project identity.
+- Establishes a shared operating agreement for future ME.EXE updates.
+
+Risks / Notes:
+- Progress may be slower by design, but review quality and direction alignment should improve.
+- Reference doc: `docs/me-exe-evolution-plan.md`.
