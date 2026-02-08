@@ -292,3 +292,19 @@ Why it matters:
 
 Risks / Notes:
 - Icon language is intentionally textual/minimal right now to match terminal aesthetics; polished icon art can come later without behavior changes.
+
+---
+
+## Entry 17 - M4 Step 3 UI Polish (Explorer + Viewer Chrome)
+
+Summary:
+- Polished FileMan item presentation with clearer active/hover states, kind badges, and explicit selection semantics.
+- Added a consistent viewer metadata header (`kind` + file name) across text/image/video/project windows for stronger “app-window” coherence.
+- Kept behavior unchanged while improving legibility and hierarchy so the system feels less like backend tooling.
+
+Why it matters:
+- Makes file browsing faster by improving scanability and visual affordances in both list and grid modes.
+- Gives all viewer apps a shared visual language, which reinforces the pseudo-OS interaction model.
+
+Risks / Notes:
+- Styling remains intentionally terminal-themed and lightweight; richer icon artwork and motion can be layered later.

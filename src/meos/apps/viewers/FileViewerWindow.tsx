@@ -25,6 +25,7 @@ const createFallbackImage = (label: string): string => {
 };
 
 const fallbackText = (name: string): string => `No inline text content configured for "${name}".`;
+const getKindLabel = (kind: string): string => kind.toUpperCase();
 
 const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
   const { snapshot } = useMeOsVfs();
@@ -32,9 +33,15 @@ const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
 
   if (!node || node.type !== 'file') {
     return (
-      <div className={styles.missing}>
-        <p>FILE NOT FOUND</p>
-        <p>It may have been deleted or moved.</p>
+      <div className={styles.viewer}>
+        <header className={styles.viewerHeader}>
+          <span className={styles.viewerKind}>MISSING</span>
+          <span className={styles.viewerName}>UNKNOWN.FILE</span>
+        </header>
+        <div className={styles.missing}>
+          <p>FILE NOT FOUND</p>
+          <p>It may have been deleted or moved.</p>
+        </div>
       </div>
     );
   }
@@ -44,8 +51,14 @@ const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
   if (kind === 'image') {
     const source = node.assetSrc?.trim() || createFallbackImage(node.name);
     return (
-      <div className={styles.mediaWrap}>
-        <img className={styles.image} src={source} alt={node.name} />
+      <div className={styles.viewer}>
+        <header className={styles.viewerHeader}>
+          <span className={styles.viewerKind}>{getKindLabel(kind)}</span>
+          <span className={styles.viewerName}>{node.name}</span>
+        </header>
+        <div className={styles.mediaWrap}>
+          <img className={styles.image} src={source} alt={node.name} />
+        </div>
       </div>
     );
   }
@@ -55,18 +68,30 @@ const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
     const poster = node.posterSrc?.trim() || createFallbackImage(`${node.name} (poster)`);
     if (!source) {
       return (
-        <div className={styles.videoFallback}>
-          <img className={styles.poster} src={poster} alt={`${node.name} poster`} />
-          <p className={styles.metaTitle}>{node.name}</p>
-          <p className={styles.metaCopy}>{node.textContent || 'No video source configured yet.'}</p>
+        <div className={styles.viewer}>
+          <header className={styles.viewerHeader}>
+            <span className={styles.viewerKind}>{getKindLabel(kind)}</span>
+            <span className={styles.viewerName}>{node.name}</span>
+          </header>
+          <div className={styles.videoFallback}>
+            <img className={styles.poster} src={poster} alt={`${node.name} poster`} />
+            <p className={styles.metaTitle}>{node.name}</p>
+            <p className={styles.metaCopy}>{node.textContent || 'No video source configured yet.'}</p>
+          </div>
         </div>
       );
     }
     return (
-      <div className={styles.mediaWrap}>
-        <video className={styles.video} controls playsInline poster={poster}>
-          <source src={source} type="video/mp4" />
-        </video>
+      <div className={styles.viewer}>
+        <header className={styles.viewerHeader}>
+          <span className={styles.viewerKind}>{getKindLabel(kind)}</span>
+          <span className={styles.viewerName}>{node.name}</span>
+        </header>
+        <div className={styles.mediaWrap}>
+          <video className={styles.video} controls playsInline poster={poster}>
+            <source src={source} type="video/mp4" />
+          </video>
+        </div>
       </div>
     );
   }
@@ -74,29 +99,41 @@ const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
   if (kind === 'project') {
     const card = node.projectMeta;
     return (
-      <article className={styles.projectCard}>
-        <p className={styles.projectLabel}>PROJECT CARD</p>
-        <h3 className={styles.projectTitle}>{card?.title || node.name}</h3>
-        <p className={styles.metaCopy}>{card?.summary || 'Project summary not configured yet.'}</p>
-        <div className={styles.stack}>
-          {(card?.stack ?? []).map((item) => (
-            <span key={item} className={styles.stackItem}>{item}</span>
-          ))}
-        </div>
-        {card?.demoUrl ? (
-          <a className={styles.link} href={card.demoUrl} target="_blank" rel="noreferrer">OPEN DEMO</a>
-        ) : null}
-        {card?.repoUrl ? (
-          <a className={styles.link} href={card.repoUrl} target="_blank" rel="noreferrer">OPEN REPO</a>
-        ) : null}
-      </article>
+      <div className={styles.viewer}>
+        <header className={styles.viewerHeader}>
+          <span className={styles.viewerKind}>{getKindLabel(kind)}</span>
+          <span className={styles.viewerName}>{node.name}</span>
+        </header>
+        <article className={styles.projectCard}>
+          <p className={styles.projectLabel}>PROJECT CARD</p>
+          <h3 className={styles.projectTitle}>{card?.title || node.name}</h3>
+          <p className={styles.metaCopy}>{card?.summary || 'Project summary not configured yet.'}</p>
+          <div className={styles.stack}>
+            {(card?.stack ?? []).map((item) => (
+              <span key={item} className={styles.stackItem}>{item}</span>
+            ))}
+          </div>
+          {card?.demoUrl ? (
+            <a className={styles.link} href={card.demoUrl} target="_blank" rel="noreferrer">OPEN DEMO</a>
+          ) : null}
+          {card?.repoUrl ? (
+            <a className={styles.link} href={card.repoUrl} target="_blank" rel="noreferrer">OPEN REPO</a>
+          ) : null}
+        </article>
+      </div>
     );
   }
 
   return (
-    <div className={styles.textWrap}>
-      <p className={styles.metaTitle}>{node.name}</p>
-      <pre className={styles.pre}>{node.textContent || fallbackText(node.name)}</pre>
+    <div className={styles.viewer}>
+      <header className={styles.viewerHeader}>
+        <span className={styles.viewerKind}>{getKindLabel(kind)}</span>
+        <span className={styles.viewerName}>{node.name}</span>
+      </header>
+      <div className={styles.textWrap}>
+        <p className={styles.metaTitle}>{node.name}</p>
+        <pre className={styles.pre}>{node.textContent || fallbackText(node.name)}</pre>
+      </div>
     </div>
   );
 };

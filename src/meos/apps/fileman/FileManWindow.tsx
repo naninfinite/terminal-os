@@ -95,6 +95,11 @@ const getNodeIcon = (node: VfsNode): string => {
   return 'TXT';
 };
 
+const getNodeKindLabel = (node: VfsNode): string => {
+  if (node.type === 'folder') return 'FOLDER';
+  return (node.kind ?? 'text').toUpperCase();
+};
+
 const FileManWindow: React.FC = () => {
   const { snapshot, listChildren, createFolder, createFile, rename, deleteNode, reset } = useMeOsVfs();
   const { openViewer } = useMeOs();
@@ -377,6 +382,7 @@ const FileManWindow: React.FC = () => {
                   key={node.id}
                   type="button"
                   className={`${styles.row} ${viewMode === 'grid' ? styles.rowGrid : styles.rowList} ${active ? styles.rowActive : ''}`.trim()}
+                  aria-selected={active}
                   onClick={() => setSelectedId(node.id)}
                   onDoubleClick={() => openNode(node)}
                   onContextMenu={(event) => {
@@ -404,7 +410,7 @@ const FileManWindow: React.FC = () => {
                   ) : (
                     <span className={styles.name}>{node.name}</span>
                   )}
-                  <span className={styles.kind}>{node.type === 'file' ? (node.kind ?? 'text') : ''}</span>
+                  <span className={styles.kind}>{getNodeKindLabel(node)}</span>
                 </button>
               );
             })}
