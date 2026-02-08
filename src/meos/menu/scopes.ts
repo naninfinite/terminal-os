@@ -32,19 +32,19 @@ export const MENU_SCOPE_CONFIG: Record<MenuScopeId, MenuScopeConfig> = {
   desktop: {
     title: 'DESKTOP',
     items: [
-      { id: 'open_meos', label: 'OPEN ME.OS' },
+      { id: 'open_meos', label: 'OPEN ME.EXE' },
       { id: 'open_fileman', label: 'OPEN FILEMAN' },
       { id: 'open_home', label: 'OPEN HOME' },
     ],
   },
   meos: {
-    title: 'ME.OS',
+    title: 'ME.EXE',
     items: [
       { id: 'open_fileman', label: 'OPEN FILEMAN' },
       { id: 'open_home', label: 'OPEN HOME' },
       { id: 'open_projects', label: 'OPEN PROJECTS' },
       { id: 'open_media', label: 'OPEN MEDIA' },
-      { id: 'exit_meos', label: 'EXIT ME.OS' },
+      { id: 'exit_meos', label: 'EXIT ME.EXE' },
     ],
   },
   you: {

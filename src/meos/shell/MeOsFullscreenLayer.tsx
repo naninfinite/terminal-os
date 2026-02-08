@@ -26,9 +26,8 @@ export const MeOsFullscreenLayer: React.FC = () => {
   if (displayMode !== 'fullscreen') return null;
 
   return (
-    <div className={styles.fullscreenLayer} role="dialog" aria-modal="true" aria-label="ME.OS fullscreen">
+    <div className={styles.fullscreenLayer} role="dialog" aria-modal="true" aria-label="ME.EXE fullscreen">
       <MeOsViewport mode="fullscreen" />
     </div>
   );
 };
-

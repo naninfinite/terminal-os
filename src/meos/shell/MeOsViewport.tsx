@@ -60,7 +60,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
       const rootEntries = listChildren(snapshot.rootId);
       return (
         <div className={styles.homeContent}>
-          <p className={styles.copy}>ME.OS SHELL READY</p>
+          <p className={styles.copy}>ME.EXE SHELL READY</p>
           <p className={styles.copyDim}>M3 foundation: FileMan v2 shell app and viewer window routing.</p>
           <div className={styles.dirList}>
             {rootEntries.map((entry) => (
@@ -165,16 +165,16 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
 
   return (
     <section className={`${styles.viewport} ${mode === 'panel' ? styles.panelMode : styles.fullscreenMode}`.trim()}>
-      <header className={styles.chromeHeader}>
-        <span className={styles.chromeTitle}>[ME.OS]</span>
-        <div className={styles.chromeActions}>
-          {mode === 'fullscreen' ? (
-            <button type="button" className={styles.chromeBtn} onClick={closeFullscreen} aria-label="Close ME.OS fullscreen">
+      {mode === 'fullscreen' ? (
+        <header className={styles.chromeHeader}>
+          <span className={styles.chromeTitle}>[ME.EXE]</span>
+          <div className={styles.chromeActions}>
+            <button type="button" className={styles.chromeBtn} onClick={closeFullscreen} aria-label="Close ME.EXE fullscreen">
               CLOSE
             </button>
-          ) : null }
-        </div>
-      </header>
+          </div>
+        </header>
+      ) : null}
 
       <div className={styles.stageViewport}>
         <div className={styles.stage}>
@@ -189,9 +189,11 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
         </div>
       </div>
 
-      <footer className={styles.chromeFooter}>
-        <span className={styles.footerInfo}>{activeWindows.length} WINDOW(S)</span>
-      </footer>
+      {mode === 'fullscreen' ? (
+        <footer className={styles.chromeFooter}>
+          <span className={styles.footerInfo}>{activeWindows.length} WINDOW(S)</span>
+        </footer>
+      ) : null}
     </section>
   );
 };

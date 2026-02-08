@@ -381,3 +381,20 @@ Why it matters:
 Risks / Notes:
 - Clipboard writes may be blocked by browser permissions/context in some environments.
 - Panel actions currently use lightweight window events; a later pass can formalize this into a dedicated command bus if needed.
+
+---
+
+## Entry 22 - UX Fixes (CONNECT Scroll + ME.EXE Surface Naming)
+
+Summary:
+- Removed CONNECT panel horizontal scrollbar by tightening ASCII rendering styles (no pre margins, clamped font size, hidden overflow).
+- Updated user-facing ME shell naming from `ME.OS` to `ME.EXE` in viewport chrome/menu labels/aria surface text.
+- Hid panel-mode internal shell chrome header/footer so the embedded experience reads as one `ME.EXE` panel instead of nested framing.
+
+Why it matters:
+- Resolves a clear visual regression in CONNECT and improves panel cleanliness.
+- Aligns product presentation with intended “ME.EXE as one immersive panel” UX while preserving underlying architecture.
+
+Risks / Notes:
+- Internal identifiers and storage keys still use ME.OS naming for technical stability.
+- If panel text scales too small on very large displays, clamp tuning can be adjusted without logic changes.

@@ -21,7 +21,7 @@ const ME: React.FC = () => {
       className={styles.root}
       role="button"
       tabIndex={0}
-      aria-label="Open ME.os fullscreen"
+      aria-label="Open ME.EXE fullscreen"
       onClick={openFullscreen}
       onKeyDown={onKeyDown}
       >
@@ -31,4 +31,3 @@ const ME: React.FC = () => {
 };
 
 export default ME;
-

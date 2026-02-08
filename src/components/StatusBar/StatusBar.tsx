@@ -155,7 +155,7 @@ const StatusBar: React.FC = () => {
         ) : null}
         <span>SYS: READY</span>
       </div>
-      <div className={styles.tasks} aria-label="ME.OS windows">
+      <div className={styles.tasks} aria-label="ME.EXE windows">
         {orderedWindows.map((win) => (
           <button
             key={win.id}

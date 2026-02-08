@@ -17,7 +17,7 @@ const createFallbackImage = (label: string): string => {
     <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
       <rect width="1280" height="720" fill="#060906" />
       <rect x="24" y="24" width="1232" height="672" fill="none" stroke="#00ff66" stroke-opacity="0.3" stroke-width="2" />
-      <text x="72" y="128" font-family="monospace" font-size="38" fill="#00ff66">ME.OS IMAGE PREVIEW</text>
+      <text x="72" y="128" font-family="monospace" font-size="38" fill="#00ff66">ME.EXE IMAGE PREVIEW</text>
       <text x="72" y="190" font-family="monospace" font-size="24" fill="#00ff66" fill-opacity="0.85">${safe}</text>
     </svg>
   `.trim();
