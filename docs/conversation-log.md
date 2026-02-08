@@ -361,3 +361,23 @@ Why it matters:
 Risks / Notes:
 - Scope activation currently follows interaction focus/hover patterns; a future pass may refine this with explicit “active window/panel” semantics.
 - `YOU`, `THIRD`, and `CONNECT` still use placeholder menu actions until subsystem feature work lands.
+
+---
+
+## Entry 21 - M5 Step 4 Real Non-ME Menu Actions
+
+Summary:
+- Replaced placeholder `YOU`, `THIRD`, and `CONNECT` menu entries with concrete commands.
+- Added panel-focus commands that scroll/focus target desktop panels through scope IDs.
+- Wired panel-specific command handlers:
+- `YOU`: save input and clear input commands.
+- `THIRD`: reset scene rotation command.
+- `CONNECT`: copy ASCII banner to clipboard command.
+
+Why it matters:
+- Makes non-ME menu scopes immediately useful rather than decorative placeholders.
+- Validates the new menu command model against real subsystem behavior before larger feature expansion.
+
+Risks / Notes:
+- Clipboard writes may be blocked by browser permissions/context in some environments.
+- Panel actions currently use lightweight window events; a later pass can formalize this into a dedicated command bus if needed.

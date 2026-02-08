@@ -10,6 +10,9 @@ import styles from './THIRD.module.scss';
 const THIRD: React.FC = () => {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const groupRef = useRef<THREE.Group | null>(null);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -18,9 +21,11 @@ const THIRD: React.FC = () => {
     // Scene + camera are created once. We only mutate camera aspect on resize.
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
+    sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
     camera.position.z = 3;
+    cameraRef.current = camera;
 
     // Renderer DOM element is appended to the mount div and cleaned up on unmount.
     const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -33,6 +38,7 @@ const THIRD: React.FC = () => {
     // Minimal wireframe objects: low geometry complexity for responsiveness.
     const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
     const group = new THREE.Group();
+    groupRef.current = group;
     const cube = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), material);
     const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 12), material);
     const torus = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.15, 8, 32), material);
@@ -71,13 +77,26 @@ const THIRD: React.FC = () => {
       tick();
     }
 
+    const onResetScene = () => {
+      if (!groupRef.current) return;
+      groupRef.current.rotation.set(0, 0, 0);
+      if (reduce && sceneRef.current && cameraRef.current && rendererRef.current) {
+        rendererRef.current.render(sceneRef.current, cameraRef.current);
+      }
+    };
+    window.addEventListener('terminalos:third:reset-scene', onResetScene as EventListener);
+
     return () => {
       // Full cleanup: stop raf, disconnect observers, dispose GPU resources, and remove canvas.
       cancelAnimationFrame(raf);
       obs.disconnect();
+      window.removeEventListener('terminalos:third:reset-scene', onResetScene as EventListener);
       material.dispose();
       renderer.dispose();
       mount.removeChild(renderer.domElement);
+      sceneRef.current = null;
+      cameraRef.current = null;
+      groupRef.current = null;
     };
   }, []);
 
@@ -85,5 +104,4 @@ const THIRD: React.FC = () => {
 };
 
 export default THIRD;
-
 

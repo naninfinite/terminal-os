@@ -13,6 +13,8 @@ export type PanelProps = {
   title: string;
   children?: React.ReactNode;
   className?: string;
+  /** Scope identifier used by menu routing/focus helpers. */
+  scopeId?: 'me' | 'you' | 'third' | 'connect';
   /** Stretch the body to fill the panel instead of centering children. */
   stretchBody?: boolean;
   /** Disable hover/focus lift animation for this panel. */
@@ -35,6 +37,7 @@ const Panel: React.FC<PanelProps> = ({
   title,
   children,
   className,
+  scopeId,
   stretchBody,
   disableHover,
   hideHeader,
@@ -45,6 +48,8 @@ const Panel: React.FC<PanelProps> = ({
     // Class composition keeps API surface small while still allowing overrides.
     className={`${styles.panel} ${className ?? ''} ${disableHover ? styles.noHover : ''}`.trim()}
     aria-label={title}
+    data-panel-scope={scopeId}
+    tabIndex={0}
     onMouseEnter={onActivate}
     onFocusCapture={onActivate}
     onMouseDown={onActivate}
@@ -61,4 +66,3 @@ const Panel: React.FC<PanelProps> = ({
 );
 
 export default Panel;
-

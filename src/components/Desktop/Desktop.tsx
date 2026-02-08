@@ -18,13 +18,13 @@ const Desktop: React.FC = () => {
   return (
     <div className={styles.desktop} role="main">
       {/* Profile / portfolio entry panel. */}
-      <Panel title="ME.EXE" stretchBody onActivate={() => setActiveScope(null)}><ME /></Panel>
+      <Panel title="ME.EXE" scopeId="me" stretchBody onActivate={() => setActiveScope(null)}><ME /></Panel>
       {/* Small persisted input panel. */}
-      <Panel title="YOU.EXE" onActivate={() => setActiveScope('you')}><YOU /></Panel>
+      <Panel title="YOU.EXE" scopeId="you" onActivate={() => setActiveScope('you')}><YOU /></Panel>
       {/* Canvas app needs a stretching body so WebGL can fill available height. */}
-      <Panel title="THIRD.EXE" stretchBody onActivate={() => setActiveScope('third')}><THIRD /></Panel>
+      <Panel title="THIRD.EXE" scopeId="third" stretchBody onActivate={() => setActiveScope('third')}><THIRD /></Panel>
       {/* ASCII banner / contact panel. */}
-      <Panel title="CONNECT.EXE" onActivate={() => setActiveScope('connect')}><CONNECT /></Panel>
+      <Panel title="CONNECT.EXE" scopeId="connect" onActivate={() => setActiveScope('connect')}><CONNECT /></Panel>
     </div>
   );
 };

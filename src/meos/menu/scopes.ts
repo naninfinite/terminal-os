@@ -9,6 +9,13 @@ export type MenuCommandId =
   | 'open_fileman'
   | 'open_projects'
   | 'open_media'
+  | 'focus_you_panel'
+  | 'you_save_input'
+  | 'you_clear_input'
+  | 'focus_third_panel'
+  | 'third_reset_scene'
+  | 'focus_connect_panel'
+  | 'connect_copy_banner'
   | 'noop';
 
 export type MenuItemConfig = {
@@ -42,15 +49,25 @@ export const MENU_SCOPE_CONFIG: Record<MenuScopeId, MenuScopeConfig> = {
   },
   you: {
     title: 'YOU',
-    items: [{ id: 'noop', label: 'COMING SOON' }],
+    items: [
+      { id: 'focus_you_panel', label: 'FOCUS YOU PANEL' },
+      { id: 'you_save_input', label: 'SAVE INPUT' },
+      { id: 'you_clear_input', label: 'CLEAR INPUT' },
+    ],
   },
   third: {
     title: 'THIRD',
-    items: [{ id: 'noop', label: 'COMING SOON' }],
+    items: [
+      { id: 'focus_third_panel', label: 'FOCUS THIRD PANEL' },
+      { id: 'third_reset_scene', label: 'RESET SCENE' },
+    ],
   },
   connect: {
     title: 'CONNECT',
-    items: [{ id: 'noop', label: 'COMING SOON' }],
+    items: [
+      { id: 'focus_connect_panel', label: 'FOCUS CONNECT PANEL' },
+      { id: 'connect_copy_banner', label: 'COPY BANNER' },
+    ],
   },
 };
 

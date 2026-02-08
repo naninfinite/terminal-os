@@ -7,6 +7,8 @@ import styles from './StatusBar.module.scss';
 import { useMeOs } from '../../meos/shell/MeOsProvider';
 import { MENU_SCOPE_CONFIG, resolveMenuScope, type MenuCommandId } from '../../meos/menu/scopes';
 
+type DesktopPanelScope = 'you' | 'third' | 'connect' | 'me';
+
 const StatusBar: React.FC = () => {
   const {
     displayMode,
@@ -57,6 +59,17 @@ const StatusBar: React.FC = () => {
     openApp(appId);
   };
 
+  const focusPanel = (scopeId: DesktopPanelScope) => {
+    const panel = document.querySelector(`[data-panel-scope="${scopeId}"]`) as HTMLElement | null;
+    if (!panel) return;
+    panel.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    panel.focus();
+  };
+
+  const dispatchShellEvent = (eventName: string) => {
+    window.dispatchEvent(new CustomEvent(eventName));
+  };
+
   const runMenuAction = (commandId: MenuCommandId) => {
     switch (commandId) {
       case 'open_meos':
@@ -76,6 +89,27 @@ const StatusBar: React.FC = () => {
         break;
       case 'open_media':
         openAppForScope('media');
+        break;
+      case 'focus_you_panel':
+        focusPanel('you');
+        break;
+      case 'you_save_input':
+        dispatchShellEvent('terminalos:you:save-input');
+        break;
+      case 'you_clear_input':
+        dispatchShellEvent('terminalos:you:clear-input');
+        break;
+      case 'focus_third_panel':
+        focusPanel('third');
+        break;
+      case 'third_reset_scene':
+        dispatchShellEvent('terminalos:third:reset-scene');
+        break;
+      case 'focus_connect_panel':
+        focusPanel('connect');
+        break;
+      case 'connect_copy_banner':
+        dispatchShellEvent('terminalos:connect:copy-banner');
         break;
       case 'noop':
       default:
