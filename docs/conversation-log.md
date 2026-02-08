@@ -327,3 +327,20 @@ Why it matters:
 Risks / Notes:
 - Scope switching is currently driven by `ME.OS` display mode (`panel` vs `fullscreen`), not by non-ME panel focus yet.
 - Task strip intentionally prioritizes restore/focus only; minimize/close controls remain in window chrome.
+
+---
+
+## Entry 19 - M5 Step 2 Menu Scope Config Model
+
+Summary:
+- Replaced inline menu arrays in `StatusBar` with a dedicated config module under `src/meos/menu/scopes.ts`.
+- Added explicit menu scope IDs and command IDs so Start menu behavior is driven by configuration instead of component-local branching.
+- Added placeholder scope definitions for future subsystem menus (`YOU`, `THIRD`, `CONNECT`) while keeping current runtime scope resolution (`desktop` vs `meos`).
+
+Why it matters:
+- Makes menu behavior easier to expand and maintain as non-ME subsystems gain parity.
+- Creates a clear contract for menu scope + command mapping before broader panel-context routing.
+
+Risks / Notes:
+- Runtime scope still resolves from `ME.OS` display mode until broader panel focus state is introduced.
+- Future subsystem scopes currently expose placeholder actions only.

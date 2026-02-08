@@ -5,8 +5,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import styles from './StatusBar.module.scss';
 import { useMeOs } from '../../meos/shell/MeOsProvider';
-
-type MenuScope = 'desktop' | 'meos';
+import { MENU_SCOPE_CONFIG, resolveMenuScope, type MenuCommandId } from '../../meos/menu/scopes';
 
 const StatusBar: React.FC = () => {
   const {
@@ -45,30 +44,44 @@ const StatusBar: React.FC = () => {
     hour12: false,
   }).format(now);
 
-  const scope: MenuScope = displayMode === 'fullscreen' ? 'meos' : 'desktop';
+  const scope = resolveMenuScope({ displayMode });
+  const scopeConfig = MENU_SCOPE_CONFIG[scope];
   const orderedWindows = useMemo(
     () => [...windows].sort((a, b) => a.zIndex - b.zIndex),
     [windows]
   );
 
-  const runMenuAction = (fn: () => void) => {
-    fn();
-    setMenuOpen(false);
+  const openAppForScope = (appId: Parameters<typeof openApp>[0]) => {
+    if (scope === 'desktop') openFullscreen();
+    openApp(appId);
   };
 
-  const desktopMenu = [
-    { label: 'OPEN ME.OS', action: () => openFullscreen() },
-    { label: 'OPEN FILEMAN', action: () => { openFullscreen(); openApp('fileman'); } },
-    { label: 'OPEN HOME', action: () => { openFullscreen(); openApp('home'); } },
-  ];
-  const meOsMenu = [
-    { label: 'OPEN FILEMAN', action: () => openApp('fileman') },
-    { label: 'OPEN HOME', action: () => openApp('home') },
-    { label: 'OPEN PROJECTS', action: () => openApp('projects') },
-    { label: 'OPEN MEDIA', action: () => openApp('media') },
-    { label: 'EXIT ME.OS', action: () => closeFullscreen() },
-  ];
-  const menuItems = scope === 'desktop' ? desktopMenu : meOsMenu;
+  const runMenuAction = (commandId: MenuCommandId) => {
+    switch (commandId) {
+      case 'open_meos':
+        openFullscreen();
+        break;
+      case 'exit_meos':
+        closeFullscreen();
+        break;
+      case 'open_home':
+        openAppForScope('home');
+        break;
+      case 'open_fileman':
+        openAppForScope('fileman');
+        break;
+      case 'open_projects':
+        openAppForScope('projects');
+        break;
+      case 'open_media':
+        openAppForScope('media');
+        break;
+      case 'noop':
+      default:
+        break;
+    }
+    setMenuOpen(false);
+  };
 
   return (
     <div className={styles.statusBar} role="contentinfo" aria-label="System status bar">
@@ -90,15 +103,15 @@ const StatusBar: React.FC = () => {
             className={styles.menu}
             role="menu"
             onClick={(event) => event.stopPropagation()}
-            aria-label={scope === 'desktop' ? 'Desktop menu' : 'ME.OS menu'}
+            aria-label={`${scopeConfig.title} menu`}
           >
-            <p className={styles.menuTitle}>{scope === 'desktop' ? 'DESKTOP' : 'ME.OS'}</p>
-            {menuItems.map((item) => (
+            <p className={styles.menuTitle}>{scopeConfig.title}</p>
+            {scopeConfig.items.map((item) => (
               <button
-                key={item.label}
+                key={item.id}
                 type="button"
                 className={styles.menuItem}
-                onClick={() => runMenuAction(item.action)}
+                onClick={() => runMenuAction(item.id)}
               >
                 {item.label}
               </button>
