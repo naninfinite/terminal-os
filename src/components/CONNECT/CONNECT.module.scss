@@ -10,7 +10,7 @@
   font-family: $font-mono;
   /* Slightly tighter spacing keeps the banner readable in smaller panels. */
   line-height: 1.1;
-  font-size: clamp(8px, 0.95vw, 12px);
+  font-size: $font-sm;
   /* Prevent inner horizontal scrollbar in the CONNECT panel. */
   overflow: hidden;
 }
