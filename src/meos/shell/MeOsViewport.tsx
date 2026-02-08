@@ -156,7 +156,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
 };
 
 export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
-  const { windows, openFullscreen, closeFullscreen, openApp } = useMeOs();
+  const { windows, closeFullscreen, openApp } = useMeOs();
   const activeWindows = useMemo(
     () => windows.filter((w) => !w.minimized).sort((a, b) => a.zIndex - b.zIndex),
     [windows]
@@ -168,15 +168,11 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
       <header className={styles.chromeHeader}>
         <span className={styles.chromeTitle}>[ME.OS]</span>
         <div className={styles.chromeActions}>
-          {mode === 'panel' ? (
-            <button type="button" className={styles.chromeBtn} onClick={openFullscreen} aria-label="Expand ME.OS">
-              EXPAND
-            </button>
-          ) : (
+          {mode === 'fullscreen' ? (
             <button type="button" className={styles.chromeBtn} onClick={closeFullscreen} aria-label="Close ME.OS fullscreen">
               CLOSE
             </button>
-          )}
+          ) : null }
         </div>
       </header>
 
