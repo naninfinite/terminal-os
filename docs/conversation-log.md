@@ -243,3 +243,20 @@ Why it matters:
 Risks / Notes:
 - This import is directional and not a commitment to immediate implementation order changes.
 - Fullscreen/status-bar overlap remains a tracked shell polish item.
+
+---
+
+## Entry 14 - M3 Completion Pass (List/Grid + Grid Keyboard Nav)
+
+Summary:
+- User asked to finish M3 before moving on.
+- Closed the remaining M3 gap by adding `FileMan` list/grid view mode toggle and keeping both views on the same explorer state.
+- Added grid-aware keyboard traversal so arrow keys work in both list and grid modes, while preserving `Enter`, `F2`, and `Delete` actions.
+
+Why it matters:
+- Brings implementation in line with the M3 contract requirement for list/grid rendering and keyboard baseline.
+- Keeps M3 scope complete without pulling in M4/M5 behavior early.
+
+Risks / Notes:
+- Grid traversal uses visual column count from layout, which is responsive and deterministic for current card sizing.
+- Fullscreen/status-bar overlap remains intentionally deferred to later shell polish.

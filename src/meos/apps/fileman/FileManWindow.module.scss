@@ -10,7 +10,7 @@
 
 .toolbar {
   display: grid;
-  grid-template-columns: auto auto auto 1fr auto auto auto;
+  grid-template-columns: auto auto auto 1fr auto auto auto auto auto;
   gap: 6px;
   align-items: center;
 }
@@ -21,6 +21,10 @@
   color: $phosphor-green;
   padding: 3px 8px;
   font-size: $font-xs;
+}
+
+.btnActive {
+  background: rgba(0, 255, 102, 0.2);
 }
 
 .path {
@@ -75,8 +79,20 @@
   overflow: auto;
   padding: 6px;
   display: grid;
+}
+
+/* Traditional explorer rows. */
+.listList {
   align-content: start;
   gap: 4px;
+  grid-template-columns: 1fr;
+}
+
+/* Responsive card grid for media-style browsing. */
+.listGrid {
+  align-content: start;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
 }
 
 .row {
@@ -84,11 +100,36 @@
   background: rgba(0, 255, 102, 0.02);
   color: $phosphor-green;
   padding: 5px 7px;
+  text-align: left;
+}
+
+.rowList {
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 8px;
   align-items: center;
-  text-align: left;
+}
+
+/* Grid cards stack metadata vertically to preserve readability in narrow columns. */
+.rowGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-content: start;
+  gap: 6px;
+  min-height: 92px;
+}
+
+.rowGrid .renameInput {
+  width: 100%;
+}
+
+.rowList .kind {
+  justify-self: end;
+}
+
+.rowGrid .icon,
+.rowGrid .kind {
+  opacity: 0.85;
 }
 
 .rowActive {
@@ -153,4 +194,3 @@
     grid-template-columns: 1fr;
   }
 }
-

@@ -7,7 +7,7 @@
  * - Keyboard interactions and contextual actions.
  * - Viewer launch flow for files.
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useMeOsVfs } from '../../vfs/MeOsVfsProvider';
 import type { VfsNode, VfsSnapshot } from '../../vfs/types';
 import { useMeOs } from '../../shell/MeOsProvider';
@@ -24,10 +24,22 @@ type ContextMenuState = {
   y: number;
 } | null;
 
+type ViewMode = 'list' | 'grid';
+
 const sortEntries = (entries: VfsNode[]): VfsNode[] => [...entries].sort((a, b) => {
   if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
   return a.name.localeCompare(b.name);
 });
+
+const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
+
+// Reads the live CSS grid template so keyboard vertical movement matches rendered columns.
+const getGridColumnCount = (element: HTMLElement | null): number => {
+  if (!element) return 1;
+  const template = window.getComputedStyle(element).gridTemplateColumns;
+  const count = template.split(' ').filter((segment) => segment.trim().length > 0).length;
+  return count > 0 ? count : 1;
+};
 
 const buildPathString = (snapshot: VfsSnapshot, folderId: string): string => {
   const names: string[] = [];
@@ -85,6 +97,9 @@ const FileManWindow: React.FC = () => {
   const [editingValue, setEditingValue] = useState('');
   const [pathInput, setPathInput] = useState('/');
   const [menu, setMenu] = useState<ContextMenuState>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [gridColumns, setGridColumns] = useState(1);
+  const listRef = useRef<HTMLDivElement | null>(null);
 
   const currentFolderId = nav.history[nav.index] ?? snapshot.rootId;
   const currentFolder = snapshot.nodes[currentFolderId];
@@ -123,6 +138,24 @@ const FileManWindow: React.FC = () => {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [menu]);
+
+  useEffect(() => {
+    if (viewMode !== 'grid') {
+      setGridColumns(1);
+      return;
+    }
+
+    const target = listRef.current;
+    if (!target) return;
+
+    const updateColumns = () => setGridColumns(getGridColumnCount(target));
+    updateColumns();
+
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(updateColumns);
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [viewMode, entries.length]);
 
   const navigateTo = (folderId: string) => {
     setNav((prev) => {
@@ -189,20 +222,52 @@ const FileManWindow: React.FC = () => {
 
   const selectedIndex = entries.findIndex((e) => e.id === selectedId);
 
+  // Centralized selection movement keeps list and grid keyboard behavior consistent.
+  const moveSelection = (offset: number) => {
+    if (entries.length === 0) return;
+    const startIndex = selectedIndex >= 0 ? selectedIndex : 0;
+    const nextIndex = clamp(startIndex + offset, 0, entries.length - 1);
+    const target = entries[nextIndex];
+    if (target) setSelectedId(target.id);
+  };
+
   const handleListKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (editingId) return;
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      const next = entries[Math.min(entries.length - 1, Math.max(0, selectedIndex + 1))];
-      if (next) setSelectedId(next.id);
-      return;
+
+    if (viewMode === 'grid') {
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        moveSelection(1);
+        return;
+      }
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        moveSelection(-1);
+        return;
+      }
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        moveSelection(gridColumns);
+        return;
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        moveSelection(-gridColumns);
+        return;
+      }
+    } else {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        moveSelection(1);
+        return;
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        moveSelection(-1);
+        return;
+      }
     }
-    if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      const next = entries[Math.max(0, selectedIndex - 1)];
-      if (next) setSelectedId(next.id);
-      return;
-    }
+
     if (event.key === 'F2' && selectedId) {
       event.preventDefault();
       startRename(selectedId);
@@ -259,6 +324,20 @@ const FileManWindow: React.FC = () => {
         />
         <button type="button" className={styles.btn} onClick={createDefaultFolder}>NEW FOLDER</button>
         <button type="button" className={styles.btn} onClick={createDefaultFile}>NEW FILE</button>
+        <button
+          type="button"
+          className={`${styles.btn} ${viewMode === 'list' ? styles.btnActive : ''}`.trim()}
+          onClick={() => setViewMode('list')}
+        >
+          LIST
+        </button>
+        <button
+          type="button"
+          className={`${styles.btn} ${viewMode === 'grid' ? styles.btnActive : ''}`.trim()}
+          onClick={() => setViewMode('grid')}
+        >
+          GRID
+        </button>
         <button type="button" className={styles.btn} onClick={reset}>RESET</button>
       </div>
 
@@ -275,11 +354,12 @@ const FileManWindow: React.FC = () => {
         <section className={styles.main}>
           <div className={styles.pathReadout}>{pathString}</div>
           <div
-            className={styles.list}
+            className={`${styles.list} ${viewMode === 'grid' ? styles.listGrid : styles.listList}`.trim()}
             tabIndex={0}
             role="listbox"
             aria-label="Directory listing"
             onKeyDown={handleListKeyDown}
+            ref={listRef}
           >
             {entries.map((node) => {
               const active = selectedId === node.id;
@@ -288,7 +368,7 @@ const FileManWindow: React.FC = () => {
                 <button
                   key={node.id}
                   type="button"
-                  className={`${styles.row} ${active ? styles.rowActive : ''}`.trim()}
+                  className={`${styles.row} ${viewMode === 'grid' ? styles.rowGrid : styles.rowList} ${active ? styles.rowActive : ''}`.trim()}
                   onClick={() => setSelectedId(node.id)}
                   onDoubleClick={() => openNode(node)}
                   onContextMenu={(event) => {

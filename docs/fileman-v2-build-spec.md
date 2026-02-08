@@ -4,7 +4,7 @@ Status: Draft for implementation
 Date: 2026-02-08
 Owner: Terminal-OS
 Related: `docs/overview.md`, `docs/phase-3.md`, `docs/ADR Index`, `docs/conversation-log.md`
-Milestone status: M1 complete, M2 complete, M3 complete (core), M4 pending
+Milestone status: M1 complete, M2 complete, M3 complete, M4 pending
 
 ---
 
