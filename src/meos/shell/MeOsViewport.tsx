@@ -10,6 +10,8 @@ import { useMeOs } from './MeOsProvider';
 import type { MeOsDisplayMode, MeOsWindow } from './types';
 import styles from './MeOsShell.module.scss';
 import { useMeOsVfs } from '../vfs/MeOsVfsProvider';
+import FileManWindow from '../apps/fileman/FileManWindow';
+import FileViewerWindow from '../apps/viewers/FileViewerWindow';
 
 type MeOsViewportProps = {
   mode: MeOsDisplayMode;
@@ -59,7 +61,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
       return (
         <div className={styles.homeContent}>
           <p className={styles.copy}>ME.OS SHELL READY</p>
-          <p className={styles.copyDim}>M2 foundation: VFS service (versioned persistence + seeded tree + reset).</p>
+          <p className={styles.copyDim}>M3 foundation: FileMan v2 shell app and viewer window routing.</p>
           <div className={styles.dirList}>
             {rootEntries.map((entry) => (
               <div key={entry.id} className={styles.dirRow}>
@@ -69,6 +71,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
             ))}
           </div>
           <div className={styles.launchGrid}>
+            <button type="button" className={styles.launchBtn} onClick={() => openApp('fileman')}>OPEN FILEMAN</button>
             <button type="button" className={styles.launchBtn} onClick={() => openApp('about')}>OPEN ABOUT</button>
             <button type="button" className={styles.launchBtn} onClick={() => openApp('projects')}>OPEN PROJECTS</button>
             <button type="button" className={styles.launchBtn} onClick={() => openApp('media')}>OPEN MEDIA</button>
@@ -79,6 +82,15 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
         </div>
       );
     }
+
+    if (win.appId === 'fileman') {
+      return <FileManWindow />;
+    }
+
+    if (win.appId === 'viewer_text' || win.appId === 'viewer_image' || win.appId === 'viewer_video') {
+      return <FileViewerWindow win={win} />;
+    }
+
     if (win.appId === 'about') {
       return (
         <div className={styles.docContent}>

@@ -240,3 +240,4 @@ Notes
 	•	Execution spec: `docs/fileman-v2-build-spec.md`.
 	•	M1 status: implemented (shared ME.OS shell state + panel/fullscreen mode + persisted shell windows).
 	•	M2 status: implemented (VFS service + versioned key + legacy migration + reset + unit tests).
+	•	M3 status: implemented (FileMan window app + navigation/actions + viewer-window launch routing).

@@ -38,6 +38,7 @@ Assets:
 - Implementation status:
 - M1 shell foundation is now implemented (shared `ME.OS` state, panel preview, fullscreen expansion, persisted shell windows).
 - M2 VFS foundation is now implemented (versioned VFS service, seed/reset/migration, unit tests).
+- M3 FileMan core is now implemented (FileMan window app, navigation/actions, viewer launch routing).
 
 Related docs:
 - `docs/phase-3.md`

@@ -207,3 +207,22 @@ Why it matters:
 Risks / Notes:
 - Current ME.OS view only surfaces a root listing and reset action for visibility.
 - Full FileMan UX (path nav, rename/delete flows, richer views) remains M3 scope.
+
+---
+
+## Entry 12 - M3 FileMan v2 Core Implemented
+
+Summary:
+- Implemented a real `FileMan` app window inside ME.OS (`FILEMAN.EXE`).
+- Added core navigation: path input, back, forward, up, and quick-access folders.
+- Added core actions: new folder, new file, rename, delete, reset.
+- Added keyboard controls (`Enter`, arrows, `F2`, `Delete`) and a React-based context menu.
+- Added per-file viewer windows (text/image/video) with focus-existing-window behavior.
+
+Why it matters:
+- Delivers the first usable FileMan interaction model over the M2 VFS service.
+- Validates the shell + VFS + app layering before advanced polish/features.
+
+Risks / Notes:
+- Viewer content is currently lightweight/placeholder-backed for M3.
+- Fullscreen ME.OS still overlays status bar; layout polish is tracked for later shell pass.

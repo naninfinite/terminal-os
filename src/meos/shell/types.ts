@@ -5,7 +5,11 @@
 
 export type MeOsDisplayMode = 'panel' | 'fullscreen';
 
-export type MeOsAppId = 'home' | 'about' | 'projects' | 'media';
+export type MeOsViewerKind = 'text' | 'image' | 'video';
+
+export type MeOsFixedAppId = 'home' | 'fileman' | 'about' | 'projects' | 'media';
+
+export type MeOsAppId = MeOsFixedAppId | 'viewer_text' | 'viewer_image' | 'viewer_video';
 
 export type MeOsWindow = {
   id: string;
@@ -17,12 +21,13 @@ export type MeOsWindow = {
   height: number;
   zIndex: number;
   minimized: boolean;
+  nodeId?: string;
+  viewerKind?: MeOsViewerKind;
 };
 
-export type MeOsWindowTemplate = Omit<MeOsWindow, 'zIndex' | 'minimized'>;
+export type MeOsWindowTemplate = Omit<MeOsWindow, 'zIndex' | 'minimized' | 'nodeId' | 'viewerKind'>;
 
 export type MeOsPersistedSnapshot = {
   version: 1;
   windows: MeOsWindow[];
 };
-
