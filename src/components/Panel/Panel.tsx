@@ -23,6 +23,12 @@ export type PanelProps = {
   bodyClassName?: string;
 };
 
+/**
+ * Small panel frame with optional behavior flags:
+ * - `stretchBody`: child fills available panel body dimensions.
+ * - `disableHover`: suppresses elevation effect in contexts where motion is distracting.
+ * - `hideHeader`: removes bracket title bar for custom compositions.
+ */
 const Panel: React.FC<PanelProps> = ({
   title,
   children,
@@ -33,6 +39,7 @@ const Panel: React.FC<PanelProps> = ({
   bodyClassName,
 }) => (
   <section
+    // Class composition keeps API surface small while still allowing overrides.
     className={`${styles.panel} ${className ?? ''} ${disableHover ? styles.noHover : ''}`.trim()}
     aria-label={title}
   >
@@ -48,6 +55,5 @@ const Panel: React.FC<PanelProps> = ({
 );
 
 export default Panel;
-
 
 

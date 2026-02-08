@@ -1,6 +1,7 @@
 /**
  * `THIRD` mounts a minimal Three.js scene into a div.
- * The renderer resizes with the panel via `ResizeObserver` and uses a lightweight wireframe scene.
+ * The renderer tracks panel size via `ResizeObserver` and runs a lightweight
+ * wireframe scene tuned for dashboard use.
  */
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
@@ -29,7 +30,7 @@ const THIRD: React.FC = () => {
     mount.appendChild(renderer.domElement);
     renderer.domElement.className = styles.canvas;
 
-    // Minimal wireframe objects
+    // Minimal wireframe objects: low geometry complexity for responsiveness.
     const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
     const group = new THREE.Group();
     const cube = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), material);
@@ -40,6 +41,7 @@ const THIRD: React.FC = () => {
     group.add(cube, sphere, torus);
     scene.add(group);
 
+    // Keep camera projection and renderer size synchronized to panel dimensions.
     const resize = () => {
       if (!mount) return;
       const { clientWidth: w, clientHeight: h } = mount;
@@ -56,9 +58,10 @@ const THIRD: React.FC = () => {
     let raf = 0;
     const reduce = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduce) {
-      // Render once without continuous animation
+      // Respect reduced-motion preference by rendering a static frame.
       renderer.render(scene, camera);
     } else {
+      // Simple requestAnimationFrame loop rotating the grouped meshes.
       const tick = () => {
         raf = requestAnimationFrame(tick);
         group.rotation.x += 0.003;
@@ -82,6 +85,5 @@ const THIRD: React.FC = () => {
 };
 
 export default THIRD;
-
 
 

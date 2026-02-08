@@ -1,6 +1,7 @@
 @use './variables' as *;
 
 html, body {
+  /* Global terminal baseline styles for the whole app. */
   margin: 0;
   padding: 0;
   height: 100%;
@@ -15,6 +16,7 @@ html, body {
 }
 
 #root {
+  /* Root React mount spans viewport and hosts shell layouts. */
   height: 100%;
   width: 100%;
   display: flex;
@@ -44,6 +46,7 @@ input, button, select, textarea {
   outline-offset: 2px;
 }
 
+/* Legacy utility classes retained for compatibility with older markup patterns. */
 .panel {
   border: $border;
   padding: $panel-padding;
@@ -86,11 +89,11 @@ input, button, select, textarea {
 }
 
 .typewriter {
+  /* Utility typing reveal effect for optional retro text animations. */
   overflow: hidden;
   white-space: nowrap;
   animation: typing steps(40, end) $typewriter-speed forwards;
 }
 
 @keyframes typing { from { width: 0; } to { width: 100%; } }
-
 

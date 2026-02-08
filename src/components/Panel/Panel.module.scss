@@ -1,6 +1,7 @@
 @use '../../styles/variables' as *;
 
 .root {
+  /* Legacy container helper kept for compatibility with older panel layouts. */
   width: 100%;
   height: 100%;
   align-self: stretch;
@@ -11,22 +12,23 @@
 }
 
 .body {
+  /* Default body mode centers content (best for text, forms, and static media). */
   flex: 1;
   display: flex;
-
   align-items: center;
   justify-content: center;
-
   min-height: 0;
   min-width: 0;
 }
 
 .bodyStretch {
+  /* Stretch mode lets child components (for example canvas) control their own layout. */
   align-items: stretch;
   justify-content: stretch;
 }
 
 .panel {
+  /* Shared desktop window frame styling. */
   border: $border;
   padding: $panel-padding;
   background-color: $bg-black;
@@ -42,16 +44,19 @@
 }
 
 .hiddenHeader {
+  /* Used by rare frameless panel variants. */
   display: none;
 }
 
 .panel:hover,
 .panel:focus-visible {
+  /* Subtle lift to suggest "active window" affordance. */
   transform: translateY(-3px) translate(1px) translateZ(0);
   box-shadow: 0 14px 35px rgba(0, 0, 0, 0.45);
 }
 
 .noHover {
+  /* Explicitly disable interactive lift when desired by parent component. */
   &:hover,
   &:focus-visible {
     transform: none !important;
@@ -60,6 +65,7 @@
 }
 
 .header {
+  /* Bracketed terminal-style title row. */
   width: 100%;
   border-bottom: $border-thin solid $phosphor-green;
   padding-bottom: 4px;
@@ -67,13 +73,5 @@
   font-size: $font-sm;
   letter-spacing: $letter-spacing;
 }
-
-// .body {
-//   flex: 1;
-//   display: flex;
-//   align-items: center;
-//   justify-content: center;
-// }
-
 
 

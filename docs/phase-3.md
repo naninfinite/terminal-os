@@ -207,3 +207,34 @@ Related phases
 	•	Phase 3: persistent OS state
 
 ⸻
+
+Phase 3 Direction Update (2026-02-08)
+
+Scope clarification
+
+Phase 3 will prioritize a `FileMan v2` path aligned with a live `ME.OS` experience:
+	•	`ME.EXE` panel hosts a live miniature `ME.OS` instance.
+	•	Opening `ME.EXE` expands that same instance to fullscreen (no duplicate app state).
+	•	Returning to desktop keeps existing `ME.OS` windows/files visible in the panel.
+
+Architecture constraints
+	•	Persistence remains service-owned (VFS/service layer only).
+	•	UI apps (`FileMan`, gallery/viewers, launchers) do not write directly to localStorage.
+	•	Window restore must rehydrate real app content, not placeholder content.
+	•	Mode-aware performance is required:
+	•	Panel mode reduces heavy rendering.
+	•	Fullscreen mode enables full interactivity.
+
+Navigation and interaction targets
+	•	FileMan v2 includes path bar, back/forward/up, quick access, and context actions.
+	•	Context menu/actions should be declarative and reusable.
+	•	Keyboard-friendly behavior remains a requirement.
+
+Menu model
+	•	Keep one global Start-like menu button in the bottom status bar.
+	•	Menu entries are context-aware by active scope (Desktop, `ME.OS`, future subsystems).
+
+Notes
+	•	This update reflects product-direction decisions and should guide implementation order.
+	•	Conversation source: `docs/conversation-log.md`.
+	•	Execution spec: `docs/fileman-v2-build-spec.md`.

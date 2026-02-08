@@ -1,6 +1,7 @@
 @use '../../styles/variables' as *;
 
 .root {
+  /* Full-screen non-interactive layer for custom cursor rendering. */
   position: fixed;
   inset: 0;
   pointer-events: none;
@@ -8,6 +9,7 @@
 }
 
 .cursor {
+  /* Cursor anchor; translated directly via inline transform updates. */
   position: absolute;
   top: 0;
   left: 0;
@@ -16,10 +18,12 @@
 }
 
 .cursor.hover .glyph {
+  /* Visual feedback when hovering interactive elements. */
   transform: scale(1.35);
 }
 
 .glyph {
+  /* CRT-style arrow glyph with subtle phosphor drop-shadow. */
   display: inline-block;
   color: $phosphor-green;
   font-family: $font-mono;
@@ -31,7 +35,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Remove glow effect under reduced-motion preference. */
   .glyph { filter: none; }
 }
-
 

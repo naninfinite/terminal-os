@@ -1,41 +1,37 @@
 @use '../../styles/variables' as *;
 
-.root { 
-    display: grid; 
-    gap: 8px; 
+.root {
+    /* Vertical form layout centered inside the panel body. */
+    display: grid;
+    gap: 8px;
     width: min(320px, 80vw);
     margin: 0 auto;
-    place-self: center; /* center the whole block inside the panel */
-    // width: min(420px, 100%); /* keep it readable on large panels, responive on small */
+    place-self: center;
 }
-.input { 
-    border: $border; 
-    background: $bg-black; 
-    color: $phosphor-green; 
-    padding: 6px 8px; 
-    width: 100%; 
+.input {
+    /* Terminal-like text field style with full-width hit area. */
+    border: $border;
+    background: $bg-black;
+    color: $phosphor-green;
+    padding: 6px 8px;
+    width: 100%;
 }
-.save { 
-    border: $border; 
-    background: $bg-black; 
-    color: $phosphor-green; 
-    padding: 4px 10px; 
-    justify-self: start; 
-    transition: background 160ms ease, color 160ms ease; 
+.save {
+    /* Left-aligned command-style button with simple state transition. */
+    border: $border;
+    background: $bg-black;
+    color: $phosphor-green;
+    padding: 4px 10px;
+    justify-self: start;
+    transition: background 160ms ease, color 160ms ease;
 }
-.saved { 
-    background: $phosphor-green; 
-    color: $bg-black; 
+.saved {
+    /* Inverted colors make save success obvious without extra copy. */
+    background: $phosphor-green;
+    color: $bg-black;
 }
-.status { 
-    font-size: $font-xs; 
-    opacity: 0.9; 
+.status {
+    font-size: $font-xs;
+    opacity: 0.9;
 }
-
-// @media (max-width: 600px) {
-//     .root {
-//         max-width: 100%;
-//     }
-// }
-
 

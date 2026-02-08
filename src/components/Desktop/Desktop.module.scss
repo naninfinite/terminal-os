@@ -1,40 +1,44 @@
+@use 'sass:math';
 @use '../../styles/variables' as *;
 
 .desktop {
+  /* Fill the shell and leave room for fixed bottom status bar. */
   flex: 1;
   padding: $grid-gap;
   padding-bottom: calc($grid-gap + $status-height);
+
+  /* Default desktop layout: 2x2 app matrix. */
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: repeat(2, minmax(260px, 1fr));
   grid-auto-rows: minmax(260px, 1fr);
   gap: $grid-gap;
-  scrollbar-width: none; /*firefox*/
-  -ms-overflow-style: none; /*ie and edge*/
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge legacy */
 
-
-  /* allow scrolling when stacked / short viewports */
+  /* Allow panel stack scrolling on short/tight viewports. */
   overflow: auto;
   -webkit-overflow-scrolling: touch;
 
   @media (max-width: 960px) {
+    /* Tablet: single-column stack with taller rows for content comfort. */
     grid-template-columns: 1fr;
-    // grid-template-rows: repeat(4, minmax(220px, auto));
     grid-template-rows: none;
     grid-auto-rows: minmax(420px, 1fr);
-    padding: $grid-gap / 2;
-    padding-bottom: calc($grid-gap / 2 + $status-height);
+    padding: math.div($grid-gap, 2);
+    padding-bottom: calc(#{math.div($grid-gap, 2)} + $status-height);
   }
 
   @media (max-width: 600px) {
-    padding: $grid-gap / 2;
-    padding-bottom: calc($grid-gap / 2 + $status-height);
-    gap: $grid-gap / 2;
+    /* Mobile: tighter gutters and reduced row floor for smaller screens. */
+    padding: math.div($grid-gap, 2);
+    padding-bottom: calc(#{math.div($grid-gap, 2)} + $status-height);
+    gap: math.div($grid-gap, 2);
     grid-auto-rows: minmax(320px, 1fr);
   }
 }
 
-/* webkit (safari/chrome) */
+/* Hide scrollbars while preserving scroll behavior (WebKit). */
 .desktop::-webkit-scrollbar {
   width: 0;
   height: 0;

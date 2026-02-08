@@ -1,6 +1,7 @@
 @use '../../styles/variables' as *;
 
 .statusBar {
+  /* Fixed bottom shell bar that stays visible over desktop content. */
   background-color: $status-bg;
   border-top: $status-border;
   height: $status-height;
@@ -20,15 +21,23 @@
   z-index: 5;
 }
 
-.left { display: flex; gap: 12px; }
-.right { opacity: 0.9; }
+.left {
+  /* Menu button + short status token cluster. */
+  display: flex;
+  gap: 12px;
+}
+
+.right {
+  /* Slightly dimmed time readout to reduce visual dominance. */
+  opacity: 0.9;
+}
 
 .btn {
+  /* Start-like command button style, matching terminal framing language. */
   border: $border;
   padding: 2px 10px;
   background: $bg-black;
   color: $phosphor-green;
 }
-
 
 

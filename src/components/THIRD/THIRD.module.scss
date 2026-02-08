@@ -1,23 +1,24 @@
 @use '../../styles/variables' as *;
 
-.root { 
-    width: 100%; 
-    height: 100%; 
+.root {
+    /* Let the mount container fully occupy the panel body. */
+    width: 100%;
+    height: 100%;
     flex: 1;
     align-self: stretch;
-    position: relative; 
+    position: relative;
     overflow: hidden;
     min-height: 0;
     min-width: 0;
 }
 
-.canvas { 
-    width: 100%; 
-    height: 100%; 
-    display: block; 
-    background: $bg-black; 
+.canvas {
+    /* Canvas should map 1:1 to container bounds with no inline spacing gaps. */
+    width: 100%;
+    height: 100%;
+    display: block;
+    background: $bg-black;
 }
-
 
 
 

@@ -125,6 +125,34 @@ Summary
 
 ⸻
 
+ADR-0034 — Live Embedded ME.OS Instance
+
+Summary
+	•	`ME.EXE` and fullscreen `ME.OS` are the same running instance.
+	•	Desktop panel displays a live miniature of `ME.OS`.
+	•	Fullscreen expands/collapses without resetting `ME.OS` state.
+
+Downstream impact
+	•	Requires shared state container for panel/fullscreen rendering modes.
+	•	Prevents duplicate instances with divergent state.
+	•	Needs mode-aware performance profile for panel rendering.
+
+⸻
+
+ADR-0035 — Context-Aware Global Menu
+
+Summary
+	•	One global Start-like menu button in bottom status bar.
+	•	Menu entries adapt to active scope (Desktop, `ME.OS`, other subsystem scopes).
+	•	Core menu component remains shared across scopes.
+
+Downstream impact
+	•	Prevents fragmented menu implementations.
+	•	Supports subsystem-specific actions without changing global layout.
+	•	Maintains consistent keyboard and accessibility behavior.
+
+⸻
+
 ⚠️ Forward-Looking Intent (Important)
 
 ADR-0090 — File System Evolution (Intent Record)

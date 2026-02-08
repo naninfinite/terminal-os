@@ -1,6 +1,7 @@
 @use '../../styles/variables' as *;
 
 .shell {
+  /* Root desktop shell container rendered after ENTER flow completes. */
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -8,9 +9,8 @@
   color: $color-fg;
   font-family: $font-mono;
   position: relative;
-  // overflow: hidden;
+  /* Keep overflow visible so panel effects/cursor layers are not clipped. */
   overflow: visible;
 }
-
 
 

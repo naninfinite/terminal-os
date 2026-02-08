@@ -2,6 +2,11 @@
  * `App` controls the top-level flow:
  * - Landing screen (`ENTER.EXE`) with an enter transition.
  * - Desktop shell with scanlines, panels, and status bar once entered.
+ *
+ * Design notes:
+ * - `entered` gates which screen is mounted.
+ * - `exiting` drives the fade-out state before switching to desktop.
+ * - Transition timing matches CSS unless reduced-motion is enabled.
  */
 import React, { useEffect, useRef, useState } from 'react';
 import landingStyles from './components/Landing/Landing.module.scss';
@@ -10,7 +15,6 @@ import Desktop from './components/Desktop/Desktop';
 import StatusBar from './components/StatusBar/StatusBar';
 import shell from './components/AppShell/AppShell.module.scss';
 import Scanlines from './components/Scanlines/Scanlines';
-import Panel from './components/Panel/Panel';
 import Cursor from './components/Cursor/Cursor';
 
 const App: React.FC = () => {
@@ -19,14 +23,16 @@ const App: React.FC = () => {
   const [videoError, setVideoError] = useState(false);
   const enterTimeoutRef = useRef<number | null>(null);
 
+  // Shared guard used by click + keyboard triggers to avoid duplicate transitions.
+  const triggerEnter = () => {
+    if (exiting || entered) return;
+    setExiting(true);
+  };
+
   // Listen for Enter key to start exiting from the landing screen.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        if (!exiting && !entered) {
-          setExiting(true);
-        }
-      }
+      if (e.key === 'Enter') triggerEnter();
     };
     window.addEventListener('keydown', onKey);
     return () => {
@@ -80,10 +86,7 @@ const App: React.FC = () => {
                   <button
                     type="button"
                     className={landingStyles.enterBtn}
-                    onClick={() => {
-                      if (exiting || entered) return;
-                      setExiting(true);
-                    }}
+                    onClick={triggerEnter}
                     aria-label="Enter Terminal-OS"
                   >
                     ENTER
@@ -106,5 +109,4 @@ const App: React.FC = () => {
 };
 
 export default App;
-
 

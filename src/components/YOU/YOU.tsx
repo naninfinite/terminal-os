@@ -1,6 +1,6 @@
 /**
  * `YOU` is a tiny "input + save" panel.
- * It persists the visitor's text in localStorage so refreshes don't wipe it.
+ * It persists visitor text in localStorage so refreshes keep prior input.
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './YOU.module.scss';
@@ -9,7 +9,7 @@ import { getItemSafe, setItemSafe } from '../../utils/storage';
 const STORAGE_KEY = 'terminal_os_you_input_v1';
 
 const YOU: React.FC = () => {
-  // Read once on mount; keeps initial render stable.
+  // Read once to avoid re-reading storage on each render.
   const initial = useMemo(() => getItemSafe<string>(STORAGE_KEY, ''), []);
   const [text, setText] = useState(initial);
   const [saved, setSaved] = useState(false);
@@ -24,6 +24,17 @@ const YOU: React.FC = () => {
     };
   }, []);
 
+  /**
+   * Persists current text and toggles a temporary "SAVED" state.
+   * The timer is reset so rapid repeated saves still show a full 3s success state.
+   */
+  const persist = () => {
+    setItemSafe(STORAGE_KEY, text);
+    setSaved(true);
+    if (saveTimeoutRef.current != null) window.clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = window.setTimeout(() => setSaved(false), 3000) as unknown as number;
+  };
+
   return (
     <div className={styles.root}>
       <input
@@ -31,11 +42,11 @@ const YOU: React.FC = () => {
         type="text"
         value={text}
         placeholder="TYPE HERE..."
+        // Any new input exits "saved" state until persisted again.
         onChange={(e) => { setText(e.target.value); setSaved(false); }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
-            setItemSafe(STORAGE_KEY, text);
-            setSaved(true);
+            persist();
           }
         }}
         aria-label="Visitor input"
@@ -43,12 +54,7 @@ const YOU: React.FC = () => {
       <button
         type="button"
         className={`${styles.save} ${saved ? styles.saved : ''}`}
-        onClick={() => {
-          setItemSafe(STORAGE_KEY, text);
-          setSaved(true);
-          if (saveTimeoutRef.current != null) window.clearTimeout(saveTimeoutRef.current);
-          saveTimeoutRef.current = window.setTimeout(() => setSaved(false), 3000) as unknown as number;
-        }}
+        onClick={persist}
         aria-label="Save input"
       >
         {saved ? 'SAVED' : 'SAVE'}
@@ -58,6 +64,5 @@ const YOU: React.FC = () => {
 };
 
 export default YOU;
-
 
 

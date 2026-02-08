@@ -1,1 +1,28 @@
+@use '../../styles/variables' as *;
 
+.root {
+  /* Stack avatar + identity text vertically and center within the panel body. */
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: center;
+}
+
+.img {
+  /* Keep avatar size stable across responsive panel widths. */
+  width: clamp(88px, 24vw, 140px);
+  height: clamp(88px, 24vw, 140px);
+  object-fit: cover;
+  border: $border;
+  background: $bg-black;
+}
+
+.text {
+  /* Preserve terminal visual language for identity label text. */
+  color: $phosphor-green;
+  font-family: $font-mono;
+  font-size: $font-sm;
+  line-height: 1.25;
+  letter-spacing: $letter-spacing;
+}

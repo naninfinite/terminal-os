@@ -1,12 +1,16 @@
 /**
  * `Cursor` implements the custom CRT cursor.
- * It tracks pointer position and renders an overlay element that follows the mouse.
+ * It tracks pointer position and renders an overlay glyph that follows the mouse.
+ *
+ * Behavior highlights:
+ * - Disabled on touch-only devices.
+ * - Hides native cursor while enabled.
+ * - Smooth follow animation with reduced-motion fallback.
+ * - Enlarges when hovering interactive elements.
  */
 import React, { useEffect, useRef, useState } from 'react';
 import styles from './Cursor.module.scss';
 
-// Retro cursor rendered as a green, monospace "►" glyph.
-// Hides the native cursor while active and respects reduced motion and touch-only devices.
 const Cursor: React.FC = () => {
   const [enabled, setEnabled] = useState(false);
   const targetX = useRef(0);
@@ -49,6 +53,7 @@ const Cursor: React.FC = () => {
 
     const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    // Heuristic: inspect hovered element ancestry for common interactive semantics.
     const isElementInteractive = (el: Element | null): boolean => {
       if (!el) return false;
       // Walk up to find an interactive ancestor
@@ -73,6 +78,7 @@ const Cursor: React.FC = () => {
       const el = document.elementFromPoint(e.clientX, e.clientY);
       setIsHoveringInteractive(isElementInteractive(el));
       if (reduceMotion) {
+        // Reduced-motion mode snaps cursor to target instead of lerping.
         currentX.current = targetX.current;
         currentY.current = targetY.current;
         if (cursorEl.current) {
@@ -93,6 +99,7 @@ const Cursor: React.FC = () => {
 
     window.addEventListener('mousemove', onMove, { passive: true });
     if (!reduceMotion) {
+      // Standard mode uses RAF for smooth interpolation.
       rafId.current = window.requestAnimationFrame(animate);
     }
 
@@ -119,5 +126,4 @@ const Cursor: React.FC = () => {
 };
 
 export default Cursor;
-
 

@@ -20,3 +20,24 @@ Assets:
 - `landing-poster.jpg` (fallback)
 - `me.png` (ME panel image)
 
+---
+
+## Direction Update (2026-02-08)
+
+- `ME.EXE` is now intended to evolve into `ME.OS`: a portfolio-focused pseudo OS.
+- Desktop behavior target:
+- `ME.OS` is visible in miniature inside the `ME.EXE` panel.
+- Clicking `ME.EXE` expands the same live instance to fullscreen.
+- Returning to desktop keeps the same live state visible in the panel.
+- Global status bar remains fixed at the bottom.
+- Menu behavior target:
+- One Start-like menu button with context-aware entries by active scope.
+- Desktop scope: core panels/system actions.
+- `ME.OS` scope: portfolio/file manager/viewer actions.
+- Other scopes (for example `THIRD`): domain-specific actions.
+
+Related docs:
+- `docs/phase-3.md`
+- `docs/ADR Index`
+- `docs/conversation-log.md`
+- `docs/fileman-v2-build-spec.md`

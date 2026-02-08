@@ -1,6 +1,7 @@
 @use '../../styles/variables' as *;
 
 .overlay {
+  /* Global CRT scanline layer; never intercepts pointer input. */
   position: fixed;
   inset: 0;
   pointer-events: none;
@@ -10,8 +11,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Reduce visual intensity for accessibility preference. */
   .overlay { opacity: 0.08; }
 }
-
 
 
