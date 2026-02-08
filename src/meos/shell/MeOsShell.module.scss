@@ -209,7 +209,7 @@
 .fullscreenLayer {
   /* Fullscreen ME.OS overlay mounted above desktop shell. */
   position: fixed;
-  inset: 10px;
+  inset: 10px 10px calc(10px + $status-height + 8px) 10px;
   z-index: 40;
   border: $border;
   background: rgba(0, 0, 0, 0.94);
@@ -223,7 +223,7 @@
   }
 
   .fullscreenLayer {
-    inset: 6px;
+    inset: 6px 6px calc(6px + $status-height + 6px) 6px;
     padding: 6px;
   }
 }

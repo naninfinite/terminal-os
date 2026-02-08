@@ -308,3 +308,22 @@ Why it matters:
 
 Risks / Notes:
 - Styling remains intentionally terminal-themed and lightweight; richer icon artwork and motion can be layered later.
+
+---
+
+## Entry 18 - M5 Step 1 Shell Bar Behavior
+
+Summary:
+- Updated fullscreen `ME.OS` layer to respect the bottom status bar instead of covering it.
+- Reworked status bar menu into a scoped Start-style menu:
+- Desktop scope: open `ME.OS`, `HOME`, or `FILEMAN`.
+- ME.OS scope: app launches plus explicit exit action.
+- Added a task strip in the status bar showing open windows and allowing restore/focus by click.
+
+Why it matters:
+- Aligns fullscreen behavior with product direction that the status bar remains persistently visible.
+- Introduces the first context-aware menu behavior and basic window/task affordances required for M5.
+
+Risks / Notes:
+- Scope switching is currently driven by `ME.OS` display mode (`panel` vs `fullscreen`), not by non-ME panel focus yet.
+- Task strip intentionally prioritizes restore/focus only; minimize/close controls remain in window chrome.
