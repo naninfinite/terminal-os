@@ -8,7 +8,7 @@
  * - Pure-ish operations with a small imperative wrapper for storage.
  */
 import { createSeedSnapshot } from './seed';
-import type { LegacyPhase3Node, VfsFileKind, VfsNode, VfsSnapshot } from './types';
+import type { LegacyPhase3Node, VfsFileKind, VfsNode, VfsProjectMeta, VfsSnapshot } from './types';
 
 export const VFS_STORAGE_KEY = 'terminalOS.meos.v1.vfs';
 export const VFS_VERSION = 1 as const;
@@ -26,8 +26,25 @@ const uid = (): string => (
 );
 
 const isValidKind = (kind: unknown): kind is VfsFileKind => (
-  kind === 'text' || kind === 'image' || kind === 'video'
+  kind === 'text' || kind === 'image' || kind === 'video' || kind === 'project'
 );
+
+const sanitizeProjectMeta = (raw: unknown): VfsProjectMeta | undefined => {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const data = raw as Record<string, unknown>;
+  const title = typeof data.title === 'string' ? data.title.trim() : '';
+  const summary = typeof data.summary === 'string' ? data.summary.trim() : '';
+  const stackRaw = Array.isArray(data.stack) ? data.stack : [];
+  const stack = stackRaw
+    .filter((v): v is string => typeof v === 'string')
+    .map((v) => v.trim())
+    .filter(Boolean)
+    .slice(0, 12);
+  if (!title || !summary || stack.length === 0) return undefined;
+  const demoUrl = typeof data.demoUrl === 'string' && data.demoUrl.trim() ? data.demoUrl.trim() : undefined;
+  const repoUrl = typeof data.repoUrl === 'string' && data.repoUrl.trim() ? data.repoUrl.trim() : undefined;
+  return { title, summary, stack, demoUrl, repoUrl };
+};
 
 const sanitizeNode = (raw: unknown): VfsNode | null => {
   if (!raw || typeof raw !== 'object') return null;
@@ -43,6 +60,10 @@ const sanitizeNode = (raw: unknown): VfsNode | null => {
     type,
     parentId,
     kind: isValidKind(data.kind) ? data.kind : undefined,
+    textContent: typeof data.textContent === 'string' ? data.textContent : undefined,
+    assetSrc: typeof data.assetSrc === 'string' ? data.assetSrc : undefined,
+    posterSrc: typeof data.posterSrc === 'string' ? data.posterSrc : undefined,
+    projectMeta: sanitizeProjectMeta(data.projectMeta),
   };
 };
 
@@ -84,10 +105,17 @@ const sanitizeSnapshot = (raw: unknown): VfsSnapshot | null => {
   };
 };
 
+const cloneNode = (node: VfsNode): VfsNode => ({
+  ...node,
+  projectMeta: node.projectMeta
+    ? { ...node.projectMeta, stack: [...node.projectMeta.stack] }
+    : undefined,
+});
+
 const cloneSnapshot = (snapshot: VfsSnapshot): VfsSnapshot => ({
   version: snapshot.version,
   rootId: snapshot.rootId,
-  nodes: Object.fromEntries(Object.entries(snapshot.nodes).map(([k, v]) => [k, { ...v }])),
+  nodes: Object.fromEntries(Object.entries(snapshot.nodes).map(([k, v]) => [k, cloneNode(v)])),
   children: Object.fromEntries(Object.entries(snapshot.children).map(([k, v]) => [k, [...v]])),
 });
 

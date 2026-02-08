@@ -5,11 +5,11 @@
 
 export type MeOsDisplayMode = 'panel' | 'fullscreen';
 
-export type MeOsViewerKind = 'text' | 'image' | 'video';
+export type MeOsViewerKind = 'text' | 'image' | 'video' | 'project';
 
 export type MeOsFixedAppId = 'home' | 'fileman' | 'about' | 'projects' | 'media';
 
-export type MeOsAppId = MeOsFixedAppId | 'viewer_text' | 'viewer_image' | 'viewer_video';
+export type MeOsAppId = MeOsFixedAppId | 'viewer_text' | 'viewer_image' | 'viewer_video' | 'viewer_project';
 
 export type MeOsWindow = {
   id: string;

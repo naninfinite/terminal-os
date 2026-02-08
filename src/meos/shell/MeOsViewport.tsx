@@ -87,7 +87,12 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
       return <FileManWindow />;
     }
 
-    if (win.appId === 'viewer_text' || win.appId === 'viewer_image' || win.appId === 'viewer_video') {
+    if (
+      win.appId === 'viewer_text'
+      || win.appId === 'viewer_image'
+      || win.appId === 'viewer_video'
+      || win.appId === 'viewer_project'
+    ) {
       return <FileViewerWindow win={win} />;
     }
 

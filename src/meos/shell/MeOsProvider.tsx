@@ -78,6 +78,7 @@ const VIEWER_APP_BY_KIND: Record<MeOsViewerKind, MeOsAppId> = {
   text: 'viewer_text',
   image: 'viewer_image',
   video: 'viewer_video',
+  project: 'viewer_project',
 };
 
 const asNumber = (value: unknown, fallback: number): number => (
@@ -97,13 +98,17 @@ const sanitizeWindow = (raw: unknown): MeOsWindow | null => {
     && appId !== 'viewer_text'
     && appId !== 'viewer_image'
     && appId !== 'viewer_video'
+    && appId !== 'viewer_project'
   ) return null;
   const id = typeof data.id === 'string' ? data.id : '';
   const title = typeof data.title === 'string' ? data.title : '';
   if (!id || !title) return null;
   const nodeId = typeof data.nodeId === 'string' ? data.nodeId : undefined;
   const viewerKind = (
-    data.viewerKind === 'text' || data.viewerKind === 'image' || data.viewerKind === 'video'
+    data.viewerKind === 'text'
+    || data.viewerKind === 'image'
+    || data.viewerKind === 'video'
+    || data.viewerKind === 'project'
   ) ? data.viewerKind : undefined;
   return {
     id,

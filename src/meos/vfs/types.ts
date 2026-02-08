@@ -4,7 +4,15 @@
 
 export type VfsNodeType = 'folder' | 'file';
 
-export type VfsFileKind = 'text' | 'image' | 'video';
+export type VfsFileKind = 'text' | 'image' | 'video' | 'project';
+
+export type VfsProjectMeta = {
+  title: string;
+  summary: string;
+  stack: string[];
+  demoUrl?: string;
+  repoUrl?: string;
+};
 
 export type VfsNode = {
   id: string;
@@ -12,6 +20,10 @@ export type VfsNode = {
   type: VfsNodeType;
   parentId: string | null;
   kind?: VfsFileKind;
+  textContent?: string;
+  assetSrc?: string;
+  posterSrc?: string;
+  projectMeta?: VfsProjectMeta;
 };
 
 export type VfsSnapshot = {
@@ -28,4 +40,3 @@ export type LegacyPhase3Node = {
   fileType?: 'notes' | 'about' | 'terminal' | 'text';
   children?: LegacyPhase3Node[];
 };
-

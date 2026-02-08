@@ -33,9 +33,16 @@
   align-content: start;
 }
 
-.title {
+.metaTitle {
   margin: 0;
   font-size: $font-sm;
+}
+
+.metaCopy {
+  margin: 0;
+  font-size: $font-sm;
+  opacity: 0.9;
+  line-height: 1.4;
 }
 
 .pre {
@@ -43,5 +50,57 @@
   white-space: pre-wrap;
   font-family: $font-mono;
   font-size: $font-sm;
+  line-height: 1.4;
 }
 
+.videoFallback {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.poster {
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  background: $bg-black;
+}
+
+.projectCard {
+  border: $border;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  background: rgba(0, 255, 102, 0.03);
+}
+
+.projectLabel {
+  margin: 0;
+  font-size: $font-xs;
+  letter-spacing: 0.06em;
+  opacity: 0.8;
+}
+
+.projectTitle {
+  margin: 0;
+  font-size: $font-md;
+}
+
+.stack {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.stackItem {
+  border: 1px solid rgba(0, 255, 102, 0.35);
+  padding: 2px 6px;
+  font-size: $font-xs;
+}
+
+.link {
+  color: $phosphor-green;
+  text-decoration: underline;
+  font-size: $font-sm;
+}

@@ -260,3 +260,20 @@ Why it matters:
 Risks / Notes:
 - Grid traversal uses visual column count from layout, which is responsive and deterministic for current card sizing.
 - Fullscreen/status-bar overlap remains intentionally deferred to later shell polish.
+
+---
+
+## Entry 15 - M4 Step 1 Viewer Realism Pass
+
+Summary:
+- Began M4 by replacing name-based placeholder viewer logic with metadata-driven rendering from VFS nodes.
+- Added first-class `project` file kind and project card viewer support (title, summary, stack, links).
+- Expanded seed filesystem with richer file metadata (`textContent`, media metadata, project cards) so viewers open meaningful content by default.
+
+Why it matters:
+- Makes the in-OS browsing experience feel like a real portfolio system rather than backend scaffolding.
+- Keeps rendering source-of-truth in VFS/service layers, aligned with current architecture rules.
+
+Risks / Notes:
+- Repository currently has no bundled binary media assets, so image/video viewers include graceful fallback surfaces when `assetSrc` is empty.
+- Full media polish and asset pipeline can be layered in later without changing viewer architecture.
