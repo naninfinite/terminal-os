@@ -187,3 +187,23 @@ Why it matters:
 Risks / Notes:
 - Panel mode currently shows a compact scaled live preview (not yet optimized beyond basic scaling).
 - Internal window content is intentionally placeholder-level for M1; FileMan v2 comes in later milestones.
+
+---
+
+## Entry 11 - M2 VFS Service Implemented
+
+Summary:
+- Implemented ME.OS VFS service with versioned persistence key `terminalOS.meos.v1.vfs`.
+- Added deterministic seed tree and reset behavior in service layer.
+- Added migration path from legacy Phase 3 key `terminal_os_fs_v1`.
+- Added React VFS provider and connected ME.OS home window to live root listing + reset action.
+- Added VFS unit tests with Vitest and switched project `test` script to run them.
+
+Why it matters:
+- Moves filesystem ownership out of UI and into a dedicated service boundary.
+- Establishes stable persistence/migration semantics before FileMan v2 UI work.
+- Provides repeatable test coverage for core stateful behavior.
+
+Risks / Notes:
+- Current ME.OS view only surfaces a root listing and reset action for visibility.
+- Full FileMan UX (path nav, rename/delete flows, richer views) remains M3 scope.

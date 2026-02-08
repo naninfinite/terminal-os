@@ -161,6 +161,20 @@
   font-size: $font-sm;
 }
 
+.dirList {
+  display: grid;
+  gap: 4px;
+  border: 1px solid rgba(0, 255, 102, 0.18);
+  padding: 6px;
+  background: rgba(0, 255, 102, 0.03);
+}
+
+.dirRow {
+  display: flex;
+  gap: 8px;
+  font-size: $font-xs;
+}
+
 .emptyState {
   position: absolute;
   inset: 0;
@@ -213,4 +227,3 @@
     padding: 6px;
   }
 }
-

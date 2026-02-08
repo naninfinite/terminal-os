@@ -4,6 +4,7 @@ Status: Draft for implementation
 Date: 2026-02-08
 Owner: Terminal-OS
 Related: `docs/overview.md`, `docs/phase-3.md`, `docs/ADR Index`, `docs/conversation-log.md`
+Milestone status: M1 complete, M2 complete, M3 pending
 
 ---
 
@@ -221,4 +222,3 @@ When implementation changes this spec:
 - Update this file in the same PR.
 - Add a short entry to `docs/conversation-log.md`.
 - If behavior-level change: reflect in `docs/phase-3.md` and `docs/ADR Index`.
-

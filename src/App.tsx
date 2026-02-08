@@ -18,6 +18,7 @@ import Scanlines from './components/Scanlines/Scanlines';
 import Cursor from './components/Cursor/Cursor';
 import { MeOsProvider } from './meos/shell/MeOsProvider';
 import { MeOsFullscreenLayer } from './meos/shell/MeOsFullscreenLayer';
+import { MeOsVfsProvider } from './meos/vfs/MeOsVfsProvider';
 
 const App: React.FC = () => {
   const [entered, setEntered] = useState(false);
@@ -100,12 +101,14 @@ const App: React.FC = () => {
         </div>
       ) : (
         <MeOsProvider>
-          <div className={shell.shell}>
-            <Scanlines />
-            <Desktop />
-            <StatusBar />
-            <MeOsFullscreenLayer />
-          </div>
+          <MeOsVfsProvider>
+            <div className={shell.shell}>
+              <Scanlines />
+              <Desktop />
+              <StatusBar />
+              <MeOsFullscreenLayer />
+            </div>
+          </MeOsVfsProvider>
         </MeOsProvider>
       )}
     </>

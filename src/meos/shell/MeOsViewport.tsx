@@ -9,6 +9,7 @@ import React, { useMemo } from 'react';
 import { useMeOs } from './MeOsProvider';
 import type { MeOsDisplayMode, MeOsWindow } from './types';
 import styles from './MeOsShell.module.scss';
+import { useMeOsVfs } from '../vfs/MeOsVfsProvider';
 
 type MeOsViewportProps = {
   mode: MeOsDisplayMode;
@@ -21,6 +22,7 @@ type MeOsWindowCardProps = {
 
 const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
   const { focusWindow, moveWindow, minimizeWindow, closeWindow, openApp } = useMeOs();
+  const { listChildren, snapshot, reset } = useMeOsVfs();
   const interactive = mode === 'fullscreen';
 
   /**
@@ -53,14 +55,26 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
 
   const renderContent = () => {
     if (win.appId === 'home') {
+      const rootEntries = listChildren(snapshot.rootId);
       return (
         <div className={styles.homeContent}>
           <p className={styles.copy}>ME.OS SHELL READY</p>
-          <p className={styles.copyDim}>M1 foundation: shared panel/fullscreen state + persisted windows.</p>
+          <p className={styles.copyDim}>M2 foundation: VFS service (versioned persistence + seeded tree + reset).</p>
+          <div className={styles.dirList}>
+            {rootEntries.map((entry) => (
+              <div key={entry.id} className={styles.dirRow}>
+                <span>{entry.type === 'folder' ? '[DIR]' : '[FILE]'}</span>
+                <span>{entry.name}</span>
+              </div>
+            ))}
+          </div>
           <div className={styles.launchGrid}>
             <button type="button" className={styles.launchBtn} onClick={() => openApp('about')}>OPEN ABOUT</button>
             <button type="button" className={styles.launchBtn} onClick={() => openApp('projects')}>OPEN PROJECTS</button>
             <button type="button" className={styles.launchBtn} onClick={() => openApp('media')}>OPEN MEDIA</button>
+            {interactive ? (
+              <button type="button" className={styles.launchBtn} onClick={reset}>RESET VFS</button>
+            ) : null}
           </div>
         </div>
       );
@@ -171,4 +185,3 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
     </section>
   );
 };
-
