@@ -210,7 +210,17 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (existing) {
         const nextZ = zRef.current + 1;
         zRef.current = nextZ;
-        return prev.map((w) => (w.id === template.id ? { ...w, zIndex: nextZ, minimized: false } : w));
+        return prev.map((w) => (
+          w.id === template.id
+            ? {
+              ...w,
+              zIndex: nextZ,
+              minimized: false,
+              x: appId === 'fileman' ? template.x : w.x,
+              y: appId === 'fileman' ? template.y : w.y,
+            }
+            : w
+        ));
       }
       const nextZ = zRef.current + 1;
       zRef.current = nextZ;
