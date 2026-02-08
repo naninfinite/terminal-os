@@ -1,7 +1,7 @@
 /**
  * `App` controls the top-level flow:
  * - Landing screen (`ENTER.EXE`) with an enter transition.
- * - Desktop shell with scanlines, panels, and status bar once entered.
+ * - Desktop shell with scanlines, panels, status bar, and ME.OS provider once entered.
  *
  * Design notes:
  * - `entered` gates which screen is mounted.
@@ -16,6 +16,8 @@ import StatusBar from './components/StatusBar/StatusBar';
 import shell from './components/AppShell/AppShell.module.scss';
 import Scanlines from './components/Scanlines/Scanlines';
 import Cursor from './components/Cursor/Cursor';
+import { MeOsProvider } from './meos/shell/MeOsProvider';
+import { MeOsFullscreenLayer } from './meos/shell/MeOsFullscreenLayer';
 
 const App: React.FC = () => {
   const [entered, setEntered] = useState(false);
@@ -97,16 +99,17 @@ const App: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className={shell.shell}>
-          <Cursor />
-          <Scanlines />
-          <Desktop />
-          <StatusBar />
-        </div>
+        <MeOsProvider>
+          <div className={shell.shell}>
+            <Scanlines />
+            <Desktop />
+            <StatusBar />
+            <MeOsFullscreenLayer />
+          </div>
+        </MeOsProvider>
       )}
     </>
   );
 };
 
 export default App;
-

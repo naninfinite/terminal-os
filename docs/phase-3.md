@@ -238,3 +238,4 @@ Notes
 	•	This update reflects product-direction decisions and should guide implementation order.
 	•	Conversation source: `docs/conversation-log.md`.
 	•	Execution spec: `docs/fileman-v2-build-spec.md`.
+	•	M1 status: implemented (shared ME.OS shell state + panel/fullscreen mode + persisted shell windows).

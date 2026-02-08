@@ -35,6 +35,8 @@ Assets:
 - Desktop scope: core panels/system actions.
 - `ME.OS` scope: portfolio/file manager/viewer actions.
 - Other scopes (for example `THIRD`): domain-specific actions.
+- Implementation status:
+- M1 shell foundation is now implemented (shared `ME.OS` state, panel preview, fullscreen expansion, persisted shell windows).
 
 Related docs:
 - `docs/phase-3.md`

@@ -168,3 +168,22 @@ Why it matters:
 
 Risks / Notes:
 - Spec should stay authoritative; if implementation changes, update docs in the same PR.
+
+---
+
+## Entry 10 - M1 Shell Foundation Implemented
+
+Summary:
+- Implemented the first ME.OS build milestone from `docs/fileman-v2-build-spec.md`.
+- Added shared ME.OS provider state with persisted internal windows (`terminalOS.meos.v1.shell`).
+- Added panel-mode ME.OS viewport in `ME.EXE` and fullscreen ME.OS overlay mode driven by the same state.
+- Added basic internal window manager behavior: open/focus/move/minimize/close plus default Home bootstrap.
+- Wired status bar menu button to open ME.OS fullscreen.
+
+Why it matters:
+- Confirms the “same running ME.OS state in panel + fullscreen” direction is now real in code.
+- Establishes the shell/service boundary needed before FileMan v2 and viewer apps.
+
+Risks / Notes:
+- Panel mode currently shows a compact scaled live preview (not yet optimized beyond basic scaling).
+- Internal window content is intentionally placeholder-level for M1; FileMan v2 comes in later milestones.

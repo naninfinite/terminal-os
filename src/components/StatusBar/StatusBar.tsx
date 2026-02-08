@@ -4,8 +4,10 @@
  */
 import React, { useEffect, useState } from 'react';
 import styles from './StatusBar.module.scss';
+import { useMeOs } from '../../meos/shell/MeOsProvider';
 
 const StatusBar: React.FC = () => {
+  const { openFullscreen } = useMeOs();
   const [now, setNow] = useState<Date>(() => new Date());
 
   // Keep the clock fresh while desktop shell is mounted.
@@ -25,8 +27,8 @@ const StatusBar: React.FC = () => {
   return (
     <div className={styles.statusBar} role="contentinfo" aria-label="System status bar">
       <div className={styles.left}>
-        {/* Placeholder button for future scope-aware Start menu. */}
-        <button type="button" className={styles.btn} aria-label="Open menu">[ MENU ]</button>
+        {/* M1 wiring: menu button expands the shared ME.OS shell. */}
+        <button type="button" className={styles.btn} onClick={openFullscreen} aria-label="Open ME.OS menu">[ MENU ]</button>
         <span>SYS: READY</span>
       </div>
       <div className={styles.right} aria-live="polite" aria-atomic="true">
@@ -37,5 +39,3 @@ const StatusBar: React.FC = () => {
 };
 
 export default StatusBar;
-
-

@@ -15,7 +15,7 @@ const Desktop: React.FC = () => {
   return (
     <div className={styles.desktop} role="main">
       {/* Profile / portfolio entry panel. */}
-      <Panel title="ME.EXE"><ME /></Panel>
+      <Panel title="ME.EXE" stretchBody><ME /></Panel>
       {/* Small persisted input panel. */}
       <Panel title="YOU.EXE"><YOU /></Panel>
       {/* Canvas app needs a stretching body so WebGL can fill available height. */}
@@ -27,4 +27,3 @@ const Desktop: React.FC = () => {
 };
 
 export default Desktop;
-
