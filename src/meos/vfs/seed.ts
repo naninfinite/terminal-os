@@ -22,7 +22,7 @@ const seedNodes: VfsNode[] = [
       'Welcome to ME.OS.',
       '',
       'This environment is the portfolio layer for Terminal-OS.',
-      'Use FILEMAN.EXE to browse folders and open files.',
+      'Use FILE.EXE to browse folders and open files.',
       '',
       'Current milestone:',
       '- FileMan list/grid navigation',

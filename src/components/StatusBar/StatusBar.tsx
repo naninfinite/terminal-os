@@ -82,7 +82,7 @@ const StatusBar: React.FC = () => {
         openAppForScope('home');
         break;
       case 'open_fileman':
-        openAppForScope('fileman');
+        openAppForScope('file');
         break;
       case 'open_projects':
         openAppForScope('projects');

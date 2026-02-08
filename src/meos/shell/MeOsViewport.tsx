@@ -61,7 +61,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
       return (
         <div className={styles.homeContent}>
           <p className={styles.copy}>ME.EXE SHELL READY</p>
-          <p className={styles.copyDim}>M3 foundation: FileMan v2 shell app and viewer window routing.</p>
+          <p className={styles.copyDim}>M3 foundation: File app shell and viewer window routing.</p>
           <div className={styles.dirList}>
             {rootEntries.map((entry) => (
               <div key={entry.id} className={styles.dirRow}>
@@ -71,7 +71,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
             ))}
           </div>
           <div className={styles.launchGrid}>
-            <button type="button" className={styles.launchBtn} onClick={() => openApp('fileman')}>OPEN FILEMAN</button>
+            <button type="button" className={styles.launchBtn} onClick={() => openApp('file')}>OPEN FILE</button>
             <button type="button" className={styles.launchBtn} onClick={() => openApp('about')}>OPEN ABOUT</button>
             <button type="button" className={styles.launchBtn} onClick={() => openApp('projects')}>OPEN PROJECTS</button>
             <button type="button" className={styles.launchBtn} onClick={() => openApp('media')}>OPEN MEDIA</button>
@@ -83,7 +83,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
       );
     }
 
-    if (win.appId === 'fileman') {
+    if (win.appId === 'file') {
       return <FileManWindow />;
     }
 
@@ -100,7 +100,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
       return (
         <div className={styles.docContent}>
           <p className={styles.copy}>ABOUT.TXT</p>
-          <p className={styles.copyDim}>Terminal-OS portfolio shell. FileMan v2 and viewers will be layered on this shell.</p>
+          <p className={styles.copyDim}>Terminal-OS portfolio shell. File and viewers will be layered on this shell.</p>
         </div>
       );
     }
@@ -150,7 +150,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
           </div>
         ) : null}
       </div>
-      <div className={`${styles.windowBody} ${win.appId === 'fileman' ? styles.windowBodyNoScroll : ''}`.trim()}>
+      <div className={`${styles.windowBody} ${win.appId === 'file' ? styles.windowBodyNoScroll : ''}`.trim()}>
         {renderContent()}
       </div>
     </article>
@@ -184,7 +184,7 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
             <div className={styles.emptyState}>
               <p>DESKTOP READY</p>
               <div className={styles.launchGrid}>
-                <button type="button" className={styles.launchBtn} onClick={() => openApp('fileman')}>FILEMAN</button>
+                <button type="button" className={styles.launchBtn} onClick={() => openApp('file')}>FILE</button>
                 <button type="button" className={styles.launchBtn} onClick={() => openApp('about')}>ABOUT</button>
                 <button type="button" className={styles.launchBtn} onClick={() => openApp('projects')}>PROJECTS</button>
                 <button type="button" className={styles.launchBtn} onClick={() => openApp('media')}>MEDIA</button>

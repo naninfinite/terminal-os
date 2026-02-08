@@ -32,10 +32,10 @@ const WINDOW_TEMPLATES: Record<MeOsFixedAppId, MeOsWindowTemplate> = {
     width: 560,
     height: 360,
   },
-  fileman: {
+  file: {
     id: 'meos_fileman',
-    title: 'FILEMAN.EXE',
-    appId: 'fileman',
+    title: 'FILE.EXE',
+    appId: 'file',
     x: 36,
     y: 30,
     width: 700,
@@ -88,10 +88,11 @@ const asNumber = (value: unknown, fallback: number): number => (
 const sanitizeWindow = (raw: unknown): MeOsWindow | null => {
   if (!raw || typeof raw !== 'object') return null;
   const data = raw as Record<string, unknown>;
-  const appId = data.appId;
+  const rawAppId = data.appId;
+  const appId = rawAppId === 'fileman' ? 'file' : rawAppId;
   if (
     appId !== 'home'
-    && appId !== 'fileman'
+    && appId !== 'file'
     && appId !== 'about'
     && appId !== 'projects'
     && appId !== 'media'
@@ -209,8 +210,8 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ...w,
               zIndex: nextZ,
               minimized: false,
-              x: appId === 'fileman' ? template.x : w.x,
-              y: appId === 'fileman' ? template.y : w.y,
+              x: appId === 'file' ? template.x : w.x,
+              y: appId === 'file' ? template.y : w.y,
             }
             : w
         ));
