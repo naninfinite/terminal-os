@@ -344,3 +344,20 @@ Why it matters:
 Risks / Notes:
 - Runtime scope still resolves from `ME.OS` display mode until broader panel focus state is introduced.
 - Future subsystem scopes currently expose placeholder actions only.
+
+---
+
+## Entry 20 - M5 Step 3 Active Panel Scope Routing
+
+Summary:
+- Added active panel scope state to `MeOsProvider` (`you`, `third`, `connect`) with a setter exposed through shell context.
+- Wired desktop panel interaction events (`mouseenter`, focus-capture, mousedown) to update active scope from `Desktop`.
+- Updated menu scope resolution so fullscreen always forces `ME.OS`, while desktop mode now reflects the last active non-ME panel scope.
+
+Why it matters:
+- Moves Start menu behavior from a display-mode-only heuristic toward true panel-context awareness.
+- Establishes the state path needed for future subsystem-specific menu actions without rewriting status bar logic.
+
+Risks / Notes:
+- Scope activation currently follows interaction focus/hover patterns; a future pass may refine this with explicit “active window/panel” semantics.
+- `YOU`, `THIRD`, and `CONNECT` still use placeholder menu actions until subsystem feature work lands.

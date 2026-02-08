@@ -10,18 +10,21 @@ import YOU from '../YOU/YOU';
 import THIRD from '../THIRD/THIRD';
 import CONNECT from '../CONNECT/CONNECT';
 import styles from './Desktop.module.scss';
+import { useMeOs } from '../../meos/shell/MeOsProvider';
 
 const Desktop: React.FC = () => {
+  const { setActiveScope } = useMeOs();
+
   return (
     <div className={styles.desktop} role="main">
       {/* Profile / portfolio entry panel. */}
-      <Panel title="ME.EXE" stretchBody><ME /></Panel>
+      <Panel title="ME.EXE" stretchBody onActivate={() => setActiveScope(null)}><ME /></Panel>
       {/* Small persisted input panel. */}
-      <Panel title="YOU.EXE"><YOU /></Panel>
+      <Panel title="YOU.EXE" onActivate={() => setActiveScope('you')}><YOU /></Panel>
       {/* Canvas app needs a stretching body so WebGL can fill available height. */}
-      <Panel title="THIRD.EXE" stretchBody><THIRD /></Panel>
+      <Panel title="THIRD.EXE" stretchBody onActivate={() => setActiveScope('third')}><THIRD /></Panel>
       {/* ASCII banner / contact panel. */}
-      <Panel title="CONNECT.EXE"><CONNECT /></Panel>
+      <Panel title="CONNECT.EXE" onActivate={() => setActiveScope('connect')}><CONNECT /></Panel>
     </div>
   );
 };

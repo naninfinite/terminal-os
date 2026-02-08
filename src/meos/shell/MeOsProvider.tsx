@@ -151,6 +151,8 @@ const loadPersistedWindows = (): MeOsWindow[] => {
 type MeOsContextValue = {
   displayMode: MeOsDisplayMode;
   windows: MeOsWindow[];
+  activeScope: 'you' | 'third' | 'connect' | null;
+  setActiveScope: (scope: 'you' | 'third' | 'connect' | null) => void;
   openFullscreen: () => void;
   closeFullscreen: () => void;
   openApp: (appId: MeOsFixedAppId) => void;
@@ -167,6 +169,7 @@ const MeOsContext = createContext<MeOsContextValue | null>(null);
 export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [displayMode, setDisplayMode] = useState<MeOsDisplayMode>('panel');
   const [windows, setWindows] = useState<MeOsWindow[]>(() => loadPersistedWindows());
+  const [activeScope, setActiveScopeState] = useState<'you' | 'third' | 'connect' | null>(null);
   const zRef = useRef<number>(getMaxZ(windows));
 
   useEffect(() => {
@@ -177,7 +180,14 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, [windows]);
 
-  const openFullscreen = useCallback(() => setDisplayMode('fullscreen'), []);
+  const setActiveScope = useCallback((scope: 'you' | 'third' | 'connect' | null) => {
+    setActiveScopeState(scope);
+  }, []);
+
+  const openFullscreen = useCallback(() => {
+    setDisplayMode('fullscreen');
+    setActiveScopeState(null);
+  }, []);
   const closeFullscreen = useCallback(() => setDisplayMode('panel'), []);
 
   const bringToFront = useCallback((id: string) => {
@@ -287,6 +297,8 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value = useMemo<MeOsContextValue>(() => ({
     displayMode,
     windows,
+    activeScope,
+    setActiveScope,
     openFullscreen,
     closeFullscreen,
     openApp,
@@ -299,6 +311,7 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }), [
     closeFullscreen,
     closeWindow,
+    activeScope,
     displayMode,
     focusWindow,
     minimizeWindow,
@@ -307,6 +320,7 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     openViewer,
     openFullscreen,
     restoreWindow,
+    setActiveScope,
     windows,
   ]);
 

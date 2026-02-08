@@ -21,6 +21,8 @@ export type PanelProps = {
   hideHeader?: boolean;
   /** Optional extra class for the body wrapper. */
   bodyClassName?: string;
+  /** Optional hook for notifying parent when this panel becomes active/focused. */
+  onActivate?: () => void;
 };
 
 /**
@@ -37,11 +39,15 @@ const Panel: React.FC<PanelProps> = ({
   disableHover,
   hideHeader,
   bodyClassName,
+  onActivate,
 }) => (
   <section
     // Class composition keeps API surface small while still allowing overrides.
     className={`${styles.panel} ${className ?? ''} ${disableHover ? styles.noHover : ''}`.trim()}
     aria-label={title}
+    onMouseEnter={onActivate}
+    onFocusCapture={onActivate}
+    onMouseDown={onActivate}
   >
     <header className={`${styles.header} ${hideHeader ? styles.hiddenHeader : ''}`.trim()}>
       [{title}]
@@ -55,5 +61,4 @@ const Panel: React.FC<PanelProps> = ({
 );
 
 export default Panel;
-
 

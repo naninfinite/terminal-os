@@ -10,6 +10,7 @@ import { MENU_SCOPE_CONFIG, resolveMenuScope, type MenuCommandId } from '../../m
 const StatusBar: React.FC = () => {
   const {
     displayMode,
+    activeScope,
     windows,
     openFullscreen,
     closeFullscreen,
@@ -44,7 +45,7 @@ const StatusBar: React.FC = () => {
     hour12: false,
   }).format(now);
 
-  const scope = resolveMenuScope({ displayMode });
+  const scope = resolveMenuScope({ displayMode, activeScope: activeScope ?? undefined });
   const scopeConfig = MENU_SCOPE_CONFIG[scope];
   const orderedWindows = useMemo(
     () => [...windows].sort((a, b) => a.zIndex - b.zIndex),

@@ -58,6 +58,7 @@ export const resolveMenuScope = (args: {
   displayMode: MeOsDisplayMode;
   activeScope?: Exclude<MenuScopeId, 'desktop' | 'meos'>;
 }): MenuScopeId => {
+  if (args.displayMode === 'fullscreen') return 'meos';
   if (args.activeScope) return args.activeScope;
-  return args.displayMode === 'fullscreen' ? 'meos' : 'desktop';
+  return 'desktop';
 };
