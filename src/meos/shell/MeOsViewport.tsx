@@ -194,9 +194,6 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
       </div>
 
       <footer className={styles.chromeFooter}>
-        <button type="button" className={styles.startBtn} onClick={() => openApp('home')} aria-label="Open ME.OS Home">
-          [ START ]
-        </button>
         <span className={styles.footerInfo}>{activeWindows.length} WINDOW(S)</span>
       </footer>
     </section>
