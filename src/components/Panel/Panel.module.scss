@@ -19,6 +19,8 @@
   justify-content: center;
   min-height: 0;
   min-width: 0;
+  border: 1px solid transparent;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
 }
 
 .bodyStretch {
@@ -39,8 +41,18 @@
   display: flex;
   flex-direction: column;
   cursor: pointer;
+  position: relative;
   transition: border-color 180ms ease, box-shadow 180ms ease;
   box-sizing: border-box;
+}
+
+.panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid transparent;
+  pointer-events: none;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
 }
 
 .hiddenHeader {
@@ -50,7 +62,20 @@
 
 .panel:hover,
 .panel:focus-visible {
-  /* Match ME hover treatment: brighter frame + subtle inset glow. */
+  /* Match ME behavior: hide outer frame and show inner active frame. */
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.panel:hover::after,
+.panel:focus-visible::after {
+  border-color: rgba(0, 255, 102, 0.5);
+  box-shadow: 0 0 0 1px rgba(0, 255, 102, 0.2) inset;
+}
+
+.panel:hover .body,
+.panel:focus-visible .body {
+  /* Mirror ME inner focus square inside content area. */
   border-color: rgba(0, 255, 102, 0.5);
   box-shadow: 0 0 0 1px rgba(0, 255, 102, 0.2) inset;
 }
@@ -60,6 +85,18 @@
   &:hover,
   &:focus-visible {
     border-color: inherit !important;
+    box-shadow: none !important;
+  }
+
+  &:hover::after,
+  &:focus-visible::after {
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  &:hover .body,
+  &:focus-visible .body {
+    border-color: transparent !important;
     box-shadow: none !important;
   }
 }
@@ -73,4 +110,3 @@
   font-size: $font-sm;
   letter-spacing: $letter-spacing;
 }
-
