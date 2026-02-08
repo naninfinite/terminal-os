@@ -4,11 +4,27 @@
  */
 import React from 'react';
 import { MeOsViewport } from '../../meos/shell/MeOsViewport';
+import { useMeOs } from '../../meos/shell/MeOsProvider';
 import styles from './ME.module.scss';
 
 const ME: React.FC = () => {
+  const { openFullscreen } = useMeOs();
+  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openFullscreen();
+    }
+  };
+
   return (
-    <div className={styles.root}>
+    <div 
+      className={styles.root}
+      role="button"
+      tabIndex={0}
+      aria-label="Open ME.os fullscreen"
+      onClick={openFullscreen}
+      onKeyDown={onKeyDown}
+      >
       <MeOsViewport mode="panel" />
     </div>
   );
