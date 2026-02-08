@@ -5,9 +5,9 @@
  * - `panel`: compact live preview for `ME.EXE` panel.
  * - `fullscreen`: full interactive shell view.
  */
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useMeOs } from './MeOsProvider';
-import type { MeOsDisplayMode, MeOsWindow } from './types';
+import type { MeOsDisplayMode, MeOsFixedAppId, MeOsWindow } from './types';
 import styles from './MeOsShell.module.scss';
 import { useMeOsVfs } from '../vfs/MeOsVfsProvider';
 import FileManWindow from '../apps/fileman/FileManWindow';
@@ -158,7 +158,15 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
 };
 
 export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
-  const { windows, closeFullscreen, openApp } = useMeOs();
+  const { windows, closeFullscreen } = useMeOs();
+  const [selectedLauncher, setSelectedLauncher] = useState<MeOsFixedAppId | null>(null);
+  const interactive = mode === 'fullscreen';
+  const launchers: Array<{ id: MeOsFixedAppId; label: string }> = [
+    { id: 'file', label: 'FILE' },
+    { id: 'about', label: 'ABOUT' },
+    { id: 'projects', label: 'PROJECTS' },
+    { id: 'media', label: 'MEDIA' },
+  ];
   const activeWindows = useMemo(
     () => windows.filter((w) => !w.minimized).sort((a, b) => a.zIndex - b.zIndex),
     [windows]
@@ -184,10 +192,20 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
             <div className={styles.emptyState}>
               <p>DESKTOP READY</p>
               <div className={styles.launchGrid}>
-                <button type="button" className={styles.launchBtn} onClick={() => openApp('file')}>FILE</button>
-                <button type="button" className={styles.launchBtn} onClick={() => openApp('about')}>ABOUT</button>
-                <button type="button" className={styles.launchBtn} onClick={() => openApp('projects')}>PROJECTS</button>
-                <button type="button" className={styles.launchBtn} onClick={() => openApp('media')}>MEDIA</button>
+                {launchers.map((launcher) => (
+                  <button
+                    key={launcher.id}
+                    type="button"
+                    className={`${styles.launchBtn} ${selectedLauncher === launcher.id ? styles.launchBtnSelected : ''}`.trim()}
+                    onClick={() => {
+                      if (!interactive) return;
+                      setSelectedLauncher(launcher.id);
+                    }}
+                    aria-pressed={selectedLauncher === launcher.id}
+                  >
+                    {launcher.label}
+                  </button>
+                ))}
               </div>
             </div>
           ) : (

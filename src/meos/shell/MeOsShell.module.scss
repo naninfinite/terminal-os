@@ -164,6 +164,15 @@
   text-align: center;
 }
 
+.launchBtnSelected {
+  background: rgba(0, 255, 102, 0.12);
+  box-shadow: 0 0 0 1px rgba(0, 255, 102, 0.5) inset;
+}
+
+.panelMode .launchBtn {
+  cursor: default;
+}
+
 .list {
   margin: 0;
   padding-left: 18px;
