@@ -12,8 +12,8 @@
 }
 
 .panelMode {
-  /* Panel mode scales the stage to show a compact live snapshot. */
-  --meos-scale: 0.38;
+  /* Panel mode keeps native sizing so desktop preview matches fullscreen scale. */
+  --meos-scale: 1;
   grid-template-rows: 1fr;
 }
 
@@ -156,6 +156,12 @@
   background: $bg-black;
   color: $phosphor-green;
   padding: 4px 8px;
+  min-height: 30px;
+  min-width: 120px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .list {
@@ -223,10 +229,6 @@
 }
 
 @media (max-width: 720px) {
-  .panelMode {
-    --meos-scale: 0.33;
-  }
-
   .fullscreenLayer {
     inset: 6px 6px calc(6px + $status-height + 6px) 6px;
     padding: 6px;
