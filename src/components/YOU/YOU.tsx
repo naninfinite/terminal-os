@@ -55,29 +55,31 @@ const YOU: React.FC = () => {
 
   return (
     <div className={styles.root}>
-      <input
-        ref={inputRef}
-        className={styles.input}
-        type="text"
-        value={text}
-        placeholder="TYPE HERE..."
-        // Any new input exits "saved" state until persisted again.
-        onChange={(e) => { setText(e.target.value); setSaved(false); }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            persist();
-          }
-        }}
-        aria-label="Visitor input"
-      />
-      <button
-        type="button"
-        className={`${styles.save} ${saved ? styles.saved : ''}`}
-        onClick={persist}
-        aria-label="Save input"
-      >
-        {saved ? 'SAVED' : 'SAVE'}
-      </button>
+      <div className={styles.content}>
+        <input
+          ref={inputRef}
+          className={styles.input}
+          type="text"
+          value={text}
+          placeholder="TYPE HERE..."
+          // Any new input exits "saved" state until persisted again.
+          onChange={(e) => { setText(e.target.value); setSaved(false); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              persist();
+            }
+          }}
+          aria-label="Visitor input"
+        />
+        <button
+          type="button"
+          className={`${styles.save} ${saved ? styles.saved : ''}`}
+          onClick={persist}
+          aria-label="Save input"
+        >
+          {saved ? 'SAVED' : 'SAVE'}
+        </button>
+      </div>
     </div>
   );
 };

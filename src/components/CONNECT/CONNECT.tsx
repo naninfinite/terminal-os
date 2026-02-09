@@ -42,9 +42,12 @@ const CONNECT: React.FC = () => {
     return () => window.removeEventListener('terminalos:connect:copy-banner', onCopyBanner as EventListener);
   }, []);
 
-  return <pre className={styles.root}>{ASCII}</pre>;
+  return (
+    <div className={styles.root}>
+      <pre className={styles.banner}>{ASCII}</pre>
+    </div>
+  );
 };
 
 export default CONNECT;
-
 
