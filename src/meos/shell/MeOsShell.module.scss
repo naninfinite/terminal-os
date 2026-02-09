@@ -161,6 +161,14 @@
   align-items: center;
   justify-content: center;
   text-align: center;
+  transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+}
+
+.fullscreenMode .launchBtn:hover,
+.fullscreenMode .launchBtn:focus-visible {
+  border-color: rgba(0, 255, 102, 0.55);
+  background: rgba(0, 255, 102, 0.08);
+  box-shadow: 0 0 0 1px rgba(0, 255, 102, 0.2) inset;
 }
 
 .launchBtnSelected {
