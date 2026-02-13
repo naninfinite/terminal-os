@@ -133,8 +133,16 @@
   height: 12px;
   border-right: 1px solid rgba(0, 255, 102, 0.8);
   border-bottom: 1px solid rgba(0, 255, 102, 0.8);
-  opacity: 0.85;
+  opacity: 0;
   cursor: nwse-resize;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.window:hover .windowResizeHandle,
+.window:focus-within .windowResizeHandle {
+  opacity: 0.85;
+  pointer-events: auto;
 }
 
 .homeContent {
