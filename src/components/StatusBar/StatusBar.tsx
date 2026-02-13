@@ -78,9 +78,6 @@ const StatusBar: React.FC = () => {
       case 'exit_meos':
         closeFullscreen();
         break;
-      case 'open_home':
-        openAppForScope('home');
-        break;
       case 'open_fileman':
         openAppForScope('file');
         break;

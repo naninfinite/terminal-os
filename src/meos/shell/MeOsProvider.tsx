@@ -29,15 +29,6 @@ const MIN_VISIBLE_HEADER_WIDTH = 200;
 const MIN_VISIBLE_HEADER_HEIGHT = 56;
 
 const WINDOW_TEMPLATES: Record<MeOsFixedAppId, MeOsWindowTemplate> = {
-  home: {
-    id: 'meos_home',
-    title: 'HOME.EXE',
-    appId: 'home',
-    x: 36,
-    y: 30,
-    width: 560,
-    height: 360,
-  },
   file: {
     id: 'meos_fileman',
     title: 'FILE.EXE',
@@ -97,8 +88,7 @@ const sanitizeWindow = (raw: unknown): MeOsWindow | null => {
   const rawAppId = data.appId;
   const appId = rawAppId === 'fileman' ? 'file' : rawAppId;
   if (
-    appId !== 'home'
-    && appId !== 'file'
+    appId !== 'file'
     && appId !== 'about'
     && appId !== 'projects'
     && appId !== 'media'
