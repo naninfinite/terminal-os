@@ -5,7 +5,7 @@ export type MenuScopeId = 'desktop' | 'meos' | 'you' | 'third' | 'connect';
 export type MenuCommandId =
   | 'open_meos'
   | 'exit_meos'
-  | 'open_fileman'
+  | 'open_file'
   | 'open_projects'
   | 'open_media'
   | 'focus_you_panel'
@@ -32,13 +32,13 @@ export const MENU_SCOPE_CONFIG: Record<MenuScopeId, MenuScopeConfig> = {
     title: 'DESKTOP',
     items: [
       { id: 'open_meos', label: 'OPEN ME.EXE' },
-      { id: 'open_fileman', label: 'OPEN FILE' },
+      { id: 'open_file', label: 'OPEN FILE' },
     ],
   },
   meos: {
     title: 'ME.EXE',
     items: [
-      { id: 'open_fileman', label: 'OPEN FILE' },
+      { id: 'open_file', label: 'OPEN FILE' },
       { id: 'open_projects', label: 'OPEN PROJECTS' },
       { id: 'open_media', label: 'OPEN MEDIA' },
       { id: 'exit_meos', label: 'EXIT ME.EXE' },

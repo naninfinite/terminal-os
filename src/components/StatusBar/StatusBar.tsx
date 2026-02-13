@@ -78,7 +78,7 @@ const StatusBar: React.FC = () => {
       case 'exit_meos':
         closeFullscreen();
         break;
-      case 'open_fileman':
+      case 'open_file':
         openAppForScope('file');
         break;
       case 'open_projects':
