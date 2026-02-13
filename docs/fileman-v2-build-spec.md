@@ -4,7 +4,7 @@ Status: Draft for implementation
 Date: 2026-02-08
 Owner: Terminal-OS
 Related: `docs/overview.md`, `docs/phase-3.md`, `docs/ADR Index`, `docs/conversation-log.md`
-Milestone status: M1 complete, M2 complete, M3 complete, M4 pending
+Milestone status: M1 complete, M2 complete, M3 complete, M4 complete, M5 in progress (iterative polish)
 
 ---
 
@@ -145,6 +145,22 @@ Menu contents change by active scope:
 Rule:
 - Shared menu component + scope configs.
 - Avoid bespoke menu logic per app.
+
+Current lock (2026-02 incremental pass):
+- `HOME.EXE` launch command removed from menu scope configs.
+- File app command id normalized from `open_fileman` to `open_file`.
+- Active ME menu app set is `FILE`, `PROJECTS`, `MEDIA` plus `EXIT ME.EXE`.
+
+---
+
+## 8.1 Window Spawn Baseline
+
+ME shell spawn behavior now follows a deterministic baseline:
+- New windows open with a fixed cascade step.
+- Spawn positions are clamped so headers remain visible/reachable on-screen.
+- Viewer windows and fixed-app windows use the same cascade/clamp rules.
+
+This baseline is intended to stay stable while future resizing/video-player fixes are addressed incrementally.
 
 ---
 

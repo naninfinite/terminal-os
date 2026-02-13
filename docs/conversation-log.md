@@ -432,3 +432,21 @@ Why it matters:
 Risks / Notes:
 - Progress may be slower by design, but review quality and direction alignment should improve.
 - Reference doc: `docs/me-exe-evolution-plan.md`.
+
+---
+
+## Entry 25 - Shell Cleanup + Spawn Baseline Lock
+
+Summary:
+- Completed incremental shell cleanup by removing legacy `HOME.EXE` app/menu wiring from fixed app types, provider templates, viewport branch, and status-bar menu routing.
+- Normalized menu command naming from `open_fileman` to `open_file` to match current `FILE.EXE` terminology.
+- Added deterministic window spawn baseline: cascaded open positions with viewport clamping so window headers remain visible/reachable.
+
+Why it matters:
+- Reduces stale code paths that no longer match the current ME.EXE UX model.
+- Improves naming clarity for future scope/menu work and lowers accidental regressions.
+- Makes window launches feel more predictable across display sizes without changing visual design.
+
+Risks / Notes:
+- Existing persisted snapshots may still contain old window coordinates until reopened/saved under new behavior.
+- This pass intentionally did not address window-resize or video-player issues yet; both remain planned follow-up items.
