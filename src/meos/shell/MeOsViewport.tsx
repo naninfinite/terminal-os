@@ -21,6 +21,8 @@ type MeOsWindowCardProps = {
   mode: MeOsDisplayMode;
 };
 
+type ResizeCorner = 'nw' | 'ne' | 'sw' | 'se';
+
 const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
   const { focusWindow, moveWindow, resizeWindow, minimizeWindow, closeWindow } = useMeOs();
   const interactive = mode === 'fullscreen';
@@ -53,20 +55,50 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
     window.addEventListener('mouseup', onUp, { once: true });
   };
 
-  const onResizeStart = (e: React.MouseEvent<HTMLDivElement>) => {
+  const onResizeStart = (corner: ResizeCorner) => (e: React.MouseEvent<HTMLDivElement>) => {
     if (!interactive) return;
     e.preventDefault();
     e.stopPropagation();
     focusWindow(win.id);
     const startX = e.clientX;
     const startY = e.clientY;
+    const startWinX = win.x;
+    const startWinY = win.y;
     const startWidth = win.width;
     const startHeight = win.height;
 
     const onMove = (ev: MouseEvent) => {
       const dw = ev.clientX - startX;
       const dh = ev.clientY - startY;
-      resizeWindow(win.id, startWidth + dw, startHeight + dh);
+      let nextX = startWinX;
+      let nextY = startWinY;
+      let nextWidth = startWidth;
+      let nextHeight = startHeight;
+
+      if (corner === 'se') {
+        nextWidth = startWidth + dw;
+        nextHeight = startHeight + dh;
+      } else if (corner === 'ne') {
+        nextWidth = startWidth + dw;
+        nextHeight = startHeight - dh;
+        nextY = startWinY + dh;
+      } else if (corner === 'sw') {
+        nextWidth = startWidth - dw;
+        nextHeight = startHeight + dh;
+        nextX = startWinX + dw;
+      } else {
+        nextWidth = startWidth - dw;
+        nextHeight = startHeight - dh;
+        nextX = startWinX + dw;
+        nextY = startWinY + dh;
+      }
+
+      resizeWindow(win.id, {
+        x: nextX,
+        y: nextY,
+        width: nextWidth,
+        height: nextHeight,
+      });
     };
 
     const onUp = () => {
@@ -149,11 +181,28 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
         {renderContent()}
       </div>
       {interactive ? (
-        <div
-          className={styles.windowResizeHandle}
-          onMouseDown={onResizeStart}
-          aria-hidden="true"
-        />
+        <>
+          <div
+            className={`${styles.windowResizeHandle} ${styles.windowResizeHandleNw}`.trim()}
+            onMouseDown={onResizeStart('nw')}
+            aria-hidden="true"
+          />
+          <div
+            className={`${styles.windowResizeHandle} ${styles.windowResizeHandleNe}`.trim()}
+            onMouseDown={onResizeStart('ne')}
+            aria-hidden="true"
+          />
+          <div
+            className={`${styles.windowResizeHandle} ${styles.windowResizeHandleSw}`.trim()}
+            onMouseDown={onResizeStart('sw')}
+            aria-hidden="true"
+          />
+          <div
+            className={`${styles.windowResizeHandle} ${styles.windowResizeHandleSe}`.trim()}
+            onMouseDown={onResizeStart('se')}
+            aria-hidden="true"
+          />
+        </>
       ) : null}
     </article>
   );

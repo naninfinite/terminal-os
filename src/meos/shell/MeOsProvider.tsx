@@ -200,7 +200,7 @@ type MeOsContextValue = {
   openViewer: (args: { nodeId: string; title: string; kind: MeOsViewerKind }) => void;
   focusWindow: (id: string) => void;
   moveWindow: (id: string, x: number, y: number) => void;
-  resizeWindow: (id: string, width: number, height: number) => void;
+  resizeWindow: (id: string, args: { width: number; height: number; x?: number; y?: number }) => void;
   minimizeWindow: (id: string) => void;
   restoreWindow: (id: string) => void;
   closeWindow: (id: string) => void;
@@ -350,9 +350,20 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     )));
   }, []);
 
-  const resizeWindow = useCallback((id: string, width: number, height: number) => {
+  const resizeWindow = useCallback((id: string, args: { width: number; height: number; x?: number; y?: number }) => {
     setWindows((prev) => prev.map((w) => (
-      w.id === id ? { ...w, ...normalizeWindowRect({ ...w, width, height }) } : w
+      w.id === id
+        ? {
+          ...w,
+          ...normalizeWindowRect({
+            ...w,
+            width: args.width,
+            height: args.height,
+            x: args.x ?? w.x,
+            y: args.y ?? w.y,
+          }),
+        }
+        : w
     )));
   }, []);
 

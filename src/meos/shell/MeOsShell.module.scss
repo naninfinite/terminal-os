@@ -127,16 +127,43 @@
 
 .windowResizeHandle {
   position: absolute;
-  right: 2px;
-  bottom: 2px;
   width: 12px;
   height: 12px;
-  border-right: 1px solid rgba(0, 255, 102, 0.8);
-  border-bottom: 1px solid rgba(0, 255, 102, 0.8);
   opacity: 0;
-  cursor: nwse-resize;
   pointer-events: none;
   transition: opacity 120ms ease;
+}
+
+.windowResizeHandleSe {
+  right: 2px;
+  bottom: 2px;
+  border-right: 1px solid rgba(0, 255, 102, 0.8);
+  border-bottom: 1px solid rgba(0, 255, 102, 0.8);
+  cursor: nwse-resize;
+}
+
+.windowResizeHandleNw {
+  left: 2px;
+  top: 2px;
+  border-left: 1px solid rgba(0, 255, 102, 0.8);
+  border-top: 1px solid rgba(0, 255, 102, 0.8);
+  cursor: nwse-resize;
+}
+
+.windowResizeHandleNe {
+  right: 2px;
+  top: 2px;
+  border-right: 1px solid rgba(0, 255, 102, 0.8);
+  border-top: 1px solid rgba(0, 255, 102, 0.8);
+  cursor: nesw-resize;
+}
+
+.windowResizeHandleSw {
+  left: 2px;
+  bottom: 2px;
+  border-left: 1px solid rgba(0, 255, 102, 0.8);
+  border-bottom: 1px solid rgba(0, 255, 102, 0.8);
+  cursor: nesw-resize;
 }
 
 .window:hover .windowResizeHandle,
