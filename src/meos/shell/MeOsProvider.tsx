@@ -25,8 +25,10 @@ const STATUS_BAR_HEIGHT = 28;
 const SPAWN_MARGIN = 12;
 const SPAWN_CASCADE_STEP = 18;
 const SPAWN_CASCADE_MAX = 126;
-const MIN_VISIBLE_HEADER_WIDTH = 200;
-const MIN_VISIBLE_HEADER_HEIGHT = 56;
+const MIN_WINDOW_WIDTH = 260;
+const MIN_WINDOW_HEIGHT = 180;
+const VIEWPORT_GUTTER_X = 48;
+const VIEWPORT_GUTTER_Y = 96;
 
 const WINDOW_TEMPLATES: Record<MeOsFixedAppId, MeOsWindowTemplate> = {
   file: {
@@ -113,8 +115,8 @@ const sanitizeWindow = (raw: unknown): MeOsWindow | null => {
     appId,
     x: asNumber(data.x, 24),
     y: asNumber(data.y, 24),
-    width: Math.max(260, asNumber(data.width, 420)),
-    height: Math.max(180, asNumber(data.height, 240)),
+    width: Math.max(MIN_WINDOW_WIDTH, asNumber(data.width, 420)),
+    height: Math.max(MIN_WINDOW_HEIGHT, asNumber(data.height, 240)),
     zIndex: Math.max(1, asNumber(data.zIndex, 1)),
     minimized: Boolean(data.minimized),
     nodeId,
@@ -126,6 +128,52 @@ const sortByZ = (windows: MeOsWindow[]): MeOsWindow[] => [...windows].sort((a, b
 
 const getMaxZ = (windows: MeOsWindow[]): number => windows.reduce((max, w) => Math.max(max, w.zIndex), 1);
 
+const getSpawnViewport = (): { width: number; height: number } => {
+  if (typeof window === 'undefined') {
+    return { width: 1080, height: 620 };
+  }
+  return {
+    width: Math.max(320, window.innerWidth - VIEWPORT_GUTTER_X),
+    height: Math.max(240, window.innerHeight - STATUS_BAR_HEIGHT - VIEWPORT_GUTTER_Y),
+  };
+};
+
+const clampWindowSize = (width: number, height: number): { width: number; height: number } => {
+  const viewport = getSpawnViewport();
+  const maxWidth = Math.max(MIN_WINDOW_WIDTH, viewport.width - SPAWN_MARGIN * 2);
+  const maxHeight = Math.max(MIN_WINDOW_HEIGHT, viewport.height - SPAWN_MARGIN * 2);
+  return {
+    width: Math.min(Math.max(MIN_WINDOW_WIDTH, width), maxWidth),
+    height: Math.min(Math.max(MIN_WINDOW_HEIGHT, height), maxHeight),
+  };
+};
+
+const clampWindowPosition = (x: number, y: number, width: number, height: number): { x: number; y: number } => {
+  const viewport = getSpawnViewport();
+  const maxX = Math.max(SPAWN_MARGIN, viewport.width - width - SPAWN_MARGIN);
+  const maxY = Math.max(SPAWN_MARGIN, viewport.height - height - SPAWN_MARGIN);
+  return {
+    x: Math.min(Math.max(SPAWN_MARGIN, x), maxX),
+    y: Math.min(Math.max(SPAWN_MARGIN, y), maxY),
+  };
+};
+
+const normalizeWindowRect = (args: {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}): { x: number; y: number; width: number; height: number } => {
+  const size = clampWindowSize(args.width, args.height);
+  const pos = clampWindowPosition(args.x, args.y, size.width, size.height);
+  return {
+    x: pos.x,
+    y: pos.y,
+    width: size.width,
+    height: size.height,
+  };
+};
+
 const loadPersistedWindows = (): MeOsWindow[] => {
   const snapshot = getItemSafe<MeOsPersistedSnapshot | null>(STORAGE_KEY, null);
   if (!snapshot || snapshot.version !== STORAGE_VERSION || !Array.isArray(snapshot.windows)) {
@@ -133,29 +181,10 @@ const loadPersistedWindows = (): MeOsWindow[] => {
   }
   const parsed = snapshot.windows
     .map(sanitizeWindow)
-    .filter((w): w is MeOsWindow => w != null);
+    .filter((w): w is MeOsWindow => w != null)
+    .map((w) => ({ ...w, ...normalizeWindowRect(w) }));
   if (parsed.length === 0) return createDefaultWindows();
   return sortByZ(parsed);
-};
-
-const getSpawnViewport = (): { width: number; height: number } => {
-  if (typeof window === 'undefined') {
-    return { width: 1280, height: 720 };
-  }
-  return {
-    width: Math.max(320, window.innerWidth),
-    height: Math.max(240, window.innerHeight - STATUS_BAR_HEIGHT),
-  };
-};
-
-const clampSpawnPosition = (x: number, y: number): { x: number; y: number } => {
-  const viewport = getSpawnViewport();
-  const maxX = Math.max(SPAWN_MARGIN, viewport.width - MIN_VISIBLE_HEADER_WIDTH);
-  const maxY = Math.max(SPAWN_MARGIN, viewport.height - MIN_VISIBLE_HEADER_HEIGHT);
-  return {
-    x: Math.min(Math.max(SPAWN_MARGIN, x), maxX),
-    y: Math.min(Math.max(SPAWN_MARGIN, y), maxY),
-  };
 };
 
 const getCascadeOffset = (windows: MeOsWindow[]): number => Math.min(SPAWN_CASCADE_MAX, windows.length * SPAWN_CASCADE_STEP);
@@ -171,6 +200,7 @@ type MeOsContextValue = {
   openViewer: (args: { nodeId: string; title: string; kind: MeOsViewerKind }) => void;
   focusWindow: (id: string) => void;
   moveWindow: (id: string, x: number, y: number) => void;
+  resizeWindow: (id: string, width: number, height: number) => void;
   minimizeWindow: (id: string) => void;
   restoreWindow: (id: string) => void;
   closeWindow: (id: string) => void;
@@ -191,6 +221,14 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
       windows,
     });
   }, [windows]);
+
+  useEffect(() => {
+    const onResize = () => {
+      setWindows((prev) => prev.map((w) => ({ ...w, ...normalizeWindowRect(w) })));
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const setActiveScope = useCallback((scope: 'you' | 'third' | 'connect' | null) => {
     setActiveScopeState(scope);
@@ -237,11 +275,18 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const nextZ = zRef.current + 1;
       zRef.current = nextZ;
       const offset = getCascadeOffset(prev);
-      const spawn = clampSpawnPosition(template.x + offset, template.y + offset);
+      const nextRect = normalizeWindowRect({
+        x: template.x + offset,
+        y: template.y + offset,
+        width: template.width,
+        height: template.height,
+      });
       const next: MeOsWindow = {
         ...template,
-        x: spawn.x,
-        y: spawn.y,
+        x: nextRect.x,
+        y: nextRect.y,
+        width: nextRect.width,
+        height: nextRect.height,
         zIndex: nextZ,
         minimized: false,
       };
@@ -276,15 +321,20 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const nextZ = zRef.current + 1;
       zRef.current = nextZ;
       const offset = getCascadeOffset(prev);
-      const spawn = clampSpawnPosition(120 + offset, 80 + offset);
+      const nextRect = normalizeWindowRect({
+        x: 120 + offset,
+        y: 80 + offset,
+        width: 560,
+        height: 360,
+      });
       const next: MeOsWindow = {
         id: viewerId,
         title,
         appId: viewerAppId,
-        x: spawn.x,
-        y: spawn.y,
-        width: 560,
-        height: 360,
+        x: nextRect.x,
+        y: nextRect.y,
+        width: nextRect.width,
+        height: nextRect.height,
         zIndex: nextZ,
         minimized: false,
         nodeId,
@@ -296,9 +346,13 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const moveWindow = useCallback((id: string, x: number, y: number) => {
     setWindows((prev) => prev.map((w) => (
-      w.id === id
-        ? { ...w, x: Math.max(0, x), y: Math.max(0, y) }
-        : w
+      w.id === id ? { ...w, ...normalizeWindowRect({ ...w, x, y }) } : w
+    )));
+  }, []);
+
+  const resizeWindow = useCallback((id: string, width: number, height: number) => {
+    setWindows((prev) => prev.map((w) => (
+      w.id === id ? { ...w, ...normalizeWindowRect({ ...w, width, height }) } : w
     )));
   }, []);
 
@@ -329,6 +383,7 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     openViewer,
     focusWindow,
     moveWindow,
+    resizeWindow,
     minimizeWindow,
     restoreWindow,
     closeWindow,
@@ -343,6 +398,7 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     openApp,
     openViewer,
     openFullscreen,
+    resizeWindow,
     restoreWindow,
     setActiveScope,
     windows,

@@ -22,7 +22,7 @@ type MeOsWindowCardProps = {
 };
 
 const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
-  const { focusWindow, moveWindow, minimizeWindow, closeWindow } = useMeOs();
+  const { focusWindow, moveWindow, resizeWindow, minimizeWindow, closeWindow } = useMeOs();
   const interactive = mode === 'fullscreen';
 
   /**
@@ -43,6 +43,30 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
       const dx = ev.clientX - startX;
       const dy = ev.clientY - startY;
       moveWindow(win.id, startWinX + dx, startWinY + dy);
+    };
+
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp, { once: true });
+  };
+
+  const onResizeStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!interactive) return;
+    e.preventDefault();
+    e.stopPropagation();
+    focusWindow(win.id);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startWidth = win.width;
+    const startHeight = win.height;
+
+    const onMove = (ev: MouseEvent) => {
+      const dw = ev.clientX - startX;
+      const dh = ev.clientY - startY;
+      resizeWindow(win.id, startWidth + dw, startHeight + dh);
     };
 
     const onUp = () => {
@@ -124,6 +148,13 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
       <div className={`${styles.windowBody} ${win.appId === 'file' ? styles.windowBodyNoScroll : ''}`.trim()}>
         {renderContent()}
       </div>
+      {interactive ? (
+        <div
+          className={styles.windowResizeHandle}
+          onMouseDown={onResizeStart}
+          aria-hidden="true"
+        />
+      ) : null}
     </article>
   );
 };
