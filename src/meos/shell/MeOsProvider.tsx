@@ -21,6 +21,12 @@ import type {
 
 const STORAGE_KEY = 'terminalOS.meos.v1.shell';
 const STORAGE_VERSION = 1 as const;
+const STATUS_BAR_HEIGHT = 28;
+const SPAWN_MARGIN = 12;
+const SPAWN_CASCADE_STEP = 18;
+const SPAWN_CASCADE_MAX = 126;
+const MIN_VISIBLE_HEADER_WIDTH = 200;
+const MIN_VISIBLE_HEADER_HEIGHT = 56;
 
 const WINDOW_TEMPLATES: Record<MeOsFixedAppId, MeOsWindowTemplate> = {
   home: {
@@ -142,6 +148,28 @@ const loadPersistedWindows = (): MeOsWindow[] => {
   return sortByZ(parsed);
 };
 
+const getSpawnViewport = (): { width: number; height: number } => {
+  if (typeof window === 'undefined') {
+    return { width: 1280, height: 720 };
+  }
+  return {
+    width: Math.max(320, window.innerWidth),
+    height: Math.max(240, window.innerHeight - STATUS_BAR_HEIGHT),
+  };
+};
+
+const clampSpawnPosition = (x: number, y: number): { x: number; y: number } => {
+  const viewport = getSpawnViewport();
+  const maxX = Math.max(SPAWN_MARGIN, viewport.width - MIN_VISIBLE_HEADER_WIDTH);
+  const maxY = Math.max(SPAWN_MARGIN, viewport.height - MIN_VISIBLE_HEADER_HEIGHT);
+  return {
+    x: Math.min(Math.max(SPAWN_MARGIN, x), maxX),
+    y: Math.min(Math.max(SPAWN_MARGIN, y), maxY),
+  };
+};
+
+const getCascadeOffset = (windows: MeOsWindow[]): number => Math.min(SPAWN_CASCADE_MAX, windows.length * SPAWN_CASCADE_STEP);
+
 type MeOsContextValue = {
   displayMode: MeOsDisplayMode;
   windows: MeOsWindow[];
@@ -218,8 +246,12 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       const nextZ = zRef.current + 1;
       zRef.current = nextZ;
+      const offset = getCascadeOffset(prev);
+      const spawn = clampSpawnPosition(template.x + offset, template.y + offset);
       const next: MeOsWindow = {
         ...template,
+        x: spawn.x,
+        y: spawn.y,
         zIndex: nextZ,
         minimized: false,
       };
@@ -253,13 +285,14 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const nextZ = zRef.current + 1;
       zRef.current = nextZ;
-      const offset = Math.min(120, prev.length * 18);
+      const offset = getCascadeOffset(prev);
+      const spawn = clampSpawnPosition(120 + offset, 80 + offset);
       const next: MeOsWindow = {
         id: viewerId,
         title,
         appId: viewerAppId,
-        x: 120 + offset,
-        y: 80 + offset,
+        x: spawn.x,
+        y: spawn.y,
         width: 560,
         height: 360,
         zIndex: nextZ,
