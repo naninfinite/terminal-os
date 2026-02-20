@@ -2,7 +2,7 @@
  * File-backed viewer window for M4.
  * Renders directly from VFS node metadata instead of name-based placeholders.
  */
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import type { MeOsWindow } from '../../shell/types';
 import { useMeOsVfs } from '../../vfs/MeOsVfsProvider';
 import styles from './FileViewerWindow.module.scss';
@@ -26,6 +26,134 @@ const createFallbackImage = (label: string): string => {
 
 const fallbackText = (name: string): string => `No inline text content configured for "${name}".`;
 const getKindLabel = (kind: string): string => kind.toUpperCase();
+const formatVideoTime = (seconds: number): string => {
+  if (!Number.isFinite(seconds) || seconds < 0) return '00:00';
+  const total = Math.floor(seconds);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+  if (hours > 0) {
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
+  return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+};
+
+type VideoPlayerProps = {
+  source: string;
+  poster: string;
+  name: string;
+};
+
+const VideoPlayer: React.FC<VideoPlayerProps> = ({
+  source,
+  poster,
+  name,
+}) => {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  const hasDuration = duration > 0;
+  const seekMax = hasDuration ? duration : 1;
+  const seekValue = hasDuration ? Math.min(currentTime, duration) : 0;
+
+  const updateDuration = (value: number) => {
+    setDuration(Number.isFinite(value) && value > 0 ? value : 0);
+  };
+
+  const togglePlay = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused || video.ended) {
+      const playResult = video.play();
+      if (playResult && typeof playResult.catch === 'function') {
+        void playResult.catch(() => setIsPlaying(false));
+      }
+      return;
+    }
+    video.pause();
+  };
+
+  const toggleMute = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = !video.muted;
+    setIsMuted(video.muted);
+  };
+
+  const handleSeek = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const nextTime = Number(event.currentTarget.value);
+    if (!Number.isFinite(nextTime)) return;
+    const video = videoRef.current;
+    if (video) {
+      video.currentTime = nextTime;
+    }
+    setCurrentTime(nextTime);
+  };
+
+  return (
+    <div className={styles.videoPlayer}>
+      <div className={styles.videoStage}>
+        <video
+          ref={videoRef}
+          className={styles.video}
+          playsInline
+          preload="metadata"
+          poster={poster}
+          onClick={togglePlay}
+          onLoadedMetadata={(event) => {
+            updateDuration(event.currentTarget.duration);
+            setCurrentTime(event.currentTarget.currentTime || 0);
+            setIsMuted(event.currentTarget.muted);
+          }}
+          onDurationChange={(event) => updateDuration(event.currentTarget.duration)}
+          onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime || 0)}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onEnded={() => setIsPlaying(false)}
+          onVolumeChange={(event) => setIsMuted(event.currentTarget.muted)}
+        >
+          <source src={source} type="video/mp4" />
+        </video>
+      </div>
+
+      <div className={styles.videoControls}>
+        <button
+          type="button"
+          className={styles.controlBtn}
+          onClick={togglePlay}
+          aria-label={isPlaying ? `Pause ${name}` : `Play ${name}`}
+        >
+          {isPlaying ? 'Pause' : 'Play'}
+        </button>
+        <input
+          className={styles.timeline}
+          type="range"
+          min={0}
+          max={seekMax}
+          step={0.1}
+          value={seekValue}
+          onChange={handleSeek}
+          disabled={!hasDuration}
+          aria-label={`Seek ${name}`}
+        />
+        <span className={styles.timecode}>
+          {formatVideoTime(currentTime)} / {formatVideoTime(duration)}
+        </span>
+        <button
+          type="button"
+          className={styles.controlBtn}
+          onClick={toggleMute}
+          aria-label={isMuted ? `Unmute ${name}` : `Mute ${name}`}
+        >
+          {isMuted ? 'Unmute' : 'Mute'}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
   const { snapshot } = useMeOsVfs();
@@ -87,10 +215,12 @@ const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
           <span className={styles.viewerKind}>{getKindLabel(kind)}</span>
           <span className={styles.viewerName}>{node.name}</span>
         </header>
-        <div className={styles.mediaWrap}>
-          <video className={styles.video} controls playsInline poster={poster}>
-            <source src={source} type="video/mp4" />
-          </video>
+        <div className={`${styles.mediaWrap} ${styles.mediaWrapVideo}`.trim()}>
+          <VideoPlayer
+            source={source}
+            poster={poster}
+            name={node.name}
+          />
         </div>
       </div>
     );

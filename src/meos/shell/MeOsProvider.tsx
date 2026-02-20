@@ -80,6 +80,13 @@ const VIEWER_APP_BY_KIND: Record<MeOsViewerKind, MeOsAppId> = {
   project: 'viewer_project',
 };
 
+const VIEWER_SIZE_BY_KIND: Record<MeOsViewerKind, { width: number; height: number }> = {
+  text: { width: 560, height: 360 },
+  image: { width: 620, height: 400 },
+  video: { width: 740, height: 460 },
+  project: { width: 560, height: 360 },
+};
+
 const asNumber = (value: unknown, fallback: number): number => (
   typeof value === 'number' && Number.isFinite(value) ? value : fallback
 );
@@ -298,6 +305,7 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { nodeId, title, kind } = args;
     const viewerId = `viewer_${nodeId}`;
     const viewerAppId = VIEWER_APP_BY_KIND[kind];
+    const viewerSize = VIEWER_SIZE_BY_KIND[kind];
     setWindows((prev) => {
       const existing = prev.find((w) => w.id === viewerId);
       if (existing) {
@@ -313,6 +321,8 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
               appId: viewerAppId,
               nodeId,
               viewerKind: kind,
+              width: Math.max(existing.width, viewerSize.width),
+              height: Math.max(existing.height, viewerSize.height),
             }
             : w
         ));
@@ -324,8 +334,8 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const nextRect = normalizeWindowRect({
         x: 120 + offset,
         y: 80 + offset,
-        width: 560,
-        height: 360,
+        width: viewerSize.width,
+        height: viewerSize.height,
       });
       const next: MeOsWindow = {
         id: viewerId,

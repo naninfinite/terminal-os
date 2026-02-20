@@ -59,7 +59,7 @@ const seedNodes: VfsNode[] = [
     type: 'file',
     parentId: 'media',
     kind: 'video',
-    assetSrc: '',
+    assetSrc: 'src/assets/videos/mp4/juno-echo_web.mp4',
     posterSrc: '',
     textContent: 'Showreel slot. Attach a video source URL/path in `assetSrc` when media is available.',
   },
