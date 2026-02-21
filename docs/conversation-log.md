@@ -479,6 +479,7 @@ Summary:
 - Added preference notes for edge-first resize interaction and strict header-only drag safety around window control buttons.
 - Captured launcher discoverability request (`FILE / ABOUT / PROJECTS / MEDIA` visible even when windows are open) for a future incremental pass.
 - Captured panel-preview parity question: current desktop panel shows top active window only; multi-window miniature preview remains a deliberate future evaluation.
+- Captured task-strip/dock behavior options: contextual per-panel task lists vs desktop master grouping (`ME.EXE (n)`) with click-to-expand behavior.
 
 Why it matters:
 - Preserves design direction decisions without forcing rushed implementation.
