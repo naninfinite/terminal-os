@@ -160,7 +160,22 @@ ME shell spawn behavior now follows a deterministic baseline:
 - Spawn positions are clamped so headers remain visible/reachable on-screen.
 - Viewer windows and fixed-app windows use the same cascade/clamp rules.
 
-This baseline is intended to stay stable while future resizing/video-player fixes are addressed incrementally.
+This baseline now works with the active resize model below.
+
+---
+
+## 8.2 Window Resize + Responsiveness Baseline
+
+ME shell window interactions now include a responsive resize contract:
+- Windows support resize from all four corners (`NW`, `NE`, `SW`, `SE`).
+- Windows support resize from all four edges (`N`, `E`, `S`, `W`).
+- Resize handles appear on window hover/focus only to reduce visual noise.
+- Drag and resize updates are clamped so windows remain usable within the ME fullscreen frame.
+- Window content areas are constrained to prevent large content overflow from hiding controls.
+
+Viewer-level responsiveness lock:
+- Video viewer uses containment-friendly sizing (`height: auto`, bounded by container) so controls remain usable in smaller windows.
+- Media containers clip overflow safely, avoiding hidden content spill outside window bounds.
 
 ---
 

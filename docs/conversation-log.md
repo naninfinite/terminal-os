@@ -450,3 +450,22 @@ Why it matters:
 Risks / Notes:
 - Existing persisted snapshots may still contain old window coordinates until reopened/saved under new behavior.
 - This pass intentionally did not address window-resize or video-player issues yet; both remain planned follow-up items.
+
+---
+
+## Entry 26 - Window Resize Completion + Video Fit Responsiveness
+
+Summary:
+- Implemented ME window resize interactions from all corners and all edges.
+- Added responsive window clamping behavior so open/resize/move actions keep windows usable inside the ME fullscreen frame.
+- Updated resize affordance visibility so handles appear only on hover/focus.
+- Fixed video viewer responsiveness by adjusting media fit behavior to keep controls visible and prevent overflow spill in small windows.
+
+Why it matters:
+- Resolves the core usability issue where FILE/media windows could open larger than the visible ME frame and hide critical UI.
+- Brings ME interactions closer to expected desktop OS behavior while preserving current styling direction.
+- Improves reliability across different desktop viewport sizes without requiring a visual redesign pass.
+
+Risks / Notes:
+- Existing persisted window geometry may need one open/close cycle to settle into the new clamped bounds.
+- Resize interactions currently prioritize pointer/mouse behavior; keyboard resize behavior remains a separate future accessibility enhancement.
