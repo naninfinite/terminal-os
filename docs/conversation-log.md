@@ -469,3 +469,22 @@ Why it matters:
 Risks / Notes:
 - Existing persisted window geometry may need one open/close cycle to settle into the new clamped bounds.
 - Resize interactions currently prioritize pointer/mouse behavior; keyboard resize behavior remains a separate future accessibility enhancement.
+
+---
+
+## Entry 27 - M5 Backlog Capture (No-Code UX Notes)
+
+Summary:
+- Recorded user UX follow-ups as backlog items without changing runtime behavior.
+- Added preference notes for edge-first resize interaction and strict header-only drag safety around window control buttons.
+- Captured launcher discoverability request (`FILE / ABOUT / PROJECTS / MEDIA` visible even when windows are open) for a future incremental pass.
+- Captured panel-preview parity question: current desktop panel shows top active window only; multi-window miniature preview remains a deliberate future evaluation.
+
+Why it matters:
+- Preserves design direction decisions without forcing rushed implementation.
+- Keeps M5 polish work scoped and traceable as micro-iterations.
+- Reduces repeated re-discussion by storing exact UX intent in spec docs.
+
+Risks / Notes:
+- No code changes were made as part of this backlog-capture pass.
+- Implementation order should remain incremental to protect current styling baseline.
