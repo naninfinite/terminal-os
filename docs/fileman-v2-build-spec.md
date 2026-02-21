@@ -167,15 +167,32 @@ This baseline now works with the active resize model below.
 ## 8.2 Window Resize + Responsiveness Baseline
 
 ME shell window interactions now include a responsive resize contract:
-- Windows support resize from all four corners (`NW`, `NE`, `SW`, `SE`).
-- Windows support resize from all four edges (`N`, `E`, `S`, `W`).
-- Resize handles appear on window hover/focus only to reduce visual noise.
+- Windows support corner resize with hover/focus-only handle affordances.
+- Current safety lock: top corner handles are temporarily disabled to avoid collisions with window controls (`_` / `X`).
+- Backlog follow-up: restore full top-edge/corner resizing with dedicated hitbox separation from header controls.
 - Drag and resize updates are clamped so windows remain usable within the ME fullscreen frame.
 - Window content areas are constrained to prevent large content overflow from hiding controls.
 
 Viewer-level responsiveness lock:
 - Video viewer uses containment-friendly sizing (`height: auto`, bounded by container) so controls remain usable in smaller windows.
 - Media containers clip overflow safely, avoiding hidden content spill outside window bounds.
+
+---
+
+## 8.3 M5 Backlog Notes (UX Follow-Ups)
+
+Captured from current review pass (no behavior changes in this doc update):
+
+- Resize affordance preference: move toward standard OS-style edge resizing as primary interaction; keep corner hit areas only when they do not conflict with controls.
+- Header/control safety: preserve drag as header-only behavior and avoid hitbox overlap with `_` / `X` controls.
+- Launcher discoverability: evaluate keeping `FILE / ABOUT / PROJECTS / MEDIA` launcher access visible even when windows are open (instead of empty-state-only visibility).
+- Panel preview parity: evaluate optional multi-window miniature preview in desktop panel mode; current behavior intentionally shows only the top active window for clarity/perf.
+- Task strip model: evaluate panel-aware task grouping. Candidate patterns:
+  - Contextual mode: task strip reflects the active panel scope only.
+  - Desktop master mode: non-active panel windows collapse into one panel master item (for example `ME.EXE (3)`), with click-to-expand/focus behavior.
+
+Milestone routing:
+- Treat these as `M5` polish follow-ups (or `M5.x`) so they stay incremental and styling-safe.
 
 ---
 

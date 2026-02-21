@@ -26,6 +26,9 @@ type ResizeCorner = 'nw' | 'ne' | 'sw' | 'se';
 const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
   const { focusWindow, moveWindow, resizeWindow, minimizeWindow, closeWindow } = useMeOs();
   const interactive = mode === 'fullscreen';
+  const stopHeaderInteraction = (e: React.MouseEvent<HTMLElement>) => {
+    e.stopPropagation();
+  };
 
   /**
    * Header-drag algorithm for fullscreen mode.
@@ -171,9 +174,25 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
       <div className={styles.windowHeader} onMouseDown={onDragStart}>
         <span className={styles.windowTitle}>[{win.title}]</span>
         {interactive ? (
-          <div className={styles.windowActions}>
-            <button type="button" className={styles.windowBtn} onClick={() => minimizeWindow(win.id)} aria-label={`Minimize ${win.title}`}>_</button>
-            <button type="button" className={styles.windowBtn} onClick={() => closeWindow(win.id)} aria-label={`Close ${win.title}`}>X</button>
+          <div className={styles.windowActions} onMouseDown={stopHeaderInteraction}>
+            <button
+              type="button"
+              className={styles.windowBtn}
+              onMouseDown={stopHeaderInteraction}
+              onClick={() => minimizeWindow(win.id)}
+              aria-label={`Minimize ${win.title}`}
+            >
+              _
+            </button>
+            <button
+              type="button"
+              className={styles.windowBtn}
+              onMouseDown={stopHeaderInteraction}
+              onClick={() => closeWindow(win.id)}
+              aria-label={`Close ${win.title}`}
+            >
+              X
+            </button>
           </div>
         ) : null}
       </div>
@@ -182,16 +201,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
       </div>
       {interactive ? (
         <>
-          <div
-            className={`${styles.windowResizeHandle} ${styles.windowResizeHandleNw}`.trim()}
-            onMouseDown={onResizeStart('nw')}
-            aria-hidden="true"
-          />
-          <div
-            className={`${styles.windowResizeHandle} ${styles.windowResizeHandleNe}`.trim()}
-            onMouseDown={onResizeStart('ne')}
-            aria-hidden="true"
-          />
+          {/* Keep top window controls clear; top-corner resize returns in a dedicated hitbox pass. */}
           <div
             className={`${styles.windowResizeHandle} ${styles.windowResizeHandleSw}`.trim()}
             onMouseDown={onResizeStart('sw')}
