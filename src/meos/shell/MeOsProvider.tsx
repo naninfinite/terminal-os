@@ -29,6 +29,7 @@ const MIN_WINDOW_WIDTH = 260;
 const MIN_WINDOW_HEIGHT = 180;
 const VIEWPORT_GUTTER_X = 48;
 const VIEWPORT_GUTTER_Y = 96;
+const WINDOW_EDGE_BUFFER = 8;
 
 const WINDOW_TEMPLATES: Record<MeOsFixedAppId, MeOsWindowTemplate> = {
   file: {
@@ -147,8 +148,8 @@ const getSpawnViewport = (): { width: number; height: number } => {
 
 const clampWindowSize = (width: number, height: number): { width: number; height: number } => {
   const viewport = getSpawnViewport();
-  const maxWidth = Math.max(MIN_WINDOW_WIDTH, viewport.width - SPAWN_MARGIN * 2);
-  const maxHeight = Math.max(MIN_WINDOW_HEIGHT, viewport.height - SPAWN_MARGIN * 2);
+  const maxWidth = Math.max(MIN_WINDOW_WIDTH, viewport.width - SPAWN_MARGIN * 2 - WINDOW_EDGE_BUFFER);
+  const maxHeight = Math.max(MIN_WINDOW_HEIGHT, viewport.height - SPAWN_MARGIN * 2 - WINDOW_EDGE_BUFFER);
   return {
     width: Math.min(Math.max(MIN_WINDOW_WIDTH, width), maxWidth),
     height: Math.min(Math.max(MIN_WINDOW_HEIGHT, height), maxHeight),
@@ -157,8 +158,8 @@ const clampWindowSize = (width: number, height: number): { width: number; height
 
 const clampWindowPosition = (x: number, y: number, width: number, height: number): { x: number; y: number } => {
   const viewport = getSpawnViewport();
-  const maxX = Math.max(SPAWN_MARGIN, viewport.width - width - SPAWN_MARGIN);
-  const maxY = Math.max(SPAWN_MARGIN, viewport.height - height - SPAWN_MARGIN);
+  const maxX = Math.max(SPAWN_MARGIN, viewport.width - width - SPAWN_MARGIN - WINDOW_EDGE_BUFFER);
+  const maxY = Math.max(SPAWN_MARGIN, viewport.height - height - SPAWN_MARGIN - WINDOW_EDGE_BUFFER);
   return {
     x: Math.min(Math.max(SPAWN_MARGIN, x), maxX),
     y: Math.min(Math.max(SPAWN_MARGIN, y), maxY),
