@@ -185,7 +185,8 @@ Captured from current review pass (no behavior changes in this doc update):
 
 - Resize affordance preference: move toward standard OS-style edge resizing as primary interaction; keep corner hit areas only when they do not conflict with controls.
 - Header/control safety: preserve drag as header-only behavior and avoid hitbox overlap with `_` / `X` controls.
-- Launcher discoverability: evaluate keeping `FILE / ABOUT / PROJECTS / MEDIA` launcher access visible even when windows are open (instead of empty-state-only visibility).
+- Launcher discoverability lock (implemented): `FILE / ABOUT / PROJECTS / MEDIA` launcher access now stays visible when windows are open (no longer empty-state-only).
+- Launcher placement polish: optional follow-up to refine exact shelf placement without changing launch behavior.
 - Panel preview parity: evaluate optional multi-window miniature preview in desktop panel mode; current behavior intentionally shows only the top active window for clarity/perf.
 - Task strip model: evaluate panel-aware task grouping. Candidate patterns:
   - Contextual mode: task strip reflects the active panel scope only.

@@ -489,3 +489,21 @@ Why it matters:
 Risks / Notes:
 - No code changes were made as part of this backlog-capture pass.
 - Implementation order should remain incremental to protect current styling baseline.
+
+---
+
+## Entry 28 - M5 Launcher Persistence (Windows-Open Discoverability)
+
+Summary:
+- Updated ME shell stage rendering so launcher actions (`FILE`, `ABOUT`, `PROJECTS`, `MEDIA`) are always visible.
+- Launchers are no longer limited to the empty-state branch; windows now render as an overlay layer above the desktop launcher shelf.
+- Kept current interaction contract unchanged (`single-click` select, `double-click` open) and retained panel-mode non-interactive behavior.
+
+Why it matters:
+- Resolves the discoverability issue where launcher actions disappeared after opening a window.
+- Preserves current Terminal-OS styling while making ME desktop behavior feel more OS-like and persistent.
+- Keeps the change incremental and easy to review/rollback.
+
+Risks / Notes:
+- Launcher shelf placement is intentionally minimal and can be refined in a later polish pass without changing core behavior.
+- Panel mode still shows only the top active window in miniature; multi-window preview remains a separate queued decision.

@@ -199,6 +199,14 @@
   gap: 8px;
 }
 
+.launcherShelf {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 256px;
+  z-index: 1;
+}
+
 .launchBtn {
   border: $border;
   background: $bg-black;
@@ -260,6 +268,7 @@
   place-content: center;
   gap: 8px;
   text-align: center;
+  pointer-events: none;
 }
 
 .chromeFooter {

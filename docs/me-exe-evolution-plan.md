@@ -62,6 +62,6 @@ When proposing future ME.EXE changes:
 
 1. Edge-first resize affordances with safe hitbox separation from header controls.
 2. Keep drag strictly on window header zones; no drag collisions on action buttons.
-3. Evaluate persistent launcher access (`FILE / ABOUT / PROJECTS / MEDIA`) when windows are open.
+3. Launcher persistence complete: `FILE / ABOUT / PROJECTS / MEDIA` remains visible while windows are open.
 4. Evaluate desktop-panel miniature strategy: top-window-only (current) vs multi-window preview.
 5. Evaluate task-strip grouping behavior: active-scope-only task list vs desktop master grouping (`ME.EXE (n)`) for non-active panel windows.

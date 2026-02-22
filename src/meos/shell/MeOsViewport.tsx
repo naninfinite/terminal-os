@@ -249,34 +249,37 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
 
       <div className={styles.stageViewport}>
         <div className={styles.stage}>
+          <div className={styles.launcherShelf}>
+            <div className={styles.launchGrid}>
+              {launchers.map((launcher) => (
+                <button
+                  key={launcher.id}
+                  type="button"
+                  className={`${styles.launchBtn} ${selectedLauncher === launcher.id ? styles.launchBtnSelected : ''}`.trim()}
+                  onClick={() => {
+                    if (!interactive) return;
+                    setSelectedLauncher(launcher.id);
+                  }}
+                  onDoubleClick={() => {
+                    if (!interactive) return;
+                    setSelectedLauncher(launcher.id);
+                    openApp(launcher.id);
+                  }}
+                  aria-pressed={selectedLauncher === launcher.id}
+                >
+                  {launcher.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {visibleWindows.length === 0 ? (
             <div className={styles.emptyState}>
               <p>DESKTOP READY</p>
-              <div className={styles.launchGrid}>
-                {launchers.map((launcher) => (
-                  <button
-                    key={launcher.id}
-                    type="button"
-                    className={`${styles.launchBtn} ${selectedLauncher === launcher.id ? styles.launchBtnSelected : ''}`.trim()}
-                    onClick={() => {
-                      if (!interactive) return;
-                      setSelectedLauncher(launcher.id);
-                    }}
-                    onDoubleClick={() => {
-                      if (!interactive) return;
-                      setSelectedLauncher(launcher.id);
-                      openApp(launcher.id);
-                    }}
-                    aria-pressed={selectedLauncher === launcher.id}
-                  >
-                    {launcher.label}
-                  </button>
-                ))}
-              </div>
             </div>
-          ) : (
-            visibleWindows.map((w) => <MeOsWindowCard key={w.id} win={w} mode={mode} />)
-          )}
+          ) : null}
+
+          {visibleWindows.map((w) => <MeOsWindowCard key={w.id} win={w} mode={mode} />)}
         </div>
       </div>
 
