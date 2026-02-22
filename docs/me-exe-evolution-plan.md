@@ -60,8 +60,8 @@ When proposing future ME.EXE changes:
 
 ## 8) Near-Term UX Queue (M5 / M5.x)
 
-1. Edge-first resize affordances with safe hitbox separation from header controls.
-2. Keep drag strictly on window header zones; no drag collisions on action buttons.
+1. Edge-first resize baseline complete: `N/E/S/W` + corner handles with safe top hitbox separation from header controls.
+2. Drag remains header-only; action buttons are protected from drag/resize collisions.
 3. Launcher persistence complete: `FILE / ABOUT / PROJECTS / MEDIA` remains visible while windows are open.
 4. Evaluate desktop-panel miniature strategy: top-window-only (current) vs multi-window preview.
 5. Task-strip grouping baseline complete: show individual ME tasks only in `ME.EXE` scope and a collapsed `ME.EXE (n)` master item in non-ME scopes.

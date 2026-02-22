@@ -181,10 +181,10 @@ Viewer-level responsiveness lock:
 
 ## 8.3 M5 Backlog Notes (UX Follow-Ups)
 
-Captured from current review pass (no behavior changes in this doc update):
+Captured from recent review passes (implemented locks + remaining follow-ups):
 
-- Resize affordance preference: move toward standard OS-style edge resizing as primary interaction; keep corner hit areas only when they do not conflict with controls.
-- Header/control safety: preserve drag as header-only behavior and avoid hitbox overlap with `_` / `X` controls.
+- Resize affordance baseline (implemented): windows support edge-first resize (`N`, `E`, `S`, `W`) plus corner handles.
+- Header/control safety lock (implemented): top resize hitboxes are split/inset to avoid `_` / `X` collisions while keeping header drag behavior intact.
 - Launcher discoverability lock (implemented): `FILE / ABOUT / PROJECTS / MEDIA` launcher access now stays visible when windows are open (no longer empty-state-only).
 - Launcher placement polish: optional follow-up to refine exact shelf placement without changing launch behavior.
 - Panel preview parity: evaluate optional multi-window miniature preview in desktop panel mode; current behavior intentionally shows only the top active window for clarity/perf.

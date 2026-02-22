@@ -579,3 +579,20 @@ Why it matters:
 
 Risks / Notes:
 - Backlog-only capture; no runtime location lookup/rendering was implemented in this pass.
+
+---
+
+## Entry 33 - M5 Edge-First Resize Restore + Control-Safe Top Hitboxes
+
+Summary:
+- Restored full directional resize in ME windows using edge-first handles (`N`, `E`, `S`, `W`) plus corner handles.
+- Reintroduced top-corner resizing with control-safe hitbox geometry so `_` / `X` remain reliably clickable.
+- Kept existing header drag model and button event-guard behavior intact.
+
+Why it matters:
+- Brings window interaction closer to standard desktop OS expectations.
+- Resolves prior tradeoff where top-corner resize was disabled to avoid button collisions.
+- Maintains current Terminal-OS style while improving practical pointer ergonomics.
+
+Risks / Notes:
+- Top-edge hitbox offsets are intentionally conservative; minor tuning can be done later based on device testing.

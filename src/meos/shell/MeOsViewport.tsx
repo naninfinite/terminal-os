@@ -21,7 +21,7 @@ type MeOsWindowCardProps = {
   mode: MeOsDisplayMode;
 };
 
-type ResizeCorner = 'nw' | 'ne' | 'sw' | 'se';
+type ResizeHandle = 'n' | 'e' | 's' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
 
 const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
   const { focusWindow, moveWindow, resizeWindow, minimizeWindow, closeWindow } = useMeOs();
@@ -58,7 +58,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
     window.addEventListener('mouseup', onUp, { once: true });
   };
 
-  const onResizeStart = (corner: ResizeCorner) => (e: React.MouseEvent<HTMLDivElement>) => {
+  const onResizeStart = (handle: ResizeHandle) => (e: React.MouseEvent<HTMLDivElement>) => {
     if (!interactive) return;
     e.preventDefault();
     e.stopPropagation();
@@ -73,27 +73,20 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
     const onMove = (ev: MouseEvent) => {
       const dw = ev.clientX - startX;
       const dh = ev.clientY - startY;
+      const horizontal = handle.includes('e') ? 1 : (handle.includes('w') ? -1 : 0);
+      const vertical = handle.includes('s') ? 1 : (handle.includes('n') ? -1 : 0);
       let nextX = startWinX;
       let nextY = startWinY;
       let nextWidth = startWidth;
       let nextHeight = startHeight;
 
-      if (corner === 'se') {
-        nextWidth = startWidth + dw;
-        nextHeight = startHeight + dh;
-      } else if (corner === 'ne') {
-        nextWidth = startWidth + dw;
-        nextHeight = startHeight - dh;
-        nextY = startWinY + dh;
-      } else if (corner === 'sw') {
-        nextWidth = startWidth - dw;
-        nextHeight = startHeight + dh;
-        nextX = startWinX + dw;
-      } else {
-        nextWidth = startWidth - dw;
-        nextHeight = startHeight - dh;
-        nextX = startWinX + dw;
-        nextY = startWinY + dh;
+      if (horizontal !== 0) {
+        nextWidth = startWidth + (horizontal * dw);
+        if (horizontal < 0) nextX = startWinX + dw;
+      }
+      if (vertical !== 0) {
+        nextHeight = startHeight + (vertical * dh);
+        if (vertical < 0) nextY = startWinY + dh;
       }
 
       resizeWindow(win.id, {
@@ -201,7 +194,36 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
       </div>
       {interactive ? (
         <>
-          {/* Keep top window controls clear; top-corner resize returns in a dedicated hitbox pass. */}
+          <div
+            className={`${styles.windowResizeHandle} ${styles.windowResizeHandleN}`.trim()}
+            onMouseDown={onResizeStart('n')}
+            aria-hidden="true"
+          />
+          <div
+            className={`${styles.windowResizeHandle} ${styles.windowResizeHandleE}`.trim()}
+            onMouseDown={onResizeStart('e')}
+            aria-hidden="true"
+          />
+          <div
+            className={`${styles.windowResizeHandle} ${styles.windowResizeHandleS}`.trim()}
+            onMouseDown={onResizeStart('s')}
+            aria-hidden="true"
+          />
+          <div
+            className={`${styles.windowResizeHandle} ${styles.windowResizeHandleW}`.trim()}
+            onMouseDown={onResizeStart('w')}
+            aria-hidden="true"
+          />
+          <div
+            className={`${styles.windowResizeHandle} ${styles.windowResizeHandleNw}`.trim()}
+            onMouseDown={onResizeStart('nw')}
+            aria-hidden="true"
+          />
+          <div
+            className={`${styles.windowResizeHandle} ${styles.windowResizeHandleNe}`.trim()}
+            onMouseDown={onResizeStart('ne')}
+            aria-hidden="true"
+          />
           <div
             className={`${styles.windowResizeHandle} ${styles.windowResizeHandleSw}`.trim()}
             onMouseDown={onResizeStart('sw')}
