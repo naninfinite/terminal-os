@@ -507,3 +507,22 @@ Why it matters:
 Risks / Notes:
 - Launcher shelf placement is intentionally minimal and can be refined in a later polish pass without changing core behavior.
 - Panel mode still shows only the top active window in miniature; multi-window preview remains a separate queued decision.
+
+---
+
+## Entry 29 - M5 Task Strip Grouping Baseline (`ME.EXE (n)`)
+
+Summary:
+- Updated status bar task rendering to be scope-aware:
+  - In `ME.EXE` scope (`meos`), show individual ME window task buttons.
+  - In non-ME scopes, collapse ME windows into a single master task item labeled `ME.EXE (n)`.
+- Added click behavior for the master item to open ME fullscreen and expose individual task buttons there.
+
+Why it matters:
+- Matches the intended desktop behavior where non-active panel windows do not flood the global dock.
+- Preserves quick access to ME runtime state from other scopes without losing open-window count context.
+- Keeps the change small and style-safe while moving task-strip UX toward OS-like grouping semantics.
+
+Risks / Notes:
+- This baseline groups ME windows only; panel-owned grouping for `YOU`, `THIRD`, and `CONNECT` remains future work.
+- Task-strip layout/placement styling was intentionally left unchanged in this pass.

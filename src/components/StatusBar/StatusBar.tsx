@@ -57,6 +57,8 @@ const StatusBar: React.FC = () => {
     () => (scope === 'meos' ? orderedWindows : []),
     [orderedWindows, scope]
   );
+  const meWindowCount = orderedWindows.length;
+  const showCollapsedMeTask = scope !== 'meos' && meWindowCount > 0;
 
   const openAppForScope = (appId: Parameters<typeof openApp>[0]) => {
     if (scope === 'desktop') openFullscreen();
@@ -157,6 +159,16 @@ const StatusBar: React.FC = () => {
         <span>SYS: READY</span>
       </div>
       <div className={styles.tasks} aria-label="ME.EXE windows">
+        {showCollapsedMeTask ? (
+          <button
+            type="button"
+            className={styles.taskBtn}
+            onClick={openFullscreen}
+            title={`Open ME.EXE (${meWindowCount} window${meWindowCount === 1 ? '' : 's'})`}
+          >
+            {`ME.EXE (${meWindowCount})`}
+          </button>
+        ) : null}
         {scopedWindows.map((win) => (
           <button
             key={win.id}

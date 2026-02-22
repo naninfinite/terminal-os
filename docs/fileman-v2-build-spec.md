@@ -188,9 +188,11 @@ Captured from current review pass (no behavior changes in this doc update):
 - Launcher discoverability lock (implemented): `FILE / ABOUT / PROJECTS / MEDIA` launcher access now stays visible when windows are open (no longer empty-state-only).
 - Launcher placement polish: optional follow-up to refine exact shelf placement without changing launch behavior.
 - Panel preview parity: evaluate optional multi-window miniature preview in desktop panel mode; current behavior intentionally shows only the top active window for clarity/perf.
-- Task strip model: evaluate panel-aware task grouping. Candidate patterns:
-  - Contextual mode: task strip reflects the active panel scope only.
-  - Desktop master mode: non-active panel windows collapse into one panel master item (for example `ME.EXE (3)`), with click-to-expand/focus behavior.
+- Task strip grouping baseline (implemented):
+  - `ME.EXE` scope (`meos`): task strip shows individual ME windows.
+  - Non-`ME.EXE` scopes: task strip collapses to a single master item (`ME.EXE (n)`).
+  - Clicking the master item opens ME fullscreen, where individual task buttons are available.
+- Future extension: evaluate panel-owned task grouping for non-ME subsystems (`YOU`, `THIRD`, `CONNECT`) as they gain internal window runtimes.
 
 Milestone routing:
 - Treat these as `M5` polish follow-ups (or `M5.x`) so they stay incremental and styling-safe.
