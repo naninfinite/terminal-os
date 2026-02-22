@@ -563,3 +563,19 @@ Why it matters:
 
 Risks / Notes:
 - This is a placement-only adjustment; no command/scope/task grouping logic changed.
+
+---
+
+## Entry 32 - Status Cluster Future Slot (`location | time`)
+
+Summary:
+- Captured explicit future UX requirement for right status cluster formatting: show user location to the left of time.
+- Locked display intent as `location | time` with a pipe separator.
+- Confirmed that right cluster should remain reserved for this token pair and not be used for collapsed ME task items.
+
+Why it matters:
+- Prevents future regressions where ad-hoc status tokens consume the planned location slot.
+- Keeps status-bar information hierarchy predictable for users.
+
+Risks / Notes:
+- Backlog-only capture; no runtime location lookup/rendering was implemented in this pass.

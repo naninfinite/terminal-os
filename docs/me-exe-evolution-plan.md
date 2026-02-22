@@ -65,3 +65,4 @@ When proposing future ME.EXE changes:
 3. Launcher persistence complete: `FILE / ABOUT / PROJECTS / MEDIA` remains visible while windows are open.
 4. Evaluate desktop-panel miniature strategy: top-window-only (current) vs multi-window preview.
 5. Task-strip grouping baseline complete: show individual ME tasks only in `ME.EXE` scope and a collapsed `ME.EXE (n)` master item in non-ME scopes.
+6. Reserve right status cluster for `location | time` display; avoid placing temporary ME task tokens in that slot.
