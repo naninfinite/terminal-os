@@ -526,3 +526,40 @@ Why it matters:
 Risks / Notes:
 - This baseline groups ME windows only; panel-owned grouping for `YOU`, `THIRD`, and `CONNECT` remains future work.
 - Task-strip layout/placement styling was intentionally left unchanged in this pass.
+
+---
+
+## Entry 30 - M5 Status Bar Placement Polish (`ME.EXE (n)` Right Cluster)
+
+Summary:
+- Moved collapsed master task item `ME.EXE (n)` from the central task strip to the right status cluster.
+- Added a simple visual divider (`|`) between `ME.EXE (n)` and the clock for clearer grouping.
+- Kept scope behavior unchanged:
+  - `meos`: individual ME window task buttons stay in the main task strip.
+  - non-`meos`: collapsed master item appears near the clock.
+
+Why it matters:
+- Reduces visual churn in the central dock area when browsing non-ME panels.
+- Aligns with earlier UX direction to place compact ME aggregate status near time/status tokens.
+- Preserves existing interaction model while improving scanability.
+
+Risks / Notes:
+- Divider/spacing style is intentionally minimal and can be tuned later without behavior changes.
+
+---
+
+## Entry 31 - Status Bar Placement Revert (Reserve Right Slot)
+
+Summary:
+- Reverted collapsed `ME.EXE (n)` master task placement back to the central/left task strip.
+- Removed the temporary right-cluster divider treatment added in the previous pass.
+- Kept grouping behavior unchanged:
+  - `meos`: individual ME task buttons.
+  - non-`meos`: one collapsed `ME.EXE (n)` master item.
+
+Why it matters:
+- Preserves the right side near the clock for a planned future location handle.
+- Keeps dock semantics consistent while avoiding layout churn in the time/status area.
+
+Risks / Notes:
+- This is a placement-only adjustment; no command/scope/task grouping logic changed.
