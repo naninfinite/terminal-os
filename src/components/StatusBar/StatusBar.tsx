@@ -53,6 +53,10 @@ const StatusBar: React.FC = () => {
     () => [...windows].sort((a, b) => a.zIndex - b.zIndex),
     [windows]
   );
+  const scopedWindows = useMemo(
+    () => (scope === 'meos' ? orderedWindows : []),
+    [orderedWindows, scope]
+  );
 
   const openAppForScope = (appId: Parameters<typeof openApp>[0]) => {
     if (scope === 'desktop') openFullscreen();
@@ -153,7 +157,7 @@ const StatusBar: React.FC = () => {
         <span>SYS: READY</span>
       </div>
       <div className={styles.tasks} aria-label="ME.EXE windows">
-        {orderedWindows.map((win) => (
+        {scopedWindows.map((win) => (
           <button
             key={win.id}
             type="button"
