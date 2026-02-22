@@ -9,6 +9,19 @@ import { MENU_SCOPE_CONFIG, resolveMenuScope, type MenuCommandId } from '../../m
 
 type DesktopPanelScope = 'you' | 'third' | 'connect' | 'me';
 
+const getTimezoneFallbackLabel = (): string => {
+  const timezone = new Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (!timezone) return 'LOCATION --';
+  const parts = timezone.split('/');
+  const city = parts[parts.length - 1]?.replace(/_/g, ' ');
+  return city ? `TZ ${city}` : 'LOCATION --';
+};
+
+const formatCoordinateToken = (value: number, positiveToken: string, negativeToken: string): string => {
+  const token = value >= 0 ? positiveToken : negativeToken;
+  return `${token}${Math.abs(value).toFixed(2)}`;
+};
+
 const StatusBar: React.FC = () => {
   const {
     displayMode,
@@ -21,11 +34,41 @@ const StatusBar: React.FC = () => {
   } = useMeOs();
   const [now, setNow] = useState<Date>(() => new Date());
   const [menuOpen, setMenuOpen] = useState(false);
+  const [locationLabel, setLocationLabel] = useState<string>(() => getTimezoneFallbackLabel());
 
   // Keep the clock fresh while desktop shell is mounted.
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setLocationLabel(getTimezoneFallbackLabel());
+      return;
+    }
+
+    const onSuccess = (position: GeolocationPosition) => {
+      const lat = formatCoordinateToken(position.coords.latitude, 'N', 'S');
+      const lon = formatCoordinateToken(position.coords.longitude, 'E', 'W');
+      setLocationLabel(`${lat} ${lon}`);
+    };
+
+    const onError = () => {
+      setLocationLabel(getTimezoneFallbackLabel());
+    };
+
+    const watchId = navigator.geolocation.watchPosition(
+      onSuccess,
+      onError,
+      {
+        enableHighAccuracy: false,
+        maximumAge: 300_000,
+        timeout: 8_000,
+      }
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
   useEffect(() => {
@@ -182,7 +225,9 @@ const StatusBar: React.FC = () => {
         ))}
       </div>
       <div className={styles.right} aria-live="polite" aria-atomic="true">
-        {timeString}
+        <span className={styles.locationToken}>{locationLabel}</span>
+        <span className={styles.rightDivider} aria-hidden="true">|</span>
+        <span>{timeString}</span>
       </div>
     </div>
   );

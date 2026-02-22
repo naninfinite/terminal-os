@@ -65,5 +65,6 @@ When proposing future ME.EXE changes:
 3. Launcher persistence complete: `FILE / ABOUT / PROJECTS / MEDIA` remains visible while windows are open.
 4. Desktop-panel miniature baseline complete: top-two window stack (active + dimmed secondary) for better runtime context in panel mode.
 5. Task-strip grouping baseline complete: show individual ME tasks only in `ME.EXE` scope and a collapsed `ME.EXE (n)` master item in non-ME scopes.
-6. Reserve right status cluster for `location | time` display; avoid placing temporary ME task tokens in that slot.
+6. Right status cluster location baseline complete: live `location | time` token with geolocation source and timezone fallback.
 7. Fullscreen footer status line currently uses `DESKTOP READY/ACTIVE | N WINDOWS`; revisit with user later for potential removal.
+8. Resolve status-language hierarchy: avoid overlap/redundancy between global `SYS: READY` and panel-local readiness labels.

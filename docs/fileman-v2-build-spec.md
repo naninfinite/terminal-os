@@ -193,9 +193,14 @@ Captured from recent review passes (implemented locks + remaining follow-ups):
   - Non-`ME.EXE` scopes: task strip collapses to a single master item (`ME.EXE (n)`).
   - Clicking the master item opens ME fullscreen, where individual task buttons are available.
 - Future extension: evaluate panel-owned task grouping for non-ME subsystems (`YOU`, `THIRD`, `CONNECT`) as they gain internal window runtimes.
-- Status bar right-cluster reservation: keep space left of time for future user location token with `location | time` format.
+- Status bar right-cluster location baseline (implemented): renders live `location | time` with geolocation coordinates when available.
+- Fallback behavior: when geolocation is unavailable/denied, location token falls back to timezone-derived label (`TZ <City>`).
 - Fullscreen footer status token (implemented): `DESKTOP READY | 0 WINDOWS` and `DESKTOP ACTIVE | N WINDOWS`.
 - Future decision gate: re-evaluate whether footer status token should remain or be removed once desktop semantics are finalized.
+- Status language collision (deferred): current `SYS: READY` (global status bar) and `DESKTOP READY` (ME footer) can feel redundant.
+- Future decision options:
+  - Keep ME footer token and normalize panel language (for example `YOU READY`, `THIRD READY`, `CONNECT READY` in their contexts).
+  - Simplify by keeping only one readiness signal (global or panel-local), not both.
 
 Milestone routing:
 - Treat these as `M5` polish follow-ups (or `M5.x`) so they stay incremental and styling-safe.

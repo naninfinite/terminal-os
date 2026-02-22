@@ -630,3 +630,55 @@ Why it matters:
 
 Risks / Notes:
 - Treated as a temporary UX phase; user requested this be revisited later and potentially removed as desktop UX matures.
+
+---
+
+## Entry 36 - Status Right Cluster Scaffold (`LOCATION -- | TIME`)
+
+Summary:
+- Implemented a right-cluster placeholder token in status bar: `LOCATION -- | HH:MM:SS`.
+- Kept location value static (`LOCATION --`) for now, with no geolocation/data-source integration yet.
+- Preserved previous decision to keep this slot dedicated to location/time instead of ME task tokens.
+
+Why it matters:
+- Locks spacing and visual hierarchy for the planned location feature.
+- Enables later location integration as a data-only update without layout churn.
+
+Risks / Notes:
+- Placeholder text is temporary and should be replaced by a real location source in a future pass.
+
+---
+
+## Entry 37 - Status Language Review (Global vs Panel Ready Tokens)
+
+Summary:
+- Captured UX concern that global `SYS: READY` can clash with ME footer `DESKTOP READY`.
+- Recorded preferred direction candidates for later decision:
+  - If panel-ready language stays, consider uniform readiness phrasing across panels (for example `YOU READY`, `THIRD READY`, `CONNECT READY`).
+  - Otherwise, keep only one readiness source (global or panel-local) to avoid duplicate signals.
+
+Why it matters:
+- Improves status clarity and reduces duplicated semantic noise in the UI.
+- Keeps future copy/system-status decisions deliberate instead of ad-hoc.
+
+Risks / Notes:
+- Conversation/backlog capture only; no code changes were made in this pass.
+
+---
+
+## Entry 38 - Status Right Cluster Location Source (Geolocation + Fallback)
+
+Summary:
+- Replaced static location placeholder with a runtime location source in status bar right cluster.
+- Current format remains `location | time`:
+  - Preferred source: browser geolocation coordinates (`N/S` + `E/W` tokens).
+  - Fallback source: timezone-derived token (`TZ <City>`) when permission is denied/unavailable.
+- Kept existing layout and right-cluster spacing semantics unchanged.
+
+Why it matters:
+- Turns the right status slot from scaffold text into meaningful live context.
+- Preserves privacy/permission resilience by providing deterministic fallback output.
+
+Risks / Notes:
+- Geolocation availability depends on browser permissions and secure-context behavior.
+- Coordinates are intentionally concise and may be truncated visually in tight viewports.
