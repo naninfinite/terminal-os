@@ -194,6 +194,8 @@ Captured from recent review passes (implemented locks + remaining follow-ups):
   - Clicking the master item opens ME fullscreen, where individual task buttons are available.
 - Future extension: evaluate panel-owned task grouping for non-ME subsystems (`YOU`, `THIRD`, `CONNECT`) as they gain internal window runtimes.
 - Status bar right-cluster reservation: keep space left of time for future user location token with `location | time` format.
+- Fullscreen footer status token (implemented): `DESKTOP READY | 0 WINDOWS` and `DESKTOP ACTIVE | N WINDOWS`.
+- Future decision gate: re-evaluate whether footer status token should remain or be removed once desktop semantics are finalized.
 
 Milestone routing:
 - Treat these as `M5` polish follow-ups (or `M5.x`) so they stay incremental and styling-safe.

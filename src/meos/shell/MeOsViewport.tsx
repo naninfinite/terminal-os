@@ -255,6 +255,8 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
     () => windows.filter((w) => !w.minimized).sort((a, b) => a.zIndex - b.zIndex),
     [windows]
   );
+  const windowCount = activeWindows.length;
+  const desktopStateLabel = windowCount === 0 ? 'DESKTOP READY' : 'DESKTOP ACTIVE';
   const visibleWindows = mode === 'panel' ? activeWindows.slice(-2) : activeWindows;
 
   return (
@@ -296,12 +298,6 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
             </div>
           </div>
 
-          {visibleWindows.length === 0 ? (
-            <div className={styles.emptyState}>
-              <p>DESKTOP READY</p>
-            </div>
-          ) : null}
-
           {visibleWindows.map((w, index) => (
             <MeOsWindowCard
               key={w.id}
@@ -315,7 +311,7 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
 
       {mode === 'fullscreen' ? (
         <footer className={styles.chromeFooter}>
-          <span className={styles.footerInfo}>{activeWindows.length} WINDOW(S)</span>
+          <span className={styles.footerInfo}>{`${desktopStateLabel} | ${windowCount} WINDOW(S)`}</span>
         </footer>
       ) : null}
     </section>

@@ -613,3 +613,20 @@ Why it matters:
 
 Risks / Notes:
 - Panel preview intentionally caps at two windows for clarity; deeper stacks remain accessible in fullscreen/task strip.
+
+---
+
+## Entry 35 - ME Footer Status Token (`READY/ACTIVE | N WINDOWS`)
+
+Summary:
+- Replaced center empty-state copy with a footer status token model in fullscreen ME shell.
+- Footer now reads:
+  - `DESKTOP READY | 0 WINDOWS` when no ME windows are active.
+  - `DESKTOP ACTIVE | N WINDOWS` when one or more windows are active.
+
+Why it matters:
+- Avoids text conflict behind launcher controls while keeping empty/active state visible.
+- Aligns requested pipe-separated status phrasing with existing ME footer chrome.
+
+Risks / Notes:
+- Treated as a temporary UX phase; user requested this be revisited later and potentially removed as desktop UX matures.
