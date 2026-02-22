@@ -19,11 +19,12 @@ type MeOsViewportProps = {
 type MeOsWindowCardProps = {
   win: MeOsWindow;
   mode: MeOsDisplayMode;
+  previewVariant?: 'primary' | 'secondary';
 };
 
 type ResizeHandle = 'n' | 'e' | 's' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
 
-const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
+const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode, previewVariant = 'primary' }) => {
   const { focusWindow, moveWindow, resizeWindow, minimizeWindow, closeWindow } = useMeOs();
   const interactive = mode === 'fullscreen';
   const stopHeaderInteraction = (e: React.MouseEvent<HTMLElement>) => {
@@ -153,7 +154,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
 
   return (
     <article
-      className={styles.window}
+      className={`${styles.window} ${mode === 'panel' && previewVariant === 'secondary' ? styles.panelPreviewSecondary : ''}`.trim()}
       style={{
         left: `${win.x}px`,
         top: `${win.y}px`,
@@ -254,7 +255,7 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
     () => windows.filter((w) => !w.minimized).sort((a, b) => a.zIndex - b.zIndex),
     [windows]
   );
-  const visibleWindows = mode === 'panel' ? activeWindows.slice(-1) : activeWindows;
+  const visibleWindows = mode === 'panel' ? activeWindows.slice(-2) : activeWindows;
 
   return (
     <section className={`${styles.viewport} ${mode === 'panel' ? styles.panelMode : styles.fullscreenMode}`.trim()}>
@@ -301,7 +302,14 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
             </div>
           ) : null}
 
-          {visibleWindows.map((w) => <MeOsWindowCard key={w.id} win={w} mode={mode} />)}
+          {visibleWindows.map((w, index) => (
+            <MeOsWindowCard
+              key={w.id}
+              win={w}
+              mode={mode}
+              previewVariant={mode === 'panel' && visibleWindows.length > 1 && index === 0 ? 'secondary' : 'primary'}
+            />
+          ))}
         </div>
       </div>
 

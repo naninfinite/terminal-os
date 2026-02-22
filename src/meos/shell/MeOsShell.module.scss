@@ -83,6 +83,11 @@
   overflow: hidden;
 }
 
+.panelPreviewSecondary {
+  opacity: 0.62;
+  transform: translate(-8px, -8px);
+}
+
 .windowHeader {
   display: flex;
   justify-content: space-between;

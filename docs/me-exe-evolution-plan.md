@@ -63,6 +63,6 @@ When proposing future ME.EXE changes:
 1. Edge-first resize baseline complete: `N/E/S/W` + corner handles with safe top hitbox separation from header controls.
 2. Drag remains header-only; action buttons are protected from drag/resize collisions.
 3. Launcher persistence complete: `FILE / ABOUT / PROJECTS / MEDIA` remains visible while windows are open.
-4. Evaluate desktop-panel miniature strategy: top-window-only (current) vs multi-window preview.
+4. Desktop-panel miniature baseline complete: top-two window stack (active + dimmed secondary) for better runtime context in panel mode.
 5. Task-strip grouping baseline complete: show individual ME tasks only in `ME.EXE` scope and a collapsed `ME.EXE (n)` master item in non-ME scopes.
 6. Reserve right status cluster for `location | time` display; avoid placing temporary ME task tokens in that slot.

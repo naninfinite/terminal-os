@@ -596,3 +596,20 @@ Why it matters:
 
 Risks / Notes:
 - Top-edge hitbox offsets are intentionally conservative; minor tuning can be done later based on device testing.
+
+---
+
+## Entry 34 - M5 Panel Preview Parity (Top-Two Mini Stack)
+
+Summary:
+- Updated ME panel-mode preview to render up to the top two active windows instead of only one.
+- Added lightweight visual layering: secondary preview window is dimmed and slightly offset behind the active one.
+- Kept fullscreen rendering unchanged (all active windows still render in fullscreen mode).
+
+Why it matters:
+- Improves desktop panel readability by showing that multiple ME windows are active without full task-strip scanning.
+- Preserves performance and visual clarity by limiting panel preview to a small stack rather than full multi-window rendering.
+- Moves panel/fullscreen parity closer to expected “live runtime” behavior.
+
+Risks / Notes:
+- Panel preview intentionally caps at two windows for clarity; deeper stacks remain accessible in fullscreen/task strip.

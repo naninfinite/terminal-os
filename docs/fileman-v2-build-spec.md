@@ -187,7 +187,7 @@ Captured from recent review passes (implemented locks + remaining follow-ups):
 - Header/control safety lock (implemented): top resize hitboxes are split/inset to avoid `_` / `X` collisions while keeping header drag behavior intact.
 - Launcher discoverability lock (implemented): `FILE / ABOUT / PROJECTS / MEDIA` launcher access now stays visible when windows are open (no longer empty-state-only).
 - Launcher placement polish: optional follow-up to refine exact shelf placement without changing launch behavior.
-- Panel preview parity: evaluate optional multi-window miniature preview in desktop panel mode; current behavior intentionally shows only the top active window for clarity/perf.
+- Panel preview parity lock (implemented): desktop panel now shows a lightweight two-window stack (top active window + dimmed secondary) instead of single-window-only preview.
 - Task strip grouping baseline (implemented):
   - `ME.EXE` scope (`meos`): task strip shows individual ME windows.
   - Non-`ME.EXE` scopes: task strip collapses to a single master item (`ME.EXE (n)`).
