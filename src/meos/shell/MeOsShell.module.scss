@@ -193,7 +193,7 @@
   opacity: 0.9;
 }
 
-/* Top-row launcher variant (disabled for now)
+/* Top-row launcher variant (wide, disabled)
 .launcherShelf {
   position: absolute;
   top: 10px;
@@ -212,6 +212,22 @@
 }
 */
 
+/* Top-row launcher variant (legacy width, disabled)
+.launcherShelf {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 256px;
+  z-index: 1;
+}
+
+.launchGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+*/
+
 /* Center-column launcher variant (active) */
 .launcherShelf {
   position: absolute;
@@ -226,9 +242,9 @@
   pointer-events: auto;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: center;
   gap: 8px;
-  width: min(220px, calc(100% - 24px));
+  width: min(140px, calc(100% - 24px));
 }
 .launchBtn {
   border: $border;
