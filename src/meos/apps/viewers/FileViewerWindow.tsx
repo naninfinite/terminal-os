@@ -8,6 +8,7 @@ import { useMeOsVfs } from '../../vfs/MeOsVfsProvider';
 import styles from './FileViewerWindow.module.scss';
 import { useTheme } from '../../../theme/ThemeProvider';
 import type { ResolvedTheme } from '../../../theme/types';
+import { RUNTIME_THEME_PALETTE } from '../../../theme/runtimePalette';
 
 type FileViewerWindowProps = {
   win: MeOsWindow;
@@ -20,16 +21,16 @@ const FALLBACK_SVG_THEME: Record<ResolvedTheme, {
   bodyColor: string;
 }> = {
   dark: {
-    background: '#060906',
-    frameStroke: '#00ff66',
-    titleColor: '#00ff66',
-    bodyColor: '#00ff66',
+    background: RUNTIME_THEME_PALETTE.dark.background,
+    frameStroke: RUNTIME_THEME_PALETTE.dark.accent,
+    titleColor: RUNTIME_THEME_PALETTE.dark.text,
+    bodyColor: RUNTIME_THEME_PALETTE.dark.text,
   },
   light: {
-    background: '#f5f4ef',
-    frameStroke: '#101010',
-    titleColor: '#101010',
-    bodyColor: '#101010',
+    background: RUNTIME_THEME_PALETTE.light.background,
+    frameStroke: RUNTIME_THEME_PALETTE.light.accent,
+    titleColor: RUNTIME_THEME_PALETTE.light.text,
+    bodyColor: RUNTIME_THEME_PALETTE.light.text,
   },
 };
 
