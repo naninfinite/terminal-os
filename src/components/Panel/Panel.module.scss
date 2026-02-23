@@ -67,8 +67,8 @@
 
 .panel:hover::after,
 .panel:focus-visible::after {
-  border-color: rgba(0, 255, 102, 0.5);
-  box-shadow: 0 0 0 1px rgba(0, 255, 102, 0.2) inset;
+  border-color: var(--ui-border);
+  box-shadow: var(--ui-shadow-focus);
 }
 
 .noHover {

@@ -50,7 +50,7 @@
   /* Outer clipping region for scaled or full-size internal window stage. */
   min-height: 0;
   overflow: hidden;
-  background: rgba(0, 255, 102, 0.02);
+  background: var(--ui-fill-soft);
   position: relative;
 }
 
@@ -79,7 +79,7 @@
   min-width: 240px;
   min-height: 170px;
   box-sizing: border-box;
-  box-shadow: 0 0 0 1px rgba(0, 255, 102, 0.14);
+  box-shadow: 0 0 0 1px var(--ui-border-soft);
   overflow: hidden;
 }
 
@@ -146,7 +146,7 @@
   right: 44px;
   width: auto;
   height: 6px;
-  border-top: 1px solid rgba(0, 255, 102, 0.7);
+  border-top: 1px solid var(--ui-border);
   cursor: ns-resize;
 }
 
@@ -156,7 +156,7 @@
   bottom: 10px;
   width: 6px;
   height: auto;
-  border-right: 1px solid rgba(0, 255, 102, 0.7);
+  border-right: 1px solid var(--ui-border);
   cursor: ew-resize;
 }
 
@@ -166,7 +166,7 @@
   right: 10px;
   width: auto;
   height: 6px;
-  border-bottom: 1px solid rgba(0, 255, 102, 0.7);
+  border-bottom: 1px solid var(--ui-border);
   cursor: ns-resize;
 }
 
@@ -176,7 +176,7 @@
   bottom: 10px;
   width: 6px;
   height: auto;
-  border-left: 1px solid rgba(0, 255, 102, 0.7);
+  border-left: 1px solid var(--ui-border);
   cursor: ew-resize;
 }
 
@@ -185,8 +185,8 @@
   bottom: 0;
   width: 10px;
   height: 10px;
-  border-right: 1px solid rgba(0, 255, 102, 0.8);
-  border-bottom: 1px solid rgba(0, 255, 102, 0.8);
+  border-right: 1px solid var(--ui-border);
+  border-bottom: 1px solid var(--ui-border);
   cursor: nwse-resize;
 }
 
@@ -195,8 +195,8 @@
   top: 0;
   width: 8px;
   height: 8px;
-  border-left: 1px solid rgba(0, 255, 102, 0.8);
-  border-top: 1px solid rgba(0, 255, 102, 0.8);
+  border-left: 1px solid var(--ui-border);
+  border-top: 1px solid var(--ui-border);
   cursor: nwse-resize;
 }
 
@@ -205,8 +205,8 @@
   top: 0;
   width: 8px;
   height: 8px;
-  border-right: 1px solid rgba(0, 255, 102, 0.8);
-  border-top: 1px solid rgba(0, 255, 102, 0.8);
+  border-right: 1px solid var(--ui-border);
+  border-top: 1px solid var(--ui-border);
   cursor: nesw-resize;
 }
 
@@ -215,8 +215,8 @@
   bottom: 0;
   width: 10px;
   height: 10px;
-  border-left: 1px solid rgba(0, 255, 102, 0.8);
-  border-bottom: 1px solid rgba(0, 255, 102, 0.8);
+  border-left: 1px solid var(--ui-border);
+  border-bottom: 1px solid var(--ui-border);
   cursor: nesw-resize;
 }
 
@@ -318,14 +318,12 @@
 .fullscreenMode .launchBtn:focus-visible,
 .panelMode .launchBtn:hover,
 .panelMode .launchBtn:focus-visible {
-  border-color: rgba(0, 255, 102, 0.55);
-  background: rgba(0, 255, 102, 0.08);
-  //box-shadow: 0 0 0 1px rgba(0, 255, 102, 0.2) inset;
+  border-color: var(--ui-border);
+  background: var(--ui-fill-hover);
 }
 
 .launchBtnSelected {
-  background: rgba(0, 255, 102, 0.12);
-  //box-shadow: 0 0 0 1px rgba(0, 255, 102, 0.5) inset;
+  background: var(--ui-fill-strong);
 }
 
 .panelMode .launchBtn {
@@ -343,9 +341,9 @@
 .dirList {
   display: grid;
   gap: 4px;
-  border: 1px solid rgba(0, 255, 102, 0.18);
+  border: 1px solid var(--ui-border-soft);
   padding: 6px;
-  background: rgba(0, 255, 102, 0.03);
+  background: var(--ui-fill-soft);
 }
 
 .dirRow {
@@ -371,7 +369,7 @@
   gap: 8px;
   padding: 4px 8px;
   border-top: $border-thin solid $phosphor-green;
-  background: rgba(0, 255, 102, 0.04);
+  background: var(--ui-fill-soft);
 }
 
 .startBtn {
@@ -392,7 +390,7 @@
   inset: 0 0 $status-height 0;
   z-index: 40;
   border: $border;
-  background: rgba(0, 0, 0, 0.94);
+  background: var(--ui-overlay-bg);
   padding: 8px;
   box-sizing: border-box;
 }

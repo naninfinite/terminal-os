@@ -8,6 +8,9 @@ export type MenuCommandId =
   | 'open_file'
   | 'open_projects'
   | 'open_media'
+  | 'set_theme_auto'
+  | 'set_theme_dark'
+  | 'set_theme_light'
   | 'focus_you_panel'
   | 'you_save_input'
   | 'you_clear_input'
@@ -27,12 +30,19 @@ export type MenuScopeConfig = {
   items: MenuItemConfig[];
 };
 
+const THEME_MENU_ITEMS: MenuItemConfig[] = [
+  { id: 'set_theme_auto', label: 'THEME AUTO' },
+  { id: 'set_theme_dark', label: 'THEME DARK' },
+  { id: 'set_theme_light', label: 'THEME LIGHT' },
+];
+
 export const MENU_SCOPE_CONFIG: Record<MenuScopeId, MenuScopeConfig> = {
   desktop: {
     title: 'DESKTOP',
     items: [
       { id: 'open_meos', label: 'OPEN ME.EXE' },
       { id: 'open_file', label: 'OPEN FILE' },
+      ...THEME_MENU_ITEMS,
     ],
   },
   meos: {
@@ -42,6 +52,7 @@ export const MENU_SCOPE_CONFIG: Record<MenuScopeId, MenuScopeConfig> = {
       { id: 'open_projects', label: 'OPEN PROJECTS' },
       { id: 'open_media', label: 'OPEN MEDIA' },
       { id: 'exit_meos', label: 'EXIT ME.EXE' },
+      ...THEME_MENU_ITEMS,
     ],
   },
   you: {
@@ -50,6 +61,7 @@ export const MENU_SCOPE_CONFIG: Record<MenuScopeId, MenuScopeConfig> = {
       { id: 'focus_you_panel', label: 'FOCUS YOU PANEL' },
       { id: 'you_save_input', label: 'SAVE INPUT' },
       { id: 'you_clear_input', label: 'CLEAR INPUT' },
+      ...THEME_MENU_ITEMS,
     ],
   },
   third: {
@@ -57,6 +69,7 @@ export const MENU_SCOPE_CONFIG: Record<MenuScopeId, MenuScopeConfig> = {
     items: [
       { id: 'focus_third_panel', label: 'FOCUS THIRD PANEL' },
       { id: 'third_reset_scene', label: 'RESET SCENE' },
+      ...THEME_MENU_ITEMS,
     ],
   },
   connect: {
@@ -64,6 +77,7 @@ export const MENU_SCOPE_CONFIG: Record<MenuScopeId, MenuScopeConfig> = {
     items: [
       { id: 'focus_connect_panel', label: 'FOCUS CONNECT PANEL' },
       { id: 'connect_copy_banner', label: 'COPY BANNER' },
+      ...THEME_MENU_ITEMS,
     ],
   },
 };

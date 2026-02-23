@@ -10,9 +10,10 @@
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(rgba(0,0,0,0.06) 50%, rgba(0,0,0,0.0) 50%) 0 0 / 100% 2px,
-    radial-gradient(transparent 60%, rgba(0,0,0,0.25));
+    linear-gradient(rgb(var(--ui-scanline-rgb) / 0.08) 50%, transparent 50%) 0 0 / 100% 2px,
+    radial-gradient(transparent 60%, rgb(var(--ui-scanline-rgb) / 0.16));
   mix-blend-mode: overlay;
+  opacity: var(--ui-crt-overlay-opacity);
 }
 
 .crt::before {
@@ -20,13 +21,12 @@
   position: absolute;
   inset: 0;
   background: $scanline-gradient;
-  opacity: 0.35;
+  opacity: var(--ui-scanline-opacity);
   pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .crt::before { opacity: 0.1; }
-  .crt::after { opacity: 0.1; }
+  .crt::before { opacity: calc(var(--ui-scanline-opacity) * 0.35); }
+  .crt::after { opacity: calc(var(--ui-crt-overlay-opacity) * 0.35); }
 }
-
 

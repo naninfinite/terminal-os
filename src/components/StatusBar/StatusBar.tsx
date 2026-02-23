@@ -6,15 +6,16 @@ import React, { useEffect, useMemo, useState } from 'react';
 import styles from './StatusBar.module.scss';
 import { useMeOs } from '../../meos/shell/MeOsProvider';
 import { MENU_SCOPE_CONFIG, resolveMenuScope, type MenuCommandId } from '../../meos/menu/scopes';
+import { useTheme } from '../../theme/ThemeProvider';
 
 type DesktopPanelScope = 'you' | 'third' | 'connect' | 'me';
 
 const getTimezoneFallbackLabel = (): string => {
   const timezone = new Intl.DateTimeFormat().resolvedOptions().timeZone;
-  if (!timezone) return 'LOCATION --';
+  if (!timezone) return 'location --';
   const parts = timezone.split('/');
   const city = parts[parts.length - 1]?.replace(/_/g, ' ');
-  return city ? `TZ ${city}` : 'LOCATION --';
+  return city ? `${city}` : 'location --';
 };
 
 const formatCoordinateToken = (value: number, positiveToken: string, negativeToken: string): string => {
@@ -32,6 +33,7 @@ const StatusBar: React.FC = () => {
     openApp,
     restoreWindow,
   } = useMeOs();
+  const { setThemeMode } = useTheme();
   const [now, setNow] = useState<Date>(() => new Date());
   const [menuOpen, setMenuOpen] = useState(false);
   const [locationLabel, setLocationLabel] = useState<string>(() => getTimezoneFallbackLabel());
@@ -135,6 +137,15 @@ const StatusBar: React.FC = () => {
         break;
       case 'open_media':
         openAppForScope('media');
+        break;
+      case 'set_theme_auto':
+        setThemeMode('auto');
+        break;
+      case 'set_theme_dark':
+        setThemeMode('dark');
+        break;
+      case 'set_theme_light':
+        setThemeMode('light');
         break;
       case 'focus_you_panel':
         focusPanel('you');
