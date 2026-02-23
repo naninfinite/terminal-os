@@ -812,3 +812,19 @@ Why it matters:
 
 Risks / Notes:
 - This is a shell framing change only; window manager behavior is unchanged.
+
+---
+
+## Entry 46 - M5.x Status Language Simplification (Single Readiness Signal)
+
+Summary:
+- Simplified ME fullscreen footer copy from readiness+count to count-only.
+- Footer now renders window count tokens only (`0 WINDOWS`, `1 WINDOW`, `N WINDOWS`).
+- Kept global status bar `SYS: READY` unchanged as the sole readiness signal.
+
+Why it matters:
+- Removes duplicated readiness language (`SYS: READY` vs `DESKTOP READY/ACTIVE`) while preserving useful ME session context.
+- Keeps footer informative without introducing extra status semantics.
+
+Risks / Notes:
+- This is a copy-only behavior change; no menu, windowing, or persistence logic changed.

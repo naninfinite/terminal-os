@@ -70,8 +70,8 @@ When proposing future ME.EXE changes:
 8. Panel interaction lock complete: windows are fully interactive in panel mode (drag, resize, minimize, maximize, close); launchers open/focus on single click in panel.
 9. Fullscreen-entry lock complete: panel enters fullscreen via background-only double gesture (desktop double-click / touch double-tap), with keyboard fallback retained.
 10. Right status cluster location baseline complete: live `location | time` token with geolocation source and timezone fallback.
-11. Fullscreen footer status line currently uses `DESKTOP READY/ACTIVE | N WINDOWS`; revisit with user later for potential removal.
-12. Resolve status-language hierarchy: avoid overlap/redundancy between global `SYS: READY` and panel-local readiness labels.
+11. Fullscreen footer status line now reports window count only (`0 WINDOWS`, `1 WINDOW`, `N WINDOWS`).
+12. Status-language hierarchy resolved: `SYS: READY` is the sole readiness token; ME footer no longer duplicates readiness wording.
 13. Deferred M5.x control polish: maximize glyph should move from `[]` to square icon treatment.
 14. Edge-to-edge ME framing complete: outer ME panel/fullscreen inset padding removed while internal window body spacing remains unchanged.
 15. FileMan toolbar icon polish complete: icon + text controls are now CSS/ASCII-safe (no external icon assets), including `RESET`.
