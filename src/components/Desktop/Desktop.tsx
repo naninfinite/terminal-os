@@ -22,17 +22,17 @@ const Desktop: React.FC = () => {
         title="ME.EXE"
         scopeId="me"
         stretchBody
-        bodyClassName={styles.mePanelBodyFlush}
+        bodyClassName={styles.panelBodyFlush}
         onActivate={() => setActiveScope(null)}
       >
         <ME />
       </Panel>
       {/* Small persisted input panel. */}
-      <Panel title="YOU.EXE" scopeId="you" onActivate={() => setActiveScope('you')}><YOU /></Panel>
+      <Panel title="YOU.EXE" scopeId="you" bodyClassName={styles.panelBodyFlush} onActivate={() => setActiveScope('you')}><YOU /></Panel>
       {/* Canvas app needs a stretching body so WebGL can fill available height. */}
-      <Panel title="THIRD.EXE" scopeId="third" stretchBody onActivate={() => setActiveScope('third')}><THIRD /></Panel>
+      <Panel title="THIRD.EXE" scopeId="third" stretchBody bodyClassName={styles.panelBodyFlush} onActivate={() => setActiveScope('third')}><THIRD /></Panel>
       {/* ASCII banner / contact panel. */}
-      <Panel title="CONNECT.EXE" scopeId="connect" onActivate={() => setActiveScope('connect')}><CONNECT /></Panel>
+      <Panel title="CONNECT.EXE" scopeId="connect" bodyClassName={styles.panelBodyFlush} onActivate={() => setActiveScope('connect')}><CONNECT /></Panel>
     </div>
   );
 };
