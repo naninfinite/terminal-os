@@ -85,7 +85,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
     root.setAttribute('data-theme', resolvedTheme);
-    root.setAttribute('data-text-case', resolvedTheme === 'dark' ? 'upper' : 'mixed');
+    root.setAttribute('data-text-case', 'upper');
     root.style.setProperty('color-scheme', resolvedTheme);
   }, [resolvedTheme]);
 
