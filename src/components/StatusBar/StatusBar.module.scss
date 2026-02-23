@@ -40,10 +40,31 @@
 }
 
 .locationToken {
+  display: block;
   white-space: nowrap;
   max-width: 168px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.locationTokenButton {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.locationTokenButton:focus-visible {
+  outline: 1px dashed var(--ui-border);
+  outline-offset: 2px;
 }
 
 .rightDivider {

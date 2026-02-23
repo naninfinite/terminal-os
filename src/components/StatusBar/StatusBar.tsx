@@ -7,6 +7,14 @@ import styles from './StatusBar.module.scss';
 import { useMeOs } from '../../meos/shell/MeOsProvider';
 import { MENU_SCOPE_CONFIG, resolveMenuScope, type MenuCommandId } from '../../meos/menu/scopes';
 import { useTheme } from '../../theme/ThemeProvider';
+import { getItemSafe, setItemSafe } from '../../utils/storage';
+import {
+  LOCATION_CASE_STORAGE_KEY,
+  nextLocationCaseMode,
+  sanitizeLocationCaseMode,
+  toTextTransform,
+  type LocationCaseMode,
+} from './locationCase';
 
 type DesktopPanelScope = 'you' | 'third' | 'connect' | 'me';
 
@@ -37,6 +45,9 @@ const StatusBar: React.FC = () => {
   const [now, setNow] = useState<Date>(() => new Date());
   const [menuOpen, setMenuOpen] = useState(false);
   const [locationLabel, setLocationLabel] = useState<string>(() => getTimezoneFallbackLabel());
+  const [locationCaseMode, setLocationCaseMode] = useState<LocationCaseMode>(() => sanitizeLocationCaseMode(
+    getItemSafe<unknown>(LOCATION_CASE_STORAGE_KEY, 'upper')
+  ));
 
   // Keep the clock fresh while desktop shell is mounted.
   useEffect(() => {
@@ -74,6 +85,10 @@ const StatusBar: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    setItemSafe(LOCATION_CASE_STORAGE_KEY, locationCaseMode);
+  }, [locationCaseMode]);
+
+  useEffect(() => {
     if (!menuOpen) return;
     const onDocClick = () => setMenuOpen(false);
     const onEsc = (event: KeyboardEvent) => {
@@ -91,6 +106,7 @@ const StatusBar: React.FC = () => {
     second: '2-digit',
     hour12: false,
   }).format(now);
+  const locationTextTransform = toTextTransform(locationCaseMode);
 
   const scope = resolveMenuScope({ displayMode, activeScope: activeScope ?? undefined });
   const scopeConfig = MENU_SCOPE_CONFIG[scope];
@@ -236,7 +252,17 @@ const StatusBar: React.FC = () => {
         ))}
       </div>
       <div className={styles.right} aria-live="polite" aria-atomic="true">
-        <span className={styles.locationToken}>{locationLabel}</span>
+        <button
+          type="button"
+          className={styles.locationTokenButton}
+          onClick={() => setLocationCaseMode((prev) => nextLocationCaseMode(prev))}
+          title={`Location case: ${locationCaseMode}`}
+          aria-label={`Location case ${locationCaseMode}. Click to cycle case mode.`}
+        >
+          <span className={styles.locationToken} style={{ textTransform: locationTextTransform }}>
+            {locationLabel}
+          </span>
+        </button>
         <span className={styles.rightDivider} aria-hidden="true">|</span>
         <span>{timeString}</span>
       </div>
