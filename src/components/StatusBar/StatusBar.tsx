@@ -18,17 +18,22 @@ import {
 
 type DesktopPanelScope = 'you' | 'third' | 'connect' | 'me';
 
-const getTimezoneFallbackLabel = (): string => {
-  const timezone = new Intl.DateTimeFormat().resolvedOptions().timeZone;
-  if (!timezone) return 'location --';
-  const parts = timezone.split('/');
-  const city = parts[parts.length - 1]?.replace(/_/g, ' ');
-  return city ? `${city}` : 'location --';
+const getGmtOffsetLabel = (date: Date): string => {
+  const offsetMinutes = -date.getTimezoneOffset();
+  const sign = offsetMinutes >= 0 ? '+' : '-';
+  const absoluteMinutes = Math.abs(offsetMinutes);
+  const hours = String(Math.floor(absoluteMinutes / 60)).padStart(2, '0');
+  const minutes = String(absoluteMinutes % 60).padStart(2, '0');
+  return `GMT${sign}${hours}:${minutes}`;
 };
 
-const formatCoordinateToken = (value: number, positiveToken: string, negativeToken: string): string => {
-  const token = value >= 0 ? positiveToken : negativeToken;
-  return `${token}${Math.abs(value).toFixed(2)}`;
+const getLocationLabel = (date: Date): string => {
+  const timezone = new Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const gmtOffset = getGmtOffsetLabel(date);
+  if (!timezone) return gmtOffset;
+  const parts = timezone.split('/');
+  const city = parts[parts.length - 1]?.replace(/_/g, ' ');
+  return city ? `${city} ${gmtOffset}` : gmtOffset;
 };
 
 const StatusBar: React.FC = () => {
@@ -44,7 +49,6 @@ const StatusBar: React.FC = () => {
   const { setThemeMode } = useTheme();
   const [now, setNow] = useState<Date>(() => new Date());
   const [menuOpen, setMenuOpen] = useState(false);
-  const [locationLabel, setLocationLabel] = useState<string>(() => getTimezoneFallbackLabel());
   const [locationCaseMode, setLocationCaseMode] = useState<LocationCaseMode>(() => sanitizeLocationCaseMode(
     getItemSafe<unknown>(LOCATION_CASE_STORAGE_KEY, 'upper')
   ));
@@ -53,35 +57,6 @@ const StatusBar: React.FC = () => {
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      setLocationLabel(getTimezoneFallbackLabel());
-      return;
-    }
-
-    const onSuccess = (position: GeolocationPosition) => {
-      const lat = formatCoordinateToken(position.coords.latitude, 'N', 'S');
-      const lon = formatCoordinateToken(position.coords.longitude, 'E', 'W');
-      setLocationLabel(`${lat} ${lon}`);
-    };
-
-    const onError = () => {
-      setLocationLabel(getTimezoneFallbackLabel());
-    };
-
-    const watchId = navigator.geolocation.watchPosition(
-      onSuccess,
-      onError,
-      {
-        enableHighAccuracy: false,
-        maximumAge: 300_000,
-        timeout: 8_000,
-      }
-    );
-
-    return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
   useEffect(() => {
@@ -106,6 +81,7 @@ const StatusBar: React.FC = () => {
     second: '2-digit',
     hour12: false,
   }).format(now);
+  const locationLabel = useMemo(() => getLocationLabel(now), [now]);
   const locationTextTransform = toTextTransform(locationCaseMode);
 
   const scope = resolveMenuScope({ displayMode, activeScope: activeScope ?? undefined });
