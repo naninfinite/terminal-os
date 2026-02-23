@@ -193,7 +193,10 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
               onClick={() => toggleMaximizeWindow(win.id)}
               aria-label={`${win.maximized ? 'Restore' : 'Maximize'} ${win.title}`}
             >
-              []
+              <span
+                className={`${styles.windowBtnSquare} ${win.maximized ? styles.windowBtnSquareRestore : ''}`.trim()}
+                aria-hidden="true"
+              />
             </button>
             <button
               type="button"

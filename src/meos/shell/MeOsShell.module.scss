@@ -119,6 +119,32 @@
   background: $bg-black;
   color: $phosphor-green;
   padding: 0 6px;
+  min-width: 22px;
+  min-height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.windowBtnSquare {
+  width: 9px;
+  height: 9px;
+  border: 1px solid currentColor;
+  box-sizing: border-box;
+  position: relative;
+  display: block;
+}
+
+.windowBtnSquareRestore::after {
+  content: '';
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  left: -3px;
+  top: 2px;
+  border: 1px solid currentColor;
+  background: $bg-black;
+  box-sizing: border-box;
 }
 
 .windowBody {
