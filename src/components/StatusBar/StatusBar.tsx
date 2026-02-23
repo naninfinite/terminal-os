@@ -18,22 +18,12 @@ import {
 
 type DesktopPanelScope = 'you' | 'third' | 'connect' | 'me';
 
-const getGmtOffsetLabel = (date: Date): string => {
-  const offsetMinutes = -date.getTimezoneOffset();
-  const sign = offsetMinutes >= 0 ? '+' : '-';
-  const absoluteMinutes = Math.abs(offsetMinutes);
-  const hours = String(Math.floor(absoluteMinutes / 60)).padStart(2, '0');
-  const minutes = String(absoluteMinutes % 60).padStart(2, '0');
-  return `GMT${sign}${hours}:${minutes}`;
-};
-
-const getLocationLabel = (date: Date): string => {
+const getLocationLabel = (): string => {
   const timezone = new Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const gmtOffset = getGmtOffsetLabel(date);
-  if (!timezone) return gmtOffset;
+  if (!timezone) return 'location --';
   const parts = timezone.split('/');
   const city = parts[parts.length - 1]?.replace(/_/g, ' ');
-  return city ? `${city} ${gmtOffset}` : gmtOffset;
+  return city ? city : 'location --';
 };
 
 const StatusBar: React.FC = () => {
@@ -81,7 +71,7 @@ const StatusBar: React.FC = () => {
     second: '2-digit',
     hour12: false,
   }).format(now);
-  const locationLabel = useMemo(() => getLocationLabel(now), [now]);
+  const locationLabel = useMemo(() => getLocationLabel(), []);
   const locationTextTransform = toTextTransform(locationCaseMode);
 
   const scope = resolveMenuScope({ displayMode, activeScope: activeScope ?? undefined });
