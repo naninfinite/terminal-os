@@ -8,6 +8,7 @@ import { useMeOs } from '../../meos/shell/MeOsProvider';
 import { MENU_SCOPE_CONFIG, resolveMenuScope, type MenuCommandId } from '../../meos/menu/scopes';
 import { useTheme } from '../../theme/ThemeProvider';
 import { nextLocationCaseMode } from './locationCase';
+import { getNextThemeMode, getThemeToggleLabel } from './themeMenu';
 
 type DesktopPanelScope = 'you' | 'third' | 'connect' | 'me';
 
@@ -106,7 +107,7 @@ const StatusBar: React.FC = () => {
         openAppForScope('media');
         break;
       case 'toggle_theme':
-        setThemeMode(resolvedTheme === 'dark' ? 'light' : 'dark');
+        setThemeMode(getNextThemeMode(resolvedTheme));
         break;
       case 'focus_you_panel':
         focusPanel('you');
@@ -166,7 +167,7 @@ const StatusBar: React.FC = () => {
                 className={styles.menuItem}
                 onClick={() => runMenuAction(item.id)}
               >
-                {item.label}
+                {item.id === 'toggle_theme' ? getThemeToggleLabel(resolvedTheme) : item.label}
               </button>
             ))}
           </div>
