@@ -111,23 +111,32 @@
 
 .enterBtn {
   /* Primary entry CTA pinned near bottom of video frame. */
+  appearance: none;
+  -webkit-appearance: none;
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
   bottom: 10px;
   border: $border;
-  background: rgba(0,0,0,0.65);
+  background: rgb(var(--ui-scanline-rgb) / 0.14);
   color: $phosphor-green;
   padding: 6px 12px;
   z-index: 1;
+  box-shadow: none;
+  border-radius: 0;
+  text-shadow: none;
 }
 
-.enterBtn {
-  /* Base button typography/colors (shared across normal/hover states). */
-  border: $border;
-  background: rgba(0,0,0,0.65);
+.enterBtn:hover,
+.enterBtn:focus-visible {
+  background: var(--ui-fill-hover);
+  border-color: var(--ui-border);
   color: $phosphor-green;
-  padding: 6px 12px;
+}
+
+.enterBtn:focus-visible {
+  outline: 1px dashed var(--ui-border);
+  outline-offset: 2px;
 }
 
 /* Ensure button text matches site typography and sizing */
@@ -195,4 +204,3 @@
   font-size: clamp(12px, 1.6vw, 16px);
   color: $color-fg-dim;
 }
-
