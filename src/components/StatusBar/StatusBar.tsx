@@ -7,14 +7,7 @@ import styles from './StatusBar.module.scss';
 import { useMeOs } from '../../meos/shell/MeOsProvider';
 import { MENU_SCOPE_CONFIG, resolveMenuScope, type MenuCommandId } from '../../meos/menu/scopes';
 import { useTheme } from '../../theme/ThemeProvider';
-import { getItemSafe, setItemSafe } from '../../utils/storage';
-import {
-  LOCATION_CASE_STORAGE_KEY,
-  nextLocationCaseMode,
-  sanitizeLocationCaseMode,
-  toTextTransform,
-  type LocationCaseMode,
-} from './locationCase';
+import { nextLocationCaseMode } from './locationCase';
 
 type DesktopPanelScope = 'you' | 'third' | 'connect' | 'me';
 
@@ -36,22 +29,15 @@ const StatusBar: React.FC = () => {
     openApp,
     restoreWindow,
   } = useMeOs();
-  const { setThemeMode } = useTheme();
+  const { setThemeMode, setTextCaseMode, textCaseMode } = useTheme();
   const [now, setNow] = useState<Date>(() => new Date());
   const [menuOpen, setMenuOpen] = useState(false);
-  const [locationCaseMode, setLocationCaseMode] = useState<LocationCaseMode>(() => sanitizeLocationCaseMode(
-    getItemSafe<unknown>(LOCATION_CASE_STORAGE_KEY, 'upper')
-  ));
 
   // Keep the clock fresh while desktop shell is mounted.
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
-
-  useEffect(() => {
-    setItemSafe(LOCATION_CASE_STORAGE_KEY, locationCaseMode);
-  }, [locationCaseMode]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -72,7 +58,6 @@ const StatusBar: React.FC = () => {
     hour12: false,
   }).format(now);
   const locationLabel = useMemo(() => getLocationLabel(), []);
-  const locationTextTransform = toTextTransform(locationCaseMode);
 
   const scope = resolveMenuScope({ displayMode, activeScope: activeScope ?? undefined });
   const scopeConfig = MENU_SCOPE_CONFIG[scope];
@@ -221,11 +206,11 @@ const StatusBar: React.FC = () => {
         <button
           type="button"
           className={styles.locationTokenButton}
-          onClick={() => setLocationCaseMode((prev) => nextLocationCaseMode(prev))}
-          title={`Location case: ${locationCaseMode}`}
-          aria-label={`Location case ${locationCaseMode}. Click to cycle case mode.`}
+          onClick={() => setTextCaseMode(nextLocationCaseMode(textCaseMode))}
+          title={`Text case: ${textCaseMode}`}
+          aria-label={`Text case ${textCaseMode}. Click to toggle case mode.`}
         >
-          <span className={styles.locationToken} style={{ textTransform: locationTextTransform }}>
+          <span className={styles.locationToken}>
             {locationLabel}
           </span>
         </button>

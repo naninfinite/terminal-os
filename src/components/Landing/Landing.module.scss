@@ -7,7 +7,7 @@
   background: $bg-black;
   color: $color-fg;
   font-family: $font-mono;
-  text-transform: uppercase;
+  text-transform: inherit;
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -144,7 +144,7 @@
   font-family: $font-mono;
   font-size: $font-sm;
   letter-spacing: $letter-spacing;
-  text-transform: uppercase;
+  text-transform: inherit;
 }
 
 .overlay {

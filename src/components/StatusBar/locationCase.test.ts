@@ -14,19 +14,16 @@ describe('locationCase helpers', () => {
 
   it('keeps valid case values', () => {
     expect(sanitizeLocationCaseMode('upper')).toBe('upper');
-    expect(sanitizeLocationCaseMode('mixed')).toBe('mixed');
     expect(sanitizeLocationCaseMode('lower')).toBe('lower');
   });
 
   it('cycles in the expected order', () => {
-    expect(nextLocationCaseMode('upper')).toBe('mixed');
-    expect(nextLocationCaseMode('mixed')).toBe('lower');
+    expect(nextLocationCaseMode('upper')).toBe('lower');
     expect(nextLocationCaseMode('lower')).toBe('upper');
   });
 
   it('maps mode to css text-transform', () => {
     expect(toTextTransform('upper')).toBe('uppercase');
-    expect(toTextTransform('mixed')).toBe('none');
     expect(toTextTransform('lower')).toBe('lowercase');
   });
 });
