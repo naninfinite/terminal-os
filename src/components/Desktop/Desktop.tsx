@@ -18,7 +18,15 @@ const Desktop: React.FC = () => {
   return (
     <div className={styles.desktop} role="main">
       {/* Profile / portfolio entry panel. */}
-      <Panel title="ME.EXE" scopeId="me" stretchBody onActivate={() => setActiveScope(null)}><ME /></Panel>
+      <Panel
+        title="ME.EXE"
+        scopeId="me"
+        stretchBody
+        bodyClassName={styles.mePanelBodyFlush}
+        onActivate={() => setActiveScope(null)}
+      >
+        <ME />
+      </Panel>
       {/* Small persisted input panel. */}
       <Panel title="YOU.EXE" scopeId="you" onActivate={() => setActiveScope('you')}><YOU /></Panel>
       {/* Canvas app needs a stretching body so WebGL can fill available height. */}

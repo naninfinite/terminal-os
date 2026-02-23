@@ -414,13 +414,13 @@
   z-index: 40;
   border: $border;
   background: var(--ui-overlay-bg);
-  padding: 8px;
+  padding: 0;
   box-sizing: border-box;
 }
 
 @media (max-width: 720px) {
   .fullscreenLayer {
     inset: 0 0 $status-height 0;
-    padding: 6px;
+    padding: 0;
   }
 }
