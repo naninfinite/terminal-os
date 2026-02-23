@@ -6,19 +6,42 @@ import React, { useRef, useState } from 'react';
 import type { MeOsWindow } from '../../shell/types';
 import { useMeOsVfs } from '../../vfs/MeOsVfsProvider';
 import styles from './FileViewerWindow.module.scss';
+import { useTheme } from '../../../theme/ThemeProvider';
+import type { ResolvedTheme } from '../../../theme/types';
 
 type FileViewerWindowProps = {
   win: MeOsWindow;
 };
 
-const createFallbackImage = (label: string): string => {
+const FALLBACK_SVG_THEME: Record<ResolvedTheme, {
+  background: string;
+  frameStroke: string;
+  titleColor: string;
+  bodyColor: string;
+}> = {
+  dark: {
+    background: '#060906',
+    frameStroke: '#00ff66',
+    titleColor: '#00ff66',
+    bodyColor: '#00ff66',
+  },
+  light: {
+    background: '#f5f4ef',
+    frameStroke: '#101010',
+    titleColor: '#101010',
+    bodyColor: '#101010',
+  },
+};
+
+const createFallbackImage = (label: string, theme: ResolvedTheme): string => {
   const safe = label.replace(/[<>&]/g, '');
+  const palette = FALLBACK_SVG_THEME[theme];
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
-      <rect width="1280" height="720" fill="#060906" />
-      <rect x="24" y="24" width="1232" height="672" fill="none" stroke="#00ff66" stroke-opacity="0.3" stroke-width="2" />
-      <text x="72" y="128" font-family="monospace" font-size="38" fill="#00ff66">ME.EXE IMAGE PREVIEW</text>
-      <text x="72" y="190" font-family="monospace" font-size="24" fill="#00ff66" fill-opacity="0.85">${safe}</text>
+      <rect width="1280" height="720" fill="${palette.background}" />
+      <rect x="24" y="24" width="1232" height="672" fill="none" stroke="${palette.frameStroke}" stroke-opacity="0.3" stroke-width="2" />
+      <text x="72" y="128" font-family="monospace" font-size="38" fill="${palette.titleColor}">ME.EXE IMAGE PREVIEW</text>
+      <text x="72" y="190" font-family="monospace" font-size="24" fill="${palette.bodyColor}" fill-opacity="0.85">${safe}</text>
     </svg>
   `.trim();
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
@@ -156,6 +179,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 };
 
 const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
+  const { resolvedTheme } = useTheme();
   const { snapshot } = useMeOsVfs();
   const node = win.nodeId ? snapshot.nodes[win.nodeId] : null;
 
@@ -177,7 +201,7 @@ const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
   const kind = node.kind ?? win.viewerKind ?? 'text';
 
   if (kind === 'image') {
-    const source = node.assetSrc?.trim() || createFallbackImage(node.name);
+    const source = node.assetSrc?.trim() || createFallbackImage(node.name, resolvedTheme);
     return (
       <div className={styles.viewer}>
         <header className={styles.viewerHeader}>
@@ -193,7 +217,7 @@ const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
 
   if (kind === 'video') {
     const source = node.assetSrc?.trim();
-    const poster = node.posterSrc?.trim() || createFallbackImage(`${node.name} (poster)`);
+    const poster = node.posterSrc?.trim() || createFallbackImage(`${node.name} (poster)`, resolvedTheme);
     if (!source) {
       return (
         <div className={styles.viewer}>
