@@ -795,3 +795,20 @@ Why it matters:
 Risks / Notes:
 - On very narrow widths, icon + label buttons rely on existing responsive toolbar flow and label truncation handling.
 - Maximize square-glyph polish remains a separate deferred M5.x item and was intentionally not changed in this pass.
+
+---
+
+## Entry 45 - M5.x Edge-to-Edge ME Framing (Panel + Fullscreen)
+
+Summary:
+- Implemented the deferred shell-density polish for ME framing.
+- In desktop panel mode, ME now flushes to panel edges by removing ME-specific body inset while leaving other panels unchanged.
+- In fullscreen mode, removed ME fullscreen wrapper padding so the ME stage reaches the fullscreen frame edge.
+- Kept internal ME window/content spacing unchanged (no changes to window body padding rules).
+
+Why it matters:
+- Aligns ME framing with the requested “window edges / 100% width” desktop feel.
+- Preserves current non-ME panel styling and avoids broad layout churn.
+
+Risks / Notes:
+- This is a shell framing change only; window manager behavior is unchanged.

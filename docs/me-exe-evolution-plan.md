@@ -73,7 +73,7 @@ When proposing future ME.EXE changes:
 11. Fullscreen footer status line currently uses `DESKTOP READY/ACTIVE | N WINDOWS`; revisit with user later for potential removal.
 12. Resolve status-language hierarchy: avoid overlap/redundancy between global `SYS: READY` and panel-local readiness labels.
 13. Deferred M5.x control polish: maximize glyph should move from `[]` to square icon treatment.
-14. Deferred M5.x shell-density polish: evaluate edge-to-edge ME framing by removing outer panel/fullscreen inset padding while preserving internal window body spacing.
+14. Edge-to-edge ME framing complete: outer ME panel/fullscreen inset padding removed while internal window body spacing remains unchanged.
 15. FileMan toolbar icon polish complete: icon + text controls are now CSS/ASCII-safe (no external icon assets), including `RESET`.
 
 ## 9) Theme Split Lock (Auto / Dark / Light)
