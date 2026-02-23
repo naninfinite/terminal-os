@@ -55,17 +55,18 @@
 :root[data-theme='light'] {
   --ui-bg: #f5f4ef;
   --ui-bg-elevated: #ffffff;
-  --ui-surface: #ecebe6;
+  --ui-surface: #ffffff;
   --ui-text: #101010;
-  --ui-text-muted: #2f2f2f;
-  --ui-text-soft: #5f5f5f;
+  --ui-text-muted: #2a2a2a;
+  --ui-text-soft: #5a5a5a;
+  --ui-accent: #0f8f63;
   --ui-border: #101010;
-  --ui-border-soft: rgb(16 16 16 / 0.38);
+  --ui-border-soft: rgb(16 16 16 / 0.32);
   --ui-fill-soft: rgb(16 16 16 / 0.03);
-  --ui-fill-hover: rgb(16 16 16 / 0.08);
-  --ui-fill-strong: rgb(16 16 16 / 0.12);
-  --ui-fill-focus: rgb(16 16 16 / 0.16);
-  --ui-shadow-focus: 0 0 0 1px rgb(16 16 16 / 0.18) inset;
+  --ui-fill-hover: rgb(15 143 99 / 0.1);
+  --ui-fill-strong: rgb(15 143 99 / 0.16);
+  --ui-fill-focus: rgb(15 143 99 / 0.2);
+  --ui-shadow-focus: 0 0 0 1px rgb(15 143 99 / 0.24) inset;
   --ui-status-bg: #ecebe6;
   --ui-status-border: #101010;
   --ui-overlay-bg: rgb(245 244 239 / 0.95);
