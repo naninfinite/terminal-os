@@ -207,6 +207,28 @@ Milestone routing:
 
 ---
 
+## 8.4 Theme System v1 (Shell-First)
+
+Theme runtime is now a core-shell concern, not app-local styling:
+
+- Theme modes: `auto`, `dark`, `light`.
+- Default mode: `auto` (follow system preference).
+- Storage key: `terminalOS.ui.v1.theme`.
+- Override rule: manual selection persists until changed.
+- Dark parity rule: dark must stay visually aligned with current Terminal-OS baseline.
+- Light rule: strict monochrome shell with reduced CRT/cursor intensity.
+- Casing rule: dark uses uppercase baseline; light allows mixed/lower text.
+
+v1 rollout scope (implemented first):
+- Global shell surfaces and panel chrome.
+- Status bar + menu shell controls.
+- ME shell chrome and shared panel/window framing.
+
+Deferred to follow-up pass:
+- Deep app-interior parity (`FileMan` internals, viewers, and subsystem-specific app surfaces) unless targeted fixes are required for readability/regression.
+
+---
+
 ## 9) Performance Profile
 
 Panel mode (`ME.OS` embedded in `ME.EXE`):

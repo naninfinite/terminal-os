@@ -1,7 +1,7 @@
 # Terminal-OS Conversation Log
 
 Purpose: running summary of user/assistant decisions and direction.
-Updated: 2026-02-08
+Updated: 2026-02-23
 
 ---
 
@@ -682,3 +682,35 @@ Why it matters:
 Risks / Notes:
 - Geolocation availability depends on browser permissions and secure-context behavior.
 - Coordinates are intentionally concise and may be truncated visually in tight viewports.
+
+---
+
+## Entry 39 - Deferred: Lowercase Location Token Styling
+
+Summary:
+- Parked follow-up to keep location token text in lowercase.
+- Deferred for later pass to avoid broad casing side-effects while iterating quickly.
+
+Why it matters:
+- Current global text transform can force uppercase rendering, which conflicts with desired location style.
+
+Risks / Notes:
+- Backlog-only capture; no runtime/copy styling change applied in this pass.
+
+---
+
+## Entry 40 - Theme Architecture Lock (Auto / Dark / Light, Shell-First)
+
+Summary:
+- Locked runtime theme model to three modes: `auto`, `dark`, `light`.
+- Confirmed default behavior as system-aware `auto` with persistent manual override via menu actions.
+- Locked dark-mode parity requirement (current Terminal-OS look is baseline) and monochrome light-mode direction.
+- Scoped first rollout to core shell surfaces (status bar, panel/window chrome, ME shell, cursor/CRT intensity), with app-interior parity deferred.
+
+Why it matters:
+- Establishes a stable cross-shell theming contract without destabilizing current ME/File workflows.
+- Solves casing flexibility requirements by allowing mixed/lower rendering in light mode while preserving uppercase terminal identity in dark mode.
+
+Risks / Notes:
+- Some non-core interiors can remain dark-biased until follow-up token pass.
+- Theme control is intentionally menu-only in v1 to keep settings UX minimal and avoid extra settings UI surface.

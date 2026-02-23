@@ -68,3 +68,15 @@ When proposing future ME.EXE changes:
 6. Right status cluster location baseline complete: live `location | time` token with geolocation source and timezone fallback.
 7. Fullscreen footer status line currently uses `DESKTOP READY/ACTIVE | N WINDOWS`; revisit with user later for potential removal.
 8. Resolve status-language hierarchy: avoid overlap/redundancy between global `SYS: READY` and panel-local readiness labels.
+
+## 9) Theme Split Lock (Auto / Dark / Light)
+
+Theme direction is now locked for incremental rollout:
+
+1. Default behavior follows system preference (`auto`).
+2. User override is menu-command driven and persisted locally.
+3. Dark theme preserves current Terminal-OS visual baseline (no drift).
+4. Light theme is monochrome and intentionally less emissive.
+5. CRT/cursor effects are reduced in light mode.
+6. Text casing follows resolved theme: dark uppercase, light mixed/lower.
+7. Sequence: core shell first, then app interiors in follow-up passes.
