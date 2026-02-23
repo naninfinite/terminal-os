@@ -193,6 +193,7 @@ Captured from recent review passes (implemented locks + remaining follow-ups):
 - Panel runtime parity lock (implemented): desktop panel now renders all active non-minimized ME windows with real content (lightweight secondary-preview mode removed).
 - Panel interaction lock (implemented): ME windows remain fully interactive in panel mode (drag, resize, minimize, maximize, close).
 - Fullscreen-entry lock (implemented): panel enters fullscreen from background-only double gesture so single-click interactions remain available for launchers/windows.
+- FileMan toolbar icon polish (implemented): top toolbar actions now use icon + text controls (`BACK/FWD/UP`, `NEW FOLDER/NEW FILE`, `LIST/GRID`, `RESET`) with CSS/ASCII-safe icon primitives and no external asset pipeline.
 - Task strip grouping baseline (implemented):
   - `ME.EXE` scope (`meos`): task strip shows individual ME windows.
   - Non-`ME.EXE` scopes: task strip collapses to a single master item (`ME.EXE (n)`).

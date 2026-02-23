@@ -773,3 +773,25 @@ Why it matters:
 
 Risks / Notes:
 - Treated as a styling-density tweak only; no window manager behavior changes are required.
+
+---
+
+## Entry 44 - M5.x FileMan Toolbar Icon Polish (Icon + Text)
+
+Summary:
+- Replaced text-only FileMan toolbar controls with icon + text controls while preserving existing control order and behavior.
+- Included all requested toolbar actions in this pass:
+  - `BACK`, `FWD`, `UP`
+  - `NEW FOLDER`, `NEW FILE`
+  - `LIST`, `GRID`
+  - `RESET`
+- Implemented icon visuals with CSS/ASCII-safe primitives (no SVG/icon asset pipeline).
+- Kept `LIST`/`GRID` active-state behavior and added toggle semantics (`aria-pressed`) only for those two view-mode buttons.
+
+Why it matters:
+- Improves OS-like affordance and scanability in FileMan without introducing new dependencies or visual drift.
+- Keeps the pass narrow and low-risk by limiting scope to FileMan toolbar chrome.
+
+Risks / Notes:
+- On very narrow widths, icon + label buttons rely on existing responsive toolbar flow and label truncation handling.
+- Maximize square-glyph polish remains a separate deferred M5.x item and was intentionally not changed in this pass.
