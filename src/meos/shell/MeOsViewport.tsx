@@ -24,9 +24,21 @@ type MeOsWindowCardProps = {
 
 type ResizeHandle = 'n' | 'e' | 's' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
 
+const getPreviewLabel = (appId: MeOsWindow['appId']): string => {
+  if (appId === 'file') return 'FILE PREVIEW';
+  if (appId === 'about') return 'ABOUT PREVIEW';
+  if (appId === 'projects') return 'PROJECTS PREVIEW';
+  if (appId === 'media') return 'MEDIA PREVIEW';
+  if (appId === 'viewer_text') return 'TEXT VIEWER';
+  if (appId === 'viewer_image') return 'IMAGE VIEWER';
+  if (appId === 'viewer_video') return 'VIDEO VIEWER';
+  return 'PROJECT VIEWER';
+};
+
 const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode, previewVariant = 'primary' }) => {
   const { focusWindow, moveWindow, resizeWindow, minimizeWindow, toggleMaximizeWindow, closeWindow } = useMeOs();
   const interactive = mode === 'fullscreen';
+  const isPanelSecondaryPreview = mode === 'panel' && previewVariant === 'secondary';
   const stopHeaderInteraction = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation();
   };
@@ -163,7 +175,10 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode, previewVaria
         height: `${win.height}px`,
         zIndex: win.zIndex,
       }}
-      onMouseDown={() => focusWindow(win.id)}
+      onMouseDown={() => {
+        if (!interactive) return;
+        focusWindow(win.id);
+      }}
       aria-label={win.title}
     >
       <div className={styles.windowHeader} onMouseDown={onDragStart}>
@@ -204,7 +219,11 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode, previewVaria
         ) : null}
       </div>
       <div className={`${styles.windowBody} ${win.appId === 'file' ? styles.windowBodyNoScroll : ''}`.trim()}>
-        {renderContent()}
+        {isPanelSecondaryPreview ? (
+          <div className={styles.previewBody}>
+            <span>{getPreviewLabel(win.appId)}</span>
+          </div>
+        ) : renderContent()}
       </div>
       {interactive && !win.maximized ? (
         <>
