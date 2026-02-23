@@ -62,7 +62,7 @@ When proposing future ME.EXE changes:
 
 1. Edge/corner resize baseline complete: `N/E/S/W` + corner handles, including full top-edge and top-right hit coverage.
 2. Drag remains header-only; action buttons are protected from drag starts.
-3. Per-window maximize baseline complete: all ME windows support `[]` maximize/restore with persisted state.
+3. Per-window maximize baseline complete: all ME windows support maximize/restore with persisted state.
 4. Maximize first-pass bounds lock: maximized windows fill ME stage only (below `[ME.EXE]`, above footer status line).
 5. Launcher persistence complete: `FILE / ABOUT / PROJECTS / MEDIA` remains visible while windows are open.
 6. Desktop-panel runtime parity complete: panel now renders all active non-minimized ME windows with real content (no lightweight secondary preview path).
@@ -72,7 +72,7 @@ When proposing future ME.EXE changes:
 10. Right status cluster location baseline complete: live `location | time` token with geolocation source and timezone fallback.
 11. Fullscreen footer status line now reports window count only (`0 WINDOWS`, `1 WINDOW`, `N WINDOWS`).
 12. Status-language hierarchy resolved: `SYS: READY` is the sole readiness token; ME footer no longer duplicates readiness wording.
-13. Deferred M5.x control polish: maximize glyph should move from `[]` to square icon treatment.
+13. Maximize control polish complete: maximize glyph now uses square icon treatment.
 14. Edge-to-edge ME framing complete: outer ME panel/fullscreen inset padding removed while internal window body spacing remains unchanged.
 15. FileMan toolbar icon polish complete: icon + text controls are now CSS/ASCII-safe (no external icon assets), including `RESET`.
 

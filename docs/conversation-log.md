@@ -828,3 +828,20 @@ Why it matters:
 
 Risks / Notes:
 - This is a copy-only behavior change; no menu, windowing, or persistence logic changed.
+
+---
+
+## Entry 47 - M5.x Chrome Polish Bundle (Maximize Glyph + Panel Hover Parity + Footer Token Format)
+
+Summary:
+- Replaced ME maximize control text glyph (`[]`) with a square-style icon treatment while keeping maximize/restore logic unchanged.
+- Matched panel edge hover framing across all desktop panels (`ME`, `YOU`, `THIRD`, `CONNECT`) by applying the same body-flush hover footprint treatment.
+- Tightened ME footer token formatting from plain count text to structured token style (`WINDOW(S) | N`) without changing status semantics.
+
+Why it matters:
+- Improves control clarity and OS-like chrome consistency without broad layout redesign.
+- Reduces visual mismatch between ME and non-ME panels in desktop hover/focus behavior.
+- Keeps recent status-language simplification while improving readability of window-count footer data.
+
+Risks / Notes:
+- This bundle is visual polish only; no state, persistence, or command routing behavior changed.
