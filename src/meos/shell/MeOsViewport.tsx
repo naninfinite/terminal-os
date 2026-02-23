@@ -303,7 +303,17 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
                     setSelectedLauncher(launcher.id);
                     openApp(launcher.id);
                   }}
+                  onKeyDown={(event) => {
+                    if (!interactive) return;
+                    if (event.key !== 'Enter' && event.key !== ' ') return;
+                    event.preventDefault();
+                    setSelectedLauncher(launcher.id);
+                    openApp(launcher.id);
+                  }}
+                  tabIndex={interactive ? 0 : -1}
+                  aria-disabled={!interactive}
                   aria-pressed={selectedLauncher === launcher.id}
+                  aria-label={`${launcher.label} launcher`}
                 >
                   {launcher.label}
                 </button>
