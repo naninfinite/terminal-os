@@ -21,10 +21,192 @@
   color: $phosphor-green;
   padding: 3px 8px;
   font-size: $font-xs;
+  overflow: hidden;
+}
+
+.btn:disabled {
+  opacity: 0.58;
+}
+
+.btnContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.btnIcon {
+  width: 12px;
+  height: 12px;
+  position: relative;
+  display: inline-block;
+  flex: 0 0 12px;
+  box-sizing: border-box;
+  color: currentColor;
+}
+
+.btnIcon::before,
+.btnIcon::after {
+  content: '';
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.btnLabel {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .btnActive {
   background: var(--ui-fill-strong);
+}
+
+.iconBack::before {
+  left: 2px;
+  right: 1px;
+  top: 5px;
+  border-top: 1px solid currentColor;
+}
+
+.iconBack::after {
+  left: 2px;
+  top: 3px;
+  width: 4px;
+  height: 4px;
+  border-left: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.iconForward::before {
+  left: 1px;
+  right: 2px;
+  top: 5px;
+  border-top: 1px solid currentColor;
+}
+
+.iconForward::after {
+  right: 2px;
+  top: 3px;
+  width: 4px;
+  height: 4px;
+  border-right: 1px solid currentColor;
+  border-top: 1px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.iconUp::before {
+  left: 5px;
+  top: 2px;
+  bottom: 1px;
+  border-left: 1px solid currentColor;
+}
+
+.iconUp::after {
+  left: 3px;
+  top: 2px;
+  width: 4px;
+  height: 4px;
+  border-left: 1px solid currentColor;
+  border-top: 1px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.iconNewFolder {
+  width: 11px;
+  height: 8px;
+  margin-top: 3px;
+  border: 1px solid currentColor;
+  border-radius: 1px;
+}
+
+.iconNewFolder::before {
+  left: 1px;
+  top: -4px;
+  width: 6px;
+  height: 3px;
+  border: 1px solid currentColor;
+  border-bottom: none;
+  border-radius: 1px 1px 0 0;
+}
+
+.iconNewFolder::after {
+  right: -1px;
+  top: 1px;
+  width: 5px;
+  height: 5px;
+  background:
+    linear-gradient(currentColor, currentColor) center / 1px 5px no-repeat,
+    linear-gradient(currentColor, currentColor) center / 5px 1px no-repeat;
+}
+
+.iconNewFile {
+  border: 1px solid currentColor;
+  border-radius: 1px;
+}
+
+.iconNewFile::before {
+  right: -1px;
+  top: -1px;
+  width: 4px;
+  height: 4px;
+  background: var(--ui-bg, #000);
+  border-left: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+}
+
+.iconNewFile::after {
+  left: 1px;
+  bottom: 1px;
+  width: 5px;
+  height: 5px;
+  background:
+    linear-gradient(currentColor, currentColor) center / 1px 5px no-repeat,
+    linear-gradient(currentColor, currentColor) center / 5px 1px no-repeat;
+}
+
+.iconList::before {
+  left: 1px;
+  right: 1px;
+  top: 2px;
+  bottom: 2px;
+  background:
+    linear-gradient(currentColor, currentColor) 0 0 / 100% 1px no-repeat,
+    linear-gradient(currentColor, currentColor) 0 50% / 100% 1px no-repeat,
+    linear-gradient(currentColor, currentColor) 0 100% / 100% 1px no-repeat;
+}
+
+.iconGrid::before {
+  left: 1px;
+  top: 1px;
+  right: 1px;
+  bottom: 1px;
+  background:
+    linear-gradient(currentColor, currentColor) 0 0 / 4px 4px no-repeat,
+    linear-gradient(currentColor, currentColor) 100% 0 / 4px 4px no-repeat,
+    linear-gradient(currentColor, currentColor) 0 100% / 4px 4px no-repeat,
+    linear-gradient(currentColor, currentColor) 100% 100% / 4px 4px no-repeat;
+}
+
+.iconReset::before {
+  left: 1px;
+  top: 1px;
+  right: 1px;
+  bottom: 1px;
+  border: 1px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 999px;
+}
+
+.iconReset::after {
+  right: 1px;
+  top: 1px;
+  width: 4px;
+  height: 4px;
+  border-top: 1px solid currentColor;
+  border-right: 1px solid currentColor;
+  transform: rotate(15deg);
 }
 
 .path {

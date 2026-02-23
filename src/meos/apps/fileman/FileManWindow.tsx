@@ -25,6 +25,25 @@ type ContextMenuState = {
 } | null;
 
 type ViewMode = 'list' | 'grid';
+type ToolbarActionId = 'back' | 'forward' | 'up' | 'new_folder' | 'new_file' | 'list' | 'grid' | 'reset';
+type ToolbarIconClass =
+  | 'iconBack'
+  | 'iconForward'
+  | 'iconUp'
+  | 'iconNewFolder'
+  | 'iconNewFile'
+  | 'iconList'
+  | 'iconGrid'
+  | 'iconReset';
+type ToolbarAction = {
+  id: ToolbarActionId;
+  label: string;
+  iconClass: ToolbarIconClass;
+  onClick: () => void;
+  disabled?: boolean;
+  active?: boolean;
+  pressed?: boolean;
+};
 
 const sortEntries = (entries: VfsNode[]): VfsNode[] => [...entries].sort((a, b) => {
   if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
@@ -321,12 +340,92 @@ const FileManWindow: React.FC = () => {
     startRename(file.id);
   };
 
+  const toolbarNavActions: ToolbarAction[] = [
+    {
+      id: 'back',
+      label: 'BACK',
+      iconClass: 'iconBack',
+      onClick: goBack,
+      disabled: nav.index <= 0,
+    },
+    {
+      id: 'forward',
+      label: 'FWD',
+      iconClass: 'iconForward',
+      onClick: goForward,
+      disabled: nav.index >= nav.history.length - 1,
+    },
+    {
+      id: 'up',
+      label: 'UP',
+      iconClass: 'iconUp',
+      onClick: goUp,
+      disabled: !currentFolder || currentFolder.parentId == null,
+    },
+  ];
+
+  const toolbarActions: ToolbarAction[] = [
+    {
+      id: 'new_folder',
+      label: 'NEW FOLDER',
+      iconClass: 'iconNewFolder',
+      onClick: createDefaultFolder,
+    },
+    {
+      id: 'new_file',
+      label: 'NEW FILE',
+      iconClass: 'iconNewFile',
+      onClick: createDefaultFile,
+    },
+    {
+      id: 'list',
+      label: 'LIST',
+      iconClass: 'iconList',
+      onClick: () => setViewMode('list'),
+      active: viewMode === 'list',
+      pressed: viewMode === 'list',
+    },
+    {
+      id: 'grid',
+      label: 'GRID',
+      iconClass: 'iconGrid',
+      onClick: () => setViewMode('grid'),
+      active: viewMode === 'grid',
+      pressed: viewMode === 'grid',
+    },
+    {
+      id: 'reset',
+      label: 'RESET',
+      iconClass: 'iconReset',
+      onClick: reset,
+    },
+  ];
+
+  const renderToolbarButton = (action: ToolbarAction) => {
+    const iconClassName = styles[action.iconClass];
+    return (
+      <button
+        key={action.id}
+        type="button"
+        className={`${styles.btn} ${action.active ? styles.btnActive : ''}`.trim()}
+        onClick={action.onClick}
+        disabled={Boolean(action.disabled)}
+        aria-label={action.label}
+        title={action.label}
+        aria-pressed={action.pressed}
+      >
+        <span className={styles.btnContent}>
+          <span className={`${styles.btnIcon} ${iconClassName}`.trim()} aria-hidden="true" />
+          <span className={styles.btnLabel}>{action.label}</span>
+        </span>
+      </button>
+    );
+  };
+
   return (
     <div className={styles.root}>
       <div className={styles.toolbar}>
-        <button type="button" className={styles.btn} onClick={goBack} disabled={nav.index <= 0}>BACK</button>
-        <button type="button" className={styles.btn} onClick={goForward} disabled={nav.index >= nav.history.length - 1}>FWD</button>
-        <button type="button" className={styles.btn} onClick={goUp} disabled={!currentFolder || currentFolder.parentId == null}>UP</button>
+        {toolbarNavActions.map(renderToolbarButton)}
         <input
           className={styles.path}
           type="text"
@@ -335,23 +434,7 @@ const FileManWindow: React.FC = () => {
           onKeyDown={(e) => { if (isEnter(e)) onPathSubmit(); }}
           aria-label="Path"
         />
-        <button type="button" className={styles.btn} onClick={createDefaultFolder}>NEW FOLDER</button>
-        <button type="button" className={styles.btn} onClick={createDefaultFile}>NEW FILE</button>
-        <button
-          type="button"
-          className={`${styles.btn} ${viewMode === 'list' ? styles.btnActive : ''}`.trim()}
-          onClick={() => setViewMode('list')}
-        >
-          LIST
-        </button>
-        <button
-          type="button"
-          className={`${styles.btn} ${viewMode === 'grid' ? styles.btnActive : ''}`.trim()}
-          onClick={() => setViewMode('grid')}
-        >
-          GRID
-        </button>
-        <button type="button" className={styles.btn} onClick={reset}>RESET</button>
+        {toolbarActions.map(renderToolbarButton)}
       </div>
 
       <div className={styles.body}>
