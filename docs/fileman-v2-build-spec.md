@@ -207,6 +207,7 @@ Captured from recent review passes (implemented locks + remaining follow-ups):
   - Keep ME footer token and normalize panel language (for example `YOU READY`, `THIRD READY`, `CONNECT READY` in their contexts).
   - Simplify by keeping only one readiness signal (global or panel-local), not both.
 - Deferred M5.x visual polish: update maximize control glyph from `[]` to a square-styled icon treatment without changing current interaction behavior.
+- Deferred M5.x shell-density polish: evaluate edge-to-edge ME framing (remove outer ME wrapper padding/inset in panel and fullscreen) while keeping internal window/content padding unchanged.
 
 Milestone routing:
 - Treat these as `M5` polish follow-ups (or `M5.x`) so they stay incremental and styling-safe.

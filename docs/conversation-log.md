@@ -757,3 +757,19 @@ Why it matters:
 Risks / Notes:
 - Rendering all windows in panel can increase visual density and overlap in compact layouts; this is now accepted by product direction.
 - Maximize-control visual polish remains deferred: replace `[]` glyph with square icon treatment in a later M5.x pass.
+
+---
+
+## Entry 43 - Deferred TODO: ME Edge-to-Edge Framing Polish
+
+Summary:
+- User flagged that ME currently retains outer inset/padding and asked to track edge-to-edge framing as a TODO.
+- Decision: keep current behavior for now; capture as a deferred M5.x polish task.
+- Intended direction: remove outer ME wrapper padding/inset in panel and fullscreen so ME stage reaches frame edges, while keeping internal window/body padding unchanged.
+
+Why it matters:
+- Aligns ME shell framing with the desired “window edges at full width/height” desktop feel.
+- Keeps scope narrow by separating shell-density framing from window-content spacing.
+
+Risks / Notes:
+- Treated as a styling-density tweak only; no window manager behavior changes are required.
