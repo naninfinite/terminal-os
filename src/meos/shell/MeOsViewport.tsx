@@ -279,7 +279,7 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode, onPanelBackgro
     [windows]
   );
   const windowCount = activeWindows.length;
-  const desktopStateLabel = windowCount === 0 ? 'DESKTOP READY' : 'DESKTOP ACTIVE';
+  const windowCountLabel = `${windowCount} WINDOW${windowCount === 1 ? '' : 'S'}`;
   const visibleWindows = activeWindows;
 
   const onPanelBackgroundDoubleClick = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -377,7 +377,7 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode, onPanelBackgro
 
       {isFullscreen ? (
         <footer className={styles.chromeFooter}>
-          <span className={styles.footerInfo}>{`${desktopStateLabel} | ${windowCount} WINDOW(S)`}</span>
+          <span className={styles.footerInfo}>{windowCountLabel}</span>
         </footer>
       ) : null}
     </section>
