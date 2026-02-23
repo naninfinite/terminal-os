@@ -8,9 +8,7 @@ export type MenuCommandId =
   | 'open_file'
   | 'open_projects'
   | 'open_media'
-  | 'set_theme_auto'
-  | 'set_theme_dark'
-  | 'set_theme_light'
+  | 'toggle_theme'
   | 'focus_you_panel'
   | 'you_save_input'
   | 'you_clear_input'
@@ -31,9 +29,7 @@ export type MenuScopeConfig = {
 };
 
 const THEME_MENU_ITEMS: MenuItemConfig[] = [
-  { id: 'set_theme_auto', label: 'THEME AUTO' },
-  { id: 'set_theme_dark', label: 'THEME DARK' },
-  { id: 'set_theme_light', label: 'THEME LIGHT' },
+  { id: 'toggle_theme', label: 'TOGGLE THEME' },
 ];
 
 export const MENU_SCOPE_CONFIG: Record<MenuScopeId, MenuScopeConfig> = {

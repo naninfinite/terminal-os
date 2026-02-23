@@ -29,7 +29,7 @@ const StatusBar: React.FC = () => {
     openApp,
     restoreWindow,
   } = useMeOs();
-  const { setThemeMode, setTextCaseMode, textCaseMode } = useTheme();
+  const { resolvedTheme, setThemeMode, setTextCaseMode, textCaseMode } = useTheme();
   const [now, setNow] = useState<Date>(() => new Date());
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -105,14 +105,8 @@ const StatusBar: React.FC = () => {
       case 'open_media':
         openAppForScope('media');
         break;
-      case 'set_theme_auto':
-        setThemeMode('auto');
-        break;
-      case 'set_theme_dark':
-        setThemeMode('dark');
-        break;
-      case 'set_theme_light':
-        setThemeMode('light');
+      case 'toggle_theme':
+        setThemeMode(resolvedTheme === 'dark' ? 'light' : 'dark');
         break;
       case 'focus_you_panel':
         focusPanel('you');
