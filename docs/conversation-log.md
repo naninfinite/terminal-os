@@ -734,3 +734,26 @@ Why it matters:
 Risks / Notes:
 - Top-right resize and close hit areas are intentionally allowed to overlap behaviorally by user choice; accidental resize near `X` is accepted by design.
 - Alternative maximize target behavior (different lower bound strategy) remains deferred for a future UX decision pass.
+
+---
+
+## Entry 42 - M5.x Panel Interaction Rework (Desktop-Interactive ME)
+
+Summary:
+- Reverted lightweight panel-preview behavior and restored full real-content rendering in panel mode.
+- Removed panel miniature cap; panel now renders all active non-minimized ME windows (not just a top-two stack).
+- Kept windows fully interactive in panel mode (drag, resize, minimize, maximize, close).
+- Changed fullscreen entry behavior in panel mode to background-only double gesture:
+  - Desktop: double-click stage background.
+  - Touch: true double-tap stage background.
+- Kept launcher interactions active in panel mode (single-click open/focus), while preventing launcher/window interactions from triggering fullscreen.
+- Removed ME root single-click fullscreen open so panel interactions are no longer hijacked.
+
+Why it matters:
+- Matches the intended UX: panel behaves like a live mini desktop users can manipulate directly before entering fullscreen.
+- Prevents accidental fullscreen jumps during normal panel interactions.
+- Improves panel/fullscreen runtime parity by showing the complete active ME session in both contexts.
+
+Risks / Notes:
+- Rendering all windows in panel can increase visual density and overlap in compact layouts; this is now accepted by product direction.
+- Maximize-control visual polish remains deferred: replace `[]` glyph with square icon treatment in a later M5.x pass.

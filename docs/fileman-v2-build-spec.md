@@ -12,7 +12,7 @@ Milestone status: M1 complete, M2 complete, M3 complete, M4 complete, M5 in prog
 
 `ME.EXE` evolves from a static panel into `ME.OS`, a portfolio-focused pseudo OS:
 - Desktop always shows a live miniature `ME.OS` inside the `ME.EXE` panel.
-- Clicking `ME.EXE` expands that same running instance to fullscreen.
+- Background double-gesture inside `ME.EXE` panel (desktop double-click / touch double-tap) expands that same running instance to fullscreen.
 - Closing fullscreen returns to desktop with identical in-session `ME.OS` state visible in panel view.
 
 ---
@@ -21,7 +21,7 @@ Milestone status: M1 complete, M2 complete, M3 complete, M4 complete, M5 in prog
 
 1. User enters desktop and sees four panels (`ME`, `YOU`, `THIRD`, `CONNECT`).
 2. `ME.EXE` panel already displays a live `ME.OS` mini view.
-3. User clicks `ME.EXE`; `ME.OS` expands to fullscreen without reinitializing state.
+3. User interacts directly with windows/launchers in panel mode, then double-clicks the panel background (or double-taps on touch) to enter fullscreen without reinitializing state.
 4. User browses folders/files in FileMan v2 and opens content windows (images, videos, text, projects).
 5. User exits fullscreen; the same `ME.OS` state remains visible in the panel.
 6. User can reopen and continue exactly where they left off.
@@ -190,7 +190,9 @@ Captured from recent review passes (implemented locks + remaining follow-ups):
 - Per-window maximize baseline (implemented): all ME windows expose `[]` maximize/restore, persisted with stage-bounded maximize behavior.
 - Launcher discoverability lock (implemented): `FILE / ABOUT / PROJECTS / MEDIA` launcher access now stays visible when windows are open (no longer empty-state-only).
 - Launcher placement polish: optional follow-up to refine exact shelf placement without changing launch behavior.
-- Panel preview parity lock (implemented): desktop panel now shows a lightweight two-window stack (top active window + dimmed secondary) instead of single-window-only preview.
+- Panel runtime parity lock (implemented): desktop panel now renders all active non-minimized ME windows with real content (lightweight secondary-preview mode removed).
+- Panel interaction lock (implemented): ME windows remain fully interactive in panel mode (drag, resize, minimize, maximize, close).
+- Fullscreen-entry lock (implemented): panel enters fullscreen from background-only double gesture so single-click interactions remain available for launchers/windows.
 - Task strip grouping baseline (implemented):
   - `ME.EXE` scope (`meos`): task strip shows individual ME windows.
   - Non-`ME.EXE` scopes: task strip collapses to a single master item (`ME.EXE (n)`).
@@ -204,6 +206,7 @@ Captured from recent review passes (implemented locks + remaining follow-ups):
 - Future decision options:
   - Keep ME footer token and normalize panel language (for example `YOU READY`, `THIRD READY`, `CONNECT READY` in their contexts).
   - Simplify by keeping only one readiness signal (global or panel-local), not both.
+- Deferred M5.x visual polish: update maximize control glyph from `[]` to a square-styled icon treatment without changing current interaction behavior.
 
 Milestone routing:
 - Treat these as `M5` polish follow-ups (or `M5.x`) so they stay incremental and styling-safe.
