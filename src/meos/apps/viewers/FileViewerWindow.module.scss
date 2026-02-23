@@ -9,8 +9,8 @@
 }
 
 .viewerHeader {
-  border: 1px solid rgba(0, 255, 102, 0.25);
-  background: rgba(0, 255, 102, 0.04);
+  border: 1px solid var(--ui-border-soft);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -19,7 +19,7 @@
 }
 
 .viewerKind {
-  border: 1px solid rgba(0, 255, 102, 0.35);
+  border: 1px solid var(--ui-border-soft);
   padding: 1px 6px;
   font-size: $font-xs;
   letter-spacing: 0.05em;
@@ -35,7 +35,7 @@
   display: grid;
   gap: 6px;
   align-content: start;
-  border: 1px dashed rgba(0, 255, 102, 0.35);
+  border: 1px dashed var(--ui-border-soft);
   padding: 10px;
 }
 
@@ -72,7 +72,7 @@
   width: 100%;
   height: 100%;
   min-height: 0;
-  border: 1px solid rgba(0, 255, 102, 0.25);
+  border: 1px solid var(--ui-border-soft);
   background: $bg-black;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
@@ -89,8 +89,8 @@
   grid-template-columns: auto 1fr auto auto;
   align-items: center;
   gap: 8px;
-  border-top: 1px solid rgba(0, 255, 102, 0.22);
-  background: rgba(0, 255, 102, 0.05);
+  border-top: 1px solid var(--ui-border-soft);
+  background: transparent;
   padding: 6px 8px;
 }
 
@@ -105,9 +105,9 @@
 
 .controlBtn:hover,
 .controlBtn:focus-visible {
-  border-color: rgba(0, 255, 102, 0.55);
-  background: rgba(0, 255, 102, 0.08);
-  box-shadow: 0 0 0 1px rgba(0, 255, 102, 0.2) inset;
+  border-color: var(--ui-border);
+  background: var(--ui-fill-hover);
+  box-shadow: var(--ui-shadow-focus);
 }
 
 .timeline {
@@ -192,7 +192,7 @@
   display: grid;
   gap: 10px;
   align-content: start;
-  background: rgba(0, 255, 102, 0.03);
+  background: transparent;
   min-height: 0;
   overflow: auto;
 }
@@ -216,7 +216,7 @@
 }
 
 .stackItem {
-  border: 1px solid rgba(0, 255, 102, 0.35);
+  border: 1px solid var(--ui-border-soft);
   padding: 2px 6px;
   font-size: $font-xs;
 }
