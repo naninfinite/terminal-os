@@ -7,17 +7,20 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import styles from './THIRD.module.scss';
 import { useTheme } from '../../theme/ThemeProvider';
+import { RUNTIME_THEME_PALETTE } from '../../theme/runtimePalette';
 import type { ResolvedTheme } from '../../theme/types';
 
-const THIRD_PALETTE: Record<ResolvedTheme, { background: number; wireframe: number }> = {
-  dark: {
-    background: 0x000000,
-    wireframe: 0x00ff66,
-  },
-  light: {
-    background: 0xf5f4ef,
-    wireframe: 0x101010,
-  },
+const toThreeHex = (value: string, fallback: number): number => {
+  const parsed = Number.parseInt(value.replace('#', ''), 16);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const getThirdPalette = (theme: ResolvedTheme): { background: number; wireframe: number } => {
+  const palette = RUNTIME_THEME_PALETTE[theme];
+  return {
+    background: toThreeHex(palette.background, 0x000000),
+    wireframe: toThreeHex(palette.text, 0x00ff66),
+  };
 };
 
 const THIRD: React.FC = () => {
@@ -32,7 +35,7 @@ const THIRD: React.FC = () => {
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
-    const palette = THIRD_PALETTE[resolvedTheme];
+    const palette = getThirdPalette(resolvedTheme);
 
     // Scene + camera are created once. We only mutate camera aspect on resize.
     const scene = new THREE.Scene();
@@ -125,7 +128,7 @@ const THIRD: React.FC = () => {
     const camera = cameraRef.current;
     if (!scene || !material) return;
 
-    const palette = THIRD_PALETTE[resolvedTheme];
+    const palette = getThirdPalette(resolvedTheme);
     scene.background = new THREE.Color(palette.background);
     material.color.setHex(palette.wireframe);
 
