@@ -105,7 +105,7 @@
 
 .controlBtn:hover,
 .controlBtn:focus-visible {
-  border-color: var(--ui-border);
+  border-color: var(--ui-accent, var(--ui-border));
   background: var(--ui-fill-hover);
   box-shadow: var(--ui-shadow-focus);
 }
@@ -113,7 +113,7 @@
 .timeline {
   width: 100%;
   margin: 0;
-  accent-color: $phosphor-green;
+  accent-color: var(--ui-accent, var(--ui-text));
 }
 
 .timeline:disabled {
@@ -222,7 +222,7 @@
 }
 
 .link {
-  color: $phosphor-green;
+  color: var(--ui-accent, var(--ui-text));
   text-decoration: underline;
   font-size: $font-sm;
 }
