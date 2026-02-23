@@ -18,6 +18,7 @@
 
 .fullscreenMode {
   --meos-scale: 1;
+  grid-template-rows: auto 1fr;
 }
 
 .chromeHeader {
@@ -385,42 +386,11 @@
   pointer-events: none;
 }
 
-.chromeFooter {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
-  border-top: $border-thin solid $phosphor-green;
-  background: var(--ui-fill-soft);
-}
-
 .startBtn {
   border: $border;
   background: $bg-black;
   color: $phosphor-green;
   padding: 2px 8px;
-}
-
-.footerInfo {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: $font-xs;
-  opacity: 0.9;
-}
-
-.footerInfoLabel {
-  letter-spacing: 0.05em;
-}
-
-.footerInfoDivider {
-  opacity: 0.7;
-}
-
-.footerInfoCount {
-  min-width: 1ch;
-  text-align: right;
 }
 
 .fullscreenLayer {

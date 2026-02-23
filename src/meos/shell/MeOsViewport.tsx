@@ -278,8 +278,6 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode, onPanelBackgro
     () => windows.filter((w) => !w.minimized).sort((a, b) => a.zIndex - b.zIndex),
     [windows]
   );
-  const windowCount = activeWindows.length;
-  const windowCountWord = windowCount === 1 ? 'WINDOW' : 'WINDOWS';
   const visibleWindows = activeWindows;
 
   const onPanelBackgroundDoubleClick = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -375,15 +373,6 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode, onPanelBackgro
         </div>
       </div>
 
-      {isFullscreen ? (
-        <footer className={styles.chromeFooter}>
-          <span className={styles.footerInfo}>
-            <span className={styles.footerInfoLabel}>{windowCountWord}</span>
-            <span className={styles.footerInfoDivider} aria-hidden="true">|</span>
-            <span className={styles.footerInfoCount}>{windowCount}</span>
-          </span>
-        </footer>
-      ) : null}
     </section>
   );
 };
