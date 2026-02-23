@@ -14,37 +14,27 @@ import FileViewerWindow from '../apps/viewers/FileViewerWindow';
 
 type MeOsViewportProps = {
   mode: MeOsDisplayMode;
+  onPanelBackgroundEnterFullscreen?: () => void;
 };
 
 type MeOsWindowCardProps = {
   win: MeOsWindow;
   mode: MeOsDisplayMode;
-  previewVariant?: 'primary' | 'secondary';
 };
 
 type ResizeHandle = 'n' | 'e' | 's' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
 
-const getPreviewLabel = (appId: MeOsWindow['appId']): string => {
-  if (appId === 'file') return 'FILE PREVIEW';
-  if (appId === 'about') return 'ABOUT PREVIEW';
-  if (appId === 'projects') return 'PROJECTS PREVIEW';
-  if (appId === 'media') return 'MEDIA PREVIEW';
-  if (appId === 'viewer_text') return 'TEXT VIEWER';
-  if (appId === 'viewer_image') return 'IMAGE VIEWER';
-  if (appId === 'viewer_video') return 'VIDEO VIEWER';
-  return 'PROJECT VIEWER';
-};
+const PANEL_DOUBLE_TAP_MS = 300;
 
-const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode, previewVariant = 'primary' }) => {
+const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
   const { focusWindow, moveWindow, resizeWindow, minimizeWindow, toggleMaximizeWindow, closeWindow } = useMeOs();
-  const interactive = mode === 'fullscreen';
-  const isPanelSecondaryPreview = mode === 'panel' && previewVariant === 'secondary';
+  const interactive = mode === 'fullscreen' || mode === 'panel';
   const stopHeaderInteraction = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation();
   };
 
   /**
-   * Header-drag algorithm for fullscreen mode.
+   * Header-drag algorithm for interactive shell modes.
    * Uses document-level listeners so drag remains smooth even when pointer
    * leaves the window frame during movement.
    */
@@ -167,7 +157,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode, previewVaria
 
   return (
     <article
-      className={`${styles.window} ${win.maximized ? styles.windowMaximized : ''} ${mode === 'panel' && previewVariant === 'secondary' ? styles.panelPreviewSecondary : ''}`.trim()}
+      className={`${styles.window} ${win.maximized ? styles.windowMaximized : ''}`.trim()}
       style={{
         left: `${win.x}px`,
         top: `${win.y}px`,
@@ -219,11 +209,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode, previewVaria
         ) : null}
       </div>
       <div className={`${styles.windowBody} ${win.appId === 'file' ? styles.windowBodyNoScroll : ''}`.trim()}>
-        {isPanelSecondaryPreview ? (
-          <div className={styles.previewBody}>
-            <span>{getPreviewLabel(win.appId)}</span>
-          </div>
-        ) : renderContent()}
+        {renderContent()}
       </div>
       {interactive && !win.maximized ? (
         <>
@@ -273,10 +259,12 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode, previewVaria
   );
 };
 
-export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
+export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode, onPanelBackgroundEnterFullscreen }) => {
   const { windows, closeFullscreen, openApp } = useMeOs();
   const [selectedLauncher, setSelectedLauncher] = useState<MeOsFixedAppId | null>(null);
-  const interactive = mode === 'fullscreen';
+  const isFullscreen = mode === 'fullscreen';
+  const isPanel = mode === 'panel';
+  const panelTapAtRef = React.useRef<number | null>(null);
   const launchers: Array<{ id: MeOsFixedAppId; label: string }> = [
     { id: 'file', label: 'FILE' },
     { id: 'about', label: 'ABOUT' },
@@ -289,11 +277,34 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
   );
   const windowCount = activeWindows.length;
   const desktopStateLabel = windowCount === 0 ? 'DESKTOP READY' : 'DESKTOP ACTIVE';
-  const visibleWindows = mode === 'panel' ? activeWindows.slice(-2) : activeWindows;
+  const visibleWindows = activeWindows;
+
+  const onPanelBackgroundDoubleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!isPanel || !onPanelBackgroundEnterFullscreen) return;
+    if (event.target !== event.currentTarget) return;
+    onPanelBackgroundEnterFullscreen();
+  };
+
+  const onPanelBackgroundPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isPanel || !onPanelBackgroundEnterFullscreen) return;
+    if (event.pointerType !== 'touch') return;
+    if (event.target !== event.currentTarget) {
+      panelTapAtRef.current = null;
+      return;
+    }
+    const now = event.timeStamp;
+    const previousTap = panelTapAtRef.current;
+    if (previousTap != null && now - previousTap <= PANEL_DOUBLE_TAP_MS) {
+      panelTapAtRef.current = null;
+      onPanelBackgroundEnterFullscreen();
+      return;
+    }
+    panelTapAtRef.current = now;
+  };
 
   return (
     <section className={`${styles.viewport} ${mode === 'panel' ? styles.panelMode : styles.fullscreenMode}`.trim()}>
-      {mode === 'fullscreen' ? (
+      {isFullscreen ? (
         <header className={styles.chromeHeader}>
           <span className={styles.chromeTitle}>[ME.EXE]</span>
           <div className={styles.chromeActions}>
@@ -305,7 +316,11 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
       ) : null}
 
       <div className={styles.stageViewport}>
-        <div className={styles.stage}>
+        <div
+          className={styles.stage}
+          onDoubleClick={onPanelBackgroundDoubleClick}
+          onPointerUp={onPanelBackgroundPointerUp}
+        >
           <div className={styles.launcherShelf}>
             <div className={styles.launchGrid}>
               {launchers.map((launcher) => (
@@ -313,24 +328,31 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
                   key={launcher.id}
                   type="button"
                   className={`${styles.launchBtn} ${selectedLauncher === launcher.id ? styles.launchBtnSelected : ''}`.trim()}
-                  onClick={() => {
-                    if (!interactive) return;
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (isPanel) {
+                      setSelectedLauncher(launcher.id);
+                      openApp(launcher.id);
+                      return;
+                    }
+                    if (!isFullscreen) return;
                     setSelectedLauncher(launcher.id);
                   }}
-                  onDoubleClick={() => {
-                    if (!interactive) return;
+                  onDoubleClick={(event) => {
+                    event.stopPropagation();
+                    if (!isFullscreen) return;
                     setSelectedLauncher(launcher.id);
                     openApp(launcher.id);
                   }}
                   onKeyDown={(event) => {
-                    if (!interactive) return;
+                    if (!isPanel && !isFullscreen) return;
                     if (event.key !== 'Enter' && event.key !== ' ') return;
                     event.preventDefault();
                     setSelectedLauncher(launcher.id);
                     openApp(launcher.id);
                   }}
-                  tabIndex={interactive ? 0 : -1}
-                  aria-disabled={!interactive}
+                  tabIndex={isPanel || isFullscreen ? 0 : -1}
+                  aria-disabled={!isPanel && !isFullscreen}
                   aria-pressed={selectedLauncher === launcher.id}
                   aria-label={`${launcher.label} launcher`}
                 >
@@ -340,18 +362,17 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode }) => {
             </div>
           </div>
 
-          {visibleWindows.map((w, index) => (
+          {visibleWindows.map((w) => (
             <MeOsWindowCard
               key={w.id}
               win={w}
               mode={mode}
-              previewVariant={mode === 'panel' && visibleWindows.length > 1 && index === 0 ? 'secondary' : 'primary'}
             />
           ))}
         </div>
       </div>
 
-      {mode === 'fullscreen' ? (
+      {isFullscreen ? (
         <footer className={styles.chromeFooter}>
           <span className={styles.footerInfo}>{`${desktopStateLabel} | ${windowCount} WINDOW(S)`}</span>
         </footer>

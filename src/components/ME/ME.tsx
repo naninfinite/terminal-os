@@ -22,10 +22,9 @@ const ME: React.FC = () => {
       role="button"
       tabIndex={0}
       aria-label="Open ME.EXE fullscreen"
-      onClick={openFullscreen}
       onKeyDown={onKeyDown}
       >
-      <MeOsViewport mode="panel" />
+      <MeOsViewport mode="panel" onPanelBackgroundEnterFullscreen={openFullscreen} />
     </div>
   );
 };
