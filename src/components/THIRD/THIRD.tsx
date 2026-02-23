@@ -6,21 +6,37 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import styles from './THIRD.module.scss';
+import { useTheme } from '../../theme/ThemeProvider';
+import type { ResolvedTheme } from '../../theme/types';
+
+const THIRD_PALETTE: Record<ResolvedTheme, { background: number; wireframe: number }> = {
+  dark: {
+    background: 0x000000,
+    wireframe: 0x00ff66,
+  },
+  light: {
+    background: 0xf5f4ef,
+    wireframe: 0x101010,
+  },
+};
 
 const THIRD: React.FC = () => {
+  const { resolvedTheme } = useTheme();
   const mountRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const groupRef = useRef<THREE.Group | null>(null);
+  const materialRef = useRef<THREE.MeshBasicMaterial | null>(null);
 
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
+    const palette = THIRD_PALETTE[resolvedTheme];
 
     // Scene + camera are created once. We only mutate camera aspect on resize.
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
+    scene.background = new THREE.Color(palette.background);
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
@@ -36,7 +52,8 @@ const THIRD: React.FC = () => {
     renderer.domElement.className = styles.canvas;
 
     // Minimal wireframe objects: low geometry complexity for responsiveness.
-    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+    const material = new THREE.MeshBasicMaterial({ color: palette.wireframe, wireframe: true });
+    materialRef.current = material;
     const group = new THREE.Group();
     groupRef.current = group;
     const cube = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), material);
@@ -97,11 +114,27 @@ const THIRD: React.FC = () => {
       sceneRef.current = null;
       cameraRef.current = null;
       groupRef.current = null;
+      materialRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    const scene = sceneRef.current;
+    const material = materialRef.current;
+    const renderer = rendererRef.current;
+    const camera = cameraRef.current;
+    if (!scene || !material) return;
+
+    const palette = THIRD_PALETTE[resolvedTheme];
+    scene.background = new THREE.Color(palette.background);
+    material.color.setHex(palette.wireframe);
+
+    if (renderer && camera) {
+      renderer.render(scene, camera);
+    }
+  }, [resolvedTheme]);
 
   return <div ref={mountRef} className={styles.root} />;
 };
 
 export default THIRD;
-
