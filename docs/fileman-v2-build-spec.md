@@ -167,10 +167,11 @@ This baseline now works with the active resize model below.
 ## 8.2 Window Resize + Responsiveness Baseline
 
 ME shell window interactions now include a responsive resize contract:
-- Windows support corner resize with hover/focus-only handle affordances.
-- Current safety lock: top corner handles are temporarily disabled to avoid collisions with window controls (`_` / `X`).
-- Backlog follow-up: restore full top-edge/corner resizing with dedicated hitbox separation from header controls.
+- Windows support edge-and-corner resize (`N`, `E`, `S`, `W`, `NW`, `NE`, `SW`, `SE`) with hover/focus-only handle affordances.
+- Top-edge and top-right resize remain active even near window controls (`_` / `[]` / `X`); no control-safe inset lock is applied.
+- Drag start is header-only; window body/content does not initiate drag.
 - Drag and resize updates are clamped so windows remain usable within the ME fullscreen frame.
+- Per-window maximize/restore is available for all ME windows and is bounded to the ME stage region (below ME header, above ME footer).
 - Window content areas are constrained to prevent large content overflow from hiding controls.
 
 Viewer-level responsiveness lock:
@@ -184,7 +185,9 @@ Viewer-level responsiveness lock:
 Captured from recent review passes (implemented locks + remaining follow-ups):
 
 - Resize affordance baseline (implemented): windows support edge-first resize (`N`, `E`, `S`, `W`) plus corner handles.
-- Header/control safety lock (implemented): top resize hitboxes are split/inset to avoid `_` / `X` collisions while keeping header drag behavior intact.
+- Top-edge coverage lock (implemented): resize hitboxes now span full top edge including top-right control zone.
+- Header-only drag lock (implemented): drag remains title-bar-only with explicit action-button guard behavior.
+- Per-window maximize baseline (implemented): all ME windows expose `[]` maximize/restore, persisted with stage-bounded maximize behavior.
 - Launcher discoverability lock (implemented): `FILE / ABOUT / PROJECTS / MEDIA` launcher access now stays visible when windows are open (no longer empty-state-only).
 - Launcher placement polish: optional follow-up to refine exact shelf placement without changing launch behavior.
 - Panel preview parity lock (implemented): desktop panel now shows a lightweight two-window stack (top active window + dimmed secondary) instead of single-window-only preview.

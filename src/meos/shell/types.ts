@@ -11,6 +11,13 @@ export type MeOsFixedAppId = 'file' | 'about' | 'projects' | 'media';
 
 export type MeOsAppId = MeOsFixedAppId | 'viewer_text' | 'viewer_image' | 'viewer_video' | 'viewer_project';
 
+export type MeOsWindowRect = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 export type MeOsWindow = {
   id: string;
   title: string;
@@ -21,11 +28,13 @@ export type MeOsWindow = {
   height: number;
   zIndex: number;
   minimized: boolean;
+  maximized: boolean;
+  restoreRect?: MeOsWindowRect;
   nodeId?: string;
   viewerKind?: MeOsViewerKind;
 };
 
-export type MeOsWindowTemplate = Omit<MeOsWindow, 'zIndex' | 'minimized' | 'nodeId' | 'viewerKind'>;
+export type MeOsWindowTemplate = Omit<MeOsWindow, 'zIndex' | 'minimized' | 'maximized' | 'restoreRect' | 'nodeId' | 'viewerKind'>;
 
 export type MeOsPersistedSnapshot = {
   version: 1;

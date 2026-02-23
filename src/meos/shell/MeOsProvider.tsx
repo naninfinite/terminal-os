@@ -16,8 +16,10 @@ import type {
   MeOsPersistedSnapshot,
   MeOsViewerKind,
   MeOsWindow,
+  MeOsWindowRect,
   MeOsWindowTemplate,
 } from './types';
+import { sanitizePersistedWindowState, toggleWindowMaximize } from './windowState';
 
 const STORAGE_KEY = 'terminalOS.meos.v1.shell';
 const STORAGE_VERSION = 1 as const;
@@ -117,6 +119,10 @@ const sanitizeWindow = (raw: unknown): MeOsWindow | null => {
     || data.viewerKind === 'video'
     || data.viewerKind === 'project'
   ) ? data.viewerKind : undefined;
+  const persistedState = sanitizePersistedWindowState({
+    maximized: data.maximized,
+    restoreRect: data.restoreRect,
+  });
   return {
     id,
     title,
@@ -127,6 +133,8 @@ const sanitizeWindow = (raw: unknown): MeOsWindow | null => {
     height: Math.max(MIN_WINDOW_HEIGHT, asNumber(data.height, 240)),
     zIndex: Math.max(1, asNumber(data.zIndex, 1)),
     minimized: Boolean(data.minimized),
+    maximized: persistedState.maximized,
+    restoreRect: persistedState.restoreRect,
     nodeId,
     viewerKind,
   };
@@ -190,7 +198,11 @@ const loadPersistedWindows = (): MeOsWindow[] => {
   const parsed = snapshot.windows
     .map(sanitizeWindow)
     .filter((w): w is MeOsWindow => w != null)
-    .map((w) => ({ ...w, ...normalizeWindowRect(w) }));
+    .map((w) => ({
+      ...w,
+      ...normalizeWindowRect(w),
+      restoreRect: w.restoreRect ? normalizeWindowRect(w.restoreRect) : undefined,
+    }));
   if (parsed.length === 0) return createDefaultWindows();
   return sortByZ(parsed);
 };
@@ -209,6 +221,7 @@ type MeOsContextValue = {
   focusWindow: (id: string) => void;
   moveWindow: (id: string, x: number, y: number) => void;
   resizeWindow: (id: string, args: { width: number; height: number; x?: number; y?: number }) => void;
+  toggleMaximizeWindow: (id: string) => void;
   minimizeWindow: (id: string) => void;
   restoreWindow: (id: string) => void;
   closeWindow: (id: string) => void;
@@ -274,8 +287,8 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ...w,
               zIndex: nextZ,
               minimized: false,
-              x: appId === 'file' ? template.x : w.x,
-              y: appId === 'file' ? template.y : w.y,
+              x: appId === 'file' && !w.maximized ? template.x : w.x,
+              y: appId === 'file' && !w.maximized ? template.y : w.y,
             }
             : w
         ));
@@ -297,7 +310,8 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
         height: nextRect.height,
         zIndex: nextZ,
         minimized: false,
-      };
+        maximized: false,
+        };
       return [...prev, next];
     });
   }, []);
@@ -348,6 +362,7 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
         height: nextRect.height,
         zIndex: nextZ,
         minimized: false,
+        maximized: false,
         nodeId,
         viewerKind: kind,
       };
@@ -357,13 +372,13 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const moveWindow = useCallback((id: string, x: number, y: number) => {
     setWindows((prev) => prev.map((w) => (
-      w.id === id ? { ...w, ...normalizeWindowRect({ ...w, x, y }) } : w
+      w.id === id && !w.maximized ? { ...w, ...normalizeWindowRect({ ...w, x, y }) } : w
     )));
   }, []);
 
   const resizeWindow = useCallback((id: string, args: { width: number; height: number; x?: number; y?: number }) => {
     setWindows((prev) => prev.map((w) => (
-      w.id === id
+      w.id === id && !w.maximized
         ? {
           ...w,
           ...normalizeWindowRect({
@@ -376,6 +391,47 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         : w
     )));
+  }, []);
+
+  const toggleMaximizeWindow = useCallback((id: string) => {
+    setWindows((prev) => prev.map((w) => {
+      if (w.id !== id) return w;
+
+      const nextZ = zRef.current + 1;
+      zRef.current = nextZ;
+      const currentRect: MeOsWindowRect = normalizeWindowRect({
+        x: w.x,
+        y: w.y,
+        width: w.width,
+        height: w.height,
+      });
+      const toggled = toggleWindowMaximize(
+        { ...w, ...currentRect },
+        currentRect
+      );
+
+      if (toggled.maximized) {
+        return {
+          ...toggled,
+          ...currentRect,
+          zIndex: nextZ,
+          minimized: false,
+        };
+      }
+
+      const restoredRect = normalizeWindowRect({
+        x: toggled.x,
+        y: toggled.y,
+        width: toggled.width,
+        height: toggled.height,
+      });
+      return {
+        ...toggled,
+        ...restoredRect,
+        zIndex: nextZ,
+        minimized: false,
+      };
+    }));
   }, []);
 
   const minimizeWindow = useCallback((id: string) => {
@@ -406,6 +462,7 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     focusWindow,
     moveWindow,
     resizeWindow,
+    toggleMaximizeWindow,
     minimizeWindow,
     restoreWindow,
     closeWindow,
@@ -423,6 +480,7 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     resizeWindow,
     restoreWindow,
     setActiveScope,
+    toggleMaximizeWindow,
     windows,
   ]);
 

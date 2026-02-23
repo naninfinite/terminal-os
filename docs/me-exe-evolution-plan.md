@@ -60,14 +60,16 @@ When proposing future ME.EXE changes:
 
 ## 8) Near-Term UX Queue (M5 / M5.x)
 
-1. Edge-first resize baseline complete: `N/E/S/W` + corner handles with safe top hitbox separation from header controls.
-2. Drag remains header-only; action buttons are protected from drag/resize collisions.
-3. Launcher persistence complete: `FILE / ABOUT / PROJECTS / MEDIA` remains visible while windows are open.
-4. Desktop-panel miniature baseline complete: top-two window stack (active + dimmed secondary) for better runtime context in panel mode.
-5. Task-strip grouping baseline complete: show individual ME tasks only in `ME.EXE` scope and a collapsed `ME.EXE (n)` master item in non-ME scopes.
-6. Right status cluster location baseline complete: live `location | time` token with geolocation source and timezone fallback.
-7. Fullscreen footer status line currently uses `DESKTOP READY/ACTIVE | N WINDOWS`; revisit with user later for potential removal.
-8. Resolve status-language hierarchy: avoid overlap/redundancy between global `SYS: READY` and panel-local readiness labels.
+1. Edge/corner resize baseline complete: `N/E/S/W` + corner handles, including full top-edge and top-right hit coverage.
+2. Drag remains header-only; action buttons are protected from drag starts.
+3. Per-window maximize baseline complete: all ME windows support `[]` maximize/restore with persisted state.
+4. Maximize first-pass bounds lock: maximized windows fill ME stage only (below `[ME.EXE]`, above footer status line).
+5. Launcher persistence complete: `FILE / ABOUT / PROJECTS / MEDIA` remains visible while windows are open.
+6. Desktop-panel miniature baseline complete: top-two window stack (active + dimmed secondary) for better runtime context in panel mode.
+7. Task-strip grouping baseline complete: show individual ME tasks only in `ME.EXE` scope and a collapsed `ME.EXE (n)` master item in non-ME scopes.
+8. Right status cluster location baseline complete: live `location | time` token with geolocation source and timezone fallback.
+9. Fullscreen footer status line currently uses `DESKTOP READY/ACTIVE | N WINDOWS`; revisit with user later for potential removal.
+10. Resolve status-language hierarchy: avoid overlap/redundancy between global `SYS: READY` and panel-local readiness labels.
 
 ## 9) Theme Split Lock (Auto / Dark / Light)
 

@@ -83,6 +83,13 @@
   overflow: hidden;
 }
 
+.windowMaximized {
+  left: 0 !important;
+  top: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .panelPreviewSecondary {
   opacity: 0.62;
   transform: translate(-8px, -8px);
@@ -142,8 +149,8 @@
 
 .windowResizeHandleN {
   top: 0;
-  left: 10px;
-  right: 44px;
+  left: 0;
+  right: 0;
   width: auto;
   height: 6px;
   border-top: 1px solid var(--ui-border);

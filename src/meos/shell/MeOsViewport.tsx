@@ -25,7 +25,7 @@ type MeOsWindowCardProps = {
 type ResizeHandle = 'n' | 'e' | 's' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
 
 const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode, previewVariant = 'primary' }) => {
-  const { focusWindow, moveWindow, resizeWindow, minimizeWindow, closeWindow } = useMeOs();
+  const { focusWindow, moveWindow, resizeWindow, minimizeWindow, toggleMaximizeWindow, closeWindow } = useMeOs();
   const interactive = mode === 'fullscreen';
   const stopHeaderInteraction = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation();
@@ -37,7 +37,8 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode, previewVaria
    * leaves the window frame during movement.
    */
   const onDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!interactive) return;
+    if (!interactive || win.maximized || e.button !== 0) return;
+    if (e.target instanceof HTMLElement && e.target.closest('[data-window-action="true"]')) return;
     e.preventDefault();
     focusWindow(win.id);
     const startX = e.clientX;
@@ -60,7 +61,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode, previewVaria
   };
 
   const onResizeStart = (handle: ResizeHandle) => (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!interactive) return;
+    if (!interactive || win.maximized || e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
     focusWindow(win.id);
@@ -154,7 +155,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode, previewVaria
 
   return (
     <article
-      className={`${styles.window} ${mode === 'panel' && previewVariant === 'secondary' ? styles.panelPreviewSecondary : ''}`.trim()}
+      className={`${styles.window} ${win.maximized ? styles.windowMaximized : ''} ${mode === 'panel' && previewVariant === 'secondary' ? styles.panelPreviewSecondary : ''}`.trim()}
       style={{
         left: `${win.x}px`,
         top: `${win.y}px`,
@@ -168,10 +169,11 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode, previewVaria
       <div className={styles.windowHeader} onMouseDown={onDragStart}>
         <span className={styles.windowTitle}>[{win.title}]</span>
         {interactive ? (
-          <div className={styles.windowActions} onMouseDown={stopHeaderInteraction}>
+          <div className={styles.windowActions} onMouseDown={stopHeaderInteraction} data-window-action="true">
             <button
               type="button"
               className={styles.windowBtn}
+              data-window-action="true"
               onMouseDown={stopHeaderInteraction}
               onClick={() => minimizeWindow(win.id)}
               aria-label={`Minimize ${win.title}`}
@@ -181,6 +183,17 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode, previewVaria
             <button
               type="button"
               className={styles.windowBtn}
+              data-window-action="true"
+              onMouseDown={stopHeaderInteraction}
+              onClick={() => toggleMaximizeWindow(win.id)}
+              aria-label={`${win.maximized ? 'Restore' : 'Maximize'} ${win.title}`}
+            >
+              []
+            </button>
+            <button
+              type="button"
+              className={styles.windowBtn}
+              data-window-action="true"
               onMouseDown={stopHeaderInteraction}
               onClick={() => closeWindow(win.id)}
               aria-label={`Close ${win.title}`}
@@ -193,7 +206,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode, previewVaria
       <div className={`${styles.windowBody} ${win.appId === 'file' ? styles.windowBodyNoScroll : ''}`.trim()}>
         {renderContent()}
       </div>
-      {interactive ? (
+      {interactive && !win.maximized ? (
         <>
           <div
             className={`${styles.windowResizeHandle} ${styles.windowResizeHandleN}`.trim()}

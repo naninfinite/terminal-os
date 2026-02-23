@@ -714,3 +714,23 @@ Why it matters:
 Risks / Notes:
 - Some non-core interiors can remain dark-biased until follow-up token pass.
 - Theme control is intentionally menu-only in v1 to keep settings UX minimal and avoid extra settings UI surface.
+
+---
+
+## Entry 41 - M5.x Window Interaction + Stage-Bounded Maximize
+
+Summary:
+- Removed top-edge right-side resize inset so the resize hit area now spans the full top edge, including top-right above controls.
+- Kept drag semantics strictly header-only with explicit left-button/action-control guards.
+- Added per-window maximize/restore button (`[]`) for all ME windows.
+- Maximized windows now fill the ME stage only (below `[ME.EXE]` header and above footer status token), not the global status bar region.
+- Added persisted maximize state (`maximized`, `restoreRect`) with backward-safe load behavior for older snapshots.
+
+Why it matters:
+- Resolves visible light-theme gap above `_` / `X` caused by prior top-edge inset geometry.
+- Completes the requested interaction lock: full-edge/corner resize plus predictable title-bar drag.
+- Adds a practical first-pass maximize flow for viewer-heavy sessions (for example gallery/video exploration) without altering shell chrome structure.
+
+Risks / Notes:
+- Top-right resize and close hit areas are intentionally allowed to overlap behaviorally by user choice; accidental resize near `X` is accepted by design.
+- Alternative maximize target behavior (different lower bound strategy) remains deferred for a future UX decision pass.
