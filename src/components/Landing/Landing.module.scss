@@ -118,7 +118,7 @@
   transform: translateX(-50%);
   bottom: 10px;
   border: $border;
-  background: rgb(var(--ui-scanline-rgb) / 0.14);
+  background: transparent;
   color: $phosphor-green;
   padding: 6px 12px;
   z-index: 1;
@@ -129,7 +129,7 @@
 
 .enterBtn:hover,
 .enterBtn:focus-visible {
-  background: var(--ui-fill-hover);
+  background: transparent;
   border-color: var(--ui-border);
   color: $phosphor-green;
 }
