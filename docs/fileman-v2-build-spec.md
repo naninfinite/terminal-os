@@ -201,9 +201,8 @@ Captured from recent review passes (implemented locks + remaining follow-ups):
 - Future extension: evaluate panel-owned task grouping for non-ME subsystems (`YOU`, `THIRD`, `CONNECT`) as they gain internal window runtimes.
 - Status bar right-cluster location baseline (implemented): renders live `location | time` with geolocation coordinates when available.
 - Fallback behavior: when geolocation is unavailable/denied, location token falls back to timezone-derived label (`TZ <City>`).
-- Fullscreen footer status token (implemented): window count only (`0 WINDOWS`, `1 WINDOW`, `N WINDOWS`).
-- Future decision gate: re-evaluate whether footer status token should remain or be removed once desktop semantics are finalized.
-- Status language collision (resolved): `SYS: READY` remains the sole readiness token; ME footer now reports window count only.
+- Fullscreen footer status token (removed): ME fullscreen now uses header + stage only, with no footer token.
+- Status language collision (resolved): `SYS: READY` remains the sole readiness token; no ME-local readiness/count footer is shown.
 - Maximize control polish (implemented): maximize button now uses a square-styled glyph treatment while preserving existing maximize/restore behavior.
 - ME shell-density polish (implemented): edge-to-edge ME framing is now active in panel and fullscreen by removing outer ME wrapper inset/padding while preserving internal window/content padding.
 

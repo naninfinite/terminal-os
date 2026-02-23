@@ -845,3 +845,20 @@ Why it matters:
 
 Risks / Notes:
 - This bundle is visual polish only; no state, persistence, or command routing behavior changed.
+
+---
+
+## Entry 48 - M5.x Closeout: Remove ME Fullscreen Footer
+
+Summary:
+- Removed the ME fullscreen footer entirely.
+- ME fullscreen layout now renders only header + stage (no bottom footer row/token).
+- Did not relocate window count into header or status bar; count is no longer explicitly displayed in ME-local chrome.
+- Kept global status bar `SYS: READY` unchanged as the sole readiness signal.
+
+Why it matters:
+- Completes the M5 shell-closeout decision for cleaner fullscreen chrome.
+- Eliminates duplicated status language and reduces visual noise in ME fullscreen.
+
+Risks / Notes:
+- This is a chrome/layout cleanup only; window behavior, persistence, and menu scope logic are unchanged.
