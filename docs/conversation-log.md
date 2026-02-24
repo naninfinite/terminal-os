@@ -880,3 +880,24 @@ Why it matters:
 Risks / Notes:
 - This is a planning/documentation lock only; no runtime behavior changed in this pass.
 - M6 remains staged delivery, not an all-at-once release.
+
+---
+
+## Entry 50 - M6 `YOU.EXE` Persistent Board Baseline (Service + API Contract)
+
+Summary:
+- Implemented `YOU.EXE` as a message-board runtime backed by a dedicated service/provider boundary (replacing localStorage input-save behavior).
+- Added frontend API contract integration for:
+  - `GET /api/you/messages` (newest-first list, pagination cursor support),
+  - `POST /api/you/messages` (immutable message create).
+- Added shared runtime state for panel preview + fullscreen board layer.
+- Added polling refresh, older-message pagination, submit guardrails, and temporary client-side post cooldown behavior.
+
+Why it matters:
+- Delivers the first online-capable subsystem architecture in M6 while keeping shell patterns consistent.
+- Removes board data ownership from component-local storage and aligns with service-owned persistence direction.
+- Enables durable persistence across refresh/cache clears once backend endpoint is deployed.
+
+Risks / Notes:
+- Durable cross-device persistence now depends on managed backend deployment behind `/api/you/messages`.
+- This pass intentionally excludes moderation tooling and edit/delete flows (deferred to M6.x/M7).

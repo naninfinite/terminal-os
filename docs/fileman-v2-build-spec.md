@@ -294,6 +294,10 @@ M6 - Subsystem parity (`YOU`, `THIRD`, `CONNECT`)
   - `THIRD`: mode-aware 3D runtime with state preservation + localization scaffolding.
   - `YOU`: message-board service model + moderation-safe architecture baseline.
   - `CONNECT`: deterministic game runtime baseline (`Pong` first, `Tron` target) with staged multiplayer path.
+- M6 progress checkpoint (`YOU`):
+  - Service-backed frontend message board runtime implemented (panel preview + fullscreen board using shared provider state).
+  - API contract implemented in client (`GET/POST /api/you/messages`) with polling, paging, immutable-post flow.
+  - Durable cross-device persistence requires managed backend deployment behind the API contract.
 - Full M6 step-by-step scope is tracked in `docs/subsystem-expansion-roadmap.md`.
 
 M7 - Depth pass after parity baseline

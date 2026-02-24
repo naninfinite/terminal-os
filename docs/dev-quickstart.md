@@ -21,6 +21,12 @@ This quickstart condenses how to run the project, the main components to know, a
    npm run preview
    ```
 
+Optional env for YOU board backend:
+```bash
+# Base URL for managed API host (leave unset for same-origin /api)
+VITE_YOU_API_BASE_URL=https://your-api-host.example
+```
+
 ## Branching / Workflow
 
 - `main` — stable releases
@@ -42,7 +48,7 @@ Commit guidance:
 
 - `src/components/Desktop/Desktop.tsx` — main grid layout where panels are mounted.
 
-- `src/components/YOU/` — example interactive panel: persistent input stored via `src/utils/storage.ts`.
+- `src/components/YOU/` + `src/you/` — `YOU.EXE` message board UI + service/provider runtime.
 
 - `src/components/Cursor/` — custom cursor implementation (enabled on hover devices, respects reduced motion).
 
@@ -56,8 +62,10 @@ Commit guidance:
 
 - YOU
   - `src/components/YOU/YOU.tsx`
-  - Uses `getItemSafe` / `setItemSafe` for `localStorage` persistence (key: `terminal_os_you_input_v1`).
-  - The save button shows `SAVED` for 3s after saving.
+  - Uses `YouProvider` + `YouApiClient` (no board data localStorage writes).
+  - API contract: `GET/POST /api/you/messages`.
+  - Panel mode shows recent feed preview; fullscreen mode shows full feed with older-page loading.
+  - Backend schema/contract reference: `docs/you-api-v1.md`.
 
 - Cursor
   - `src/components/Cursor/Cursor.tsx`
@@ -74,5 +82,3 @@ Commit guidance:
 
 - `docs/phase-2.md` (detailed text-heavy descriptions — created already)
 - `docs/dev-quickstart.md` (this file) — quick reference for contributors
-
-
