@@ -102,8 +102,9 @@ Current implementation checkpoint (2026-02-24):
   - shared `YOU` provider state for panel + fullscreen board views;
   - API client contract for `GET/POST /api/you/messages`;
   - immutable post flow with polling refresh + older-page loading.
-- Deployment dependency remains:
-  - managed backend/API endpoint must be provisioned for durable cross-device persistence.
+- Backend checkpoint:
+  - Supabase tables (`you_messages`, `you_rate_limits`), RPC (`you_allow_post`), and Edge Function (`you`) are configured.
+  - Remaining integration work is environment wiring and smoke validation per deploy target.
 
 Implementation slices:
 

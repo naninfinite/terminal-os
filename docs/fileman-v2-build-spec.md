@@ -297,7 +297,7 @@ M6 - Subsystem parity (`YOU`, `THIRD`, `CONNECT`)
 - M6 progress checkpoint (`YOU`):
   - Service-backed frontend message board runtime implemented (panel preview + fullscreen board using shared provider state).
   - API contract implemented in client (`GET/POST /api/you/messages`) with polling, paging, immutable-post flow.
-  - Durable cross-device persistence requires managed backend deployment behind the API contract.
+  - Supabase backend objects + `you` Edge Function are configured and reachable; feed durability is now backend-owned.
 - Full M6 step-by-step scope is tracked in `docs/subsystem-expansion-roadmap.md`.
 
 M7 - Depth pass after parity baseline

@@ -901,3 +901,24 @@ Why it matters:
 Risks / Notes:
 - Durable cross-device persistence now depends on managed backend deployment behind `/api/you/messages`.
 - This pass intentionally excludes moderation tooling and edit/delete flows (deferred to M6.x/M7).
+
+---
+
+## Entry 51 - Supabase State Sync (Docs + Env Template Refresh)
+
+Summary:
+- Refreshed YOU.EXE backend docs to match live Supabase state:
+  - tables present (`you_messages`, `you_rate_limits`),
+  - RPC present (`you_allow_post`),
+  - Edge Function `you` with `GET/POST /messages` route.
+- Refreshed `.env.example` for current frontend integration:
+  - `VITE_YOU_API_BASE_URL` points to Supabase function base ending with `/you`,
+  - optional `VITE_YOU_API_ANON_KEY` only for `verify_jwt=true`.
+- Added explicit Phase 2 note that localStorage YOU input references are legacy historical context.
+
+Why it matters:
+- Keeps docs aligned with real backend state so implementation and ops guidance do not drift.
+- Avoids accidental policy mistakes by reiterating no anon/public table policies and no frontend service-role keys.
+
+Risks / Notes:
+- Documentation-only refresh in this pass; no runtime/code behavior changed.

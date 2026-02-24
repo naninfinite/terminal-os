@@ -10,6 +10,10 @@ This document summarizes the work completed through Phase 2 and explains the cod
 - Custom retro mouse cursor (monospace glyph) with hover enlargement and reduced-motion support
 - `YOU` panel input that persists to `localStorage` and shows a transient saved state
 
+Legacy note (post-M6):
+- The `YOU` localStorage input behavior above is historical Phase 2 context only.
+- Current `YOU.EXE` runtime uses backend-backed message feed state (Supabase) and no longer stores board messages in localStorage.
+
 ## File map and responsibilities
 
 - `src/App.tsx` — application entry point. Controls landing flow and the transition into the main shell. Key behavior:
@@ -24,7 +28,8 @@ This document summarizes the work completed through Phase 2 and explains the cod
 
 - `src/components/Desktop/` — 2×2 grid of panels; each panel is an instance of `Panel` and contains one of the feature components.
 
-- `src/components/YOU/` — implements a basic input that persists to `localStorage` using `src/utils/storage.ts`. The save button shows `SAVED` for 3 seconds after saving.
+- `src/components/YOU/` — Phase 2 originally implemented a localStorage input/save panel.
+  - Legacy only: replaced in M6 by backend-backed message board runtime (`src/you/*` + Supabase Edge Function API).
 
 - `src/components/Cursor/` — custom cursor implemented with a small React component that:
   - Detects hover-capable devices and skips touch devices
@@ -60,5 +65,4 @@ This document summarizes the work completed through Phase 2 and explains the cod
 ## Notes about recent changes
 
 - Several commits were rewritten to normalize the committer name to `NaNinfinite` and the repo was pushed to GitHub at `naninfinite/terminal-os`.
-
 

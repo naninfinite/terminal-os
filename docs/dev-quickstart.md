@@ -23,8 +23,11 @@ This quickstart condenses how to run the project, the main components to know, a
 
 Optional env for YOU board backend:
 ```bash
-# Base URL for managed API host (leave unset for same-origin /api)
+# Supabase Edge Function base (must end with /you)
 VITE_YOU_API_BASE_URL=https://your-api-host.example
+
+# Optional only if Edge Function verify_jwt=true
+VITE_YOU_API_ANON_KEY=<optional_anon_publishable_key>
 ```
 
 ## Branching / Workflow
@@ -66,6 +69,7 @@ Commit guidance:
   - API contract: `GET/POST /api/you/messages`.
   - Panel mode shows recent feed preview; fullscreen mode shows full feed with older-page loading.
   - Backend schema/contract reference: `docs/you-api-v1.md`.
+  - Supabase ops details: `docs/you-exe/SUPABASE-SETUP-AND-OPS.md`.
 
 - Cursor
   - `src/components/Cursor/Cursor.tsx`

@@ -1,25 +1,74 @@
-# YOU API v1 (`/api/you/messages`)
+# YOU.EXE API v1 (Supabase Live Contract)
 
-Status: Contract + backend setup reference  
+Status: Active (Supabase configured and deployed)  
 Date: 2026-02-24
 
-## 1) Endpoints
+## 1) Current backend state
 
-1. `GET /api/you/messages?before=<ISO>&limit=<N>`
-- Returns newest-first messages.
+Supabase objects already exist in `public` schema:
+
+- `you_messages`
+- `you_rate_limits`
+- RPC: `you_allow_post(p_client_key text) returns boolean`
+
+Security baseline:
+
+- RLS is enabled on both tables.
+- No anon/public table policies are used.
+- DB access is performed by Edge Function using service-role credentials.
+
+## 2) Edge Function
+
+- Function name: `you`
+- Routes:
+  - `GET /messages`
+  - `POST /messages`
+- Deployed URL shape:
+  - `https://<project-ref>.supabase.co/functions/v1/you/messages`
+
+## 3) Frontend contract
+
+Frontend API client lives in `src/you/service.ts`.
+
+### URL behavior
+
+1. If `VITE_YOU_API_BASE_URL` is set:
+- Request `${base}/messages`
+
+2. If `VITE_YOU_API_BASE_URL` is not set:
+- Request `/api/you/messages` (future same-origin proxy path)
+
+### Optional auth headers
+
+If `VITE_YOU_API_ANON_KEY` is set, send:
+
+- `Authorization: Bearer <anon-key>`
+- `apikey: <anon-key>`
+
+If not set, send no auth headers.
+
+## 4) Endpoint contract
+
+### GET `/messages?before=<ISO>&limit=<N>`
+
+- Returns newest-first feed.
 - Default `limit=30`, max `limit=100`.
-- `before` is an exclusive timestamp cursor for older-page fetches.
+- `before` is exclusive cursor for loading older messages.
 
-2. `POST /api/you/messages`
-- Request body:
-  - `body: string` (required, trimmed, `1..500`)
-  - `displayName?: string` (optional, trimmed, `<=32`)
-- Response:
-  - Created message payload in `YouMessage` shape.
+### POST `/messages`
+
+Request body:
+
+- `body: string` (trimmed, `1..500`)
+- `displayName?: string` (trimmed, `<=32`)
+
+Response:
+
+- Created message in `YouMessage` shape.
 
 No update/delete endpoints in M6.
 
-## 2) Message Shape
+## 5) Message shape
 
 ```json
 {
@@ -31,38 +80,33 @@ No update/delete endpoints in M6.
 }
 ```
 
-## 3) Database Schema (Postgres)
+## 6) Validation and rate limit rules
 
-```sql
-create table if not exists you_messages (
-  id uuid primary key default gen_random_uuid(),
-  body text not null check (char_length(body) between 1 and 500),
-  display_name text null check (char_length(display_name) <= 32),
-  is_anon boolean not null,
-  created_at timestamptz not null default now()
-);
+1. Validation runs server-side and client-side.
+2. `body`: trimmed length `1..500`.
+3. `displayName`: optional, trimmed, max `32`.
+4. Empty/blank name is stored as anon (`isAnon=true`, `displayName=null`).
+5. Rate limit baseline: 1 post per 8 seconds via `you_allow_post`.
+6. Posts are immutable in M6.
 
-create index if not exists you_messages_created_at_desc_idx
-  on you_messages (created_at desc);
-```
+## 7) Smoke test references
 
-## 4) Baseline API Rules
-
-1. Input validation must run server-side (never client-only).
-2. If `display_name` is blank/null then `is_anon=true`.
-3. Responses should normalize casing to camelCase for client simplicity.
-4. Rate limit baseline for M6:
-- 1 post per 8 seconds per IP or client key.
-5. Messages are immutable in M6 (no edit/delete).
-
-## 5) Frontend Integration Notes
-
-1. Frontend client is implemented in `src/you/service.ts`.
-2. Runtime provider is implemented in `src/you/YouProvider.tsx`.
-3. Configure managed backend host via:
+GET:
 
 ```bash
-VITE_YOU_API_BASE_URL=https://your-api-host.example
+curl -i "https://<project-ref>.supabase.co/functions/v1/you/messages?limit=5"
 ```
 
-If env is unset, frontend calls same-origin `/api/you/messages`.
+POST:
+
+```bash
+curl -i "https://<project-ref>.supabase.co/functions/v1/you/messages" \
+  -H "Content-Type: application/json" \
+  --data '{"body":"hello","displayName":"nan"}'
+```
+
+If `verify_jwt=true`, add:
+
+```bash
+-H "Authorization: Bearer <anon-key>" -H "apikey: <anon-key>"
+```
