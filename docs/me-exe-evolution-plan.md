@@ -87,3 +87,16 @@ Theme direction is now locked for incremental rollout:
 5. CRT/cursor effects are reduced in light mode.
 6. Text casing follows resolved theme: dark uppercase, light mixed/lower.
 7. Sequence: core shell first, then app interiors in follow-up passes.
+
+## 10) Handoff to M6 (Subsystem Parity)
+
+After M5 ME-shell closeout, subsystem implementation planning moves to:
+
+- `docs/subsystem-expansion-roadmap.md`
+
+That roadmap now holds:
+
+1. Explicit M6 definition and exit criteria.
+2. Step-by-step delivery order.
+3. Separate complexity tracks for `THIRD`, `YOU`, and `CONNECT`.
+4. M7 post-parity preview.

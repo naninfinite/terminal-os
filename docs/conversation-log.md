@@ -1,7 +1,7 @@
 # Terminal-OS Conversation Log
 
 Purpose: running summary of user/assistant decisions and direction.
-Updated: 2026-02-23
+Updated: 2026-02-24
 
 ---
 
@@ -862,3 +862,21 @@ Why it matters:
 
 Risks / Notes:
 - This is a chrome/layout cleanup only; window behavior, persistence, and menu scope logic are unchanged.
+
+---
+
+## Entry 49 - M6 Program Lock (Explicit Subsystem Runbook + M7 Preview)
+
+Summary:
+- User requested a clear, readable, step-by-step M6 explanation with separate deep sections for `THIRD.EXE`, `YOU.EXE`, and `CONNECT.EXE` due complexity.
+- Added an explicit M6 program definition, sequencing, cross-cutting constraints, subsystem-specific tracks, and exit criteria to `docs/subsystem-expansion-roadmap.md`.
+- Synced milestone language in `docs/fileman-v2-build-spec.md` so M6 is documented as subsystem parity and M7 is documented as post-parity depth work.
+
+Why it matters:
+- Converts prior directional notes into an execution-ready runbook so subsystem work can start without rediscovering scope.
+- Separates complexity by subsystem so planning risk is visible early (`THIRD` runtime/perf, `YOU` moderation/safety, `CONNECT` deterministic multiplayer).
+- Keeps roadmap memory stable while preserving the incremental-change rule (no one-shot redesign).
+
+Risks / Notes:
+- This is a planning/documentation lock only; no runtime behavior changed in this pass.
+- M6 remains staged delivery, not an all-at-once release.

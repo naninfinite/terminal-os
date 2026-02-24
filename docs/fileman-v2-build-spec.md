@@ -4,7 +4,7 @@ Status: Draft for implementation
 Date: 2026-02-08
 Owner: Terminal-OS
 Related: `docs/overview.md`, `docs/phase-3.md`, `docs/ADR Index`, `docs/conversation-log.md`
-Milestone status: M1 complete, M2 complete, M3 complete, M4 complete, M5 in progress (iterative polish)
+Milestone status: M1 complete, M2 complete, M3 complete, M4 complete, M5 closeout complete, M6 planned (subsystem parity)
 
 ---
 
@@ -287,6 +287,18 @@ M5 - Menu + polish
 - Context-aware menu configs.
 - Performance tuning for panel mode.
 - Keyboard and accessibility pass.
+
+M6 - Subsystem parity (`YOU`, `THIRD`, `CONNECT`)
+- Promote non-ME panels to shared panel/fullscreen runtime parity.
+- Apply subsystem-specific service boundaries:
+  - `THIRD`: mode-aware 3D runtime with state preservation + localization scaffolding.
+  - `YOU`: message-board service model + moderation-safe architecture baseline.
+  - `CONNECT`: deterministic game runtime baseline (`Pong` first, `Tron` target) with staged multiplayer path.
+- Full M6 step-by-step scope is tracked in `docs/subsystem-expansion-roadmap.md`.
+
+M7 - Depth pass after parity baseline
+- Expand subsystem depth only after M6 gates are met.
+- Focus: production hardening, richer feature depth, and cross-subsystem UX consistency.
 
 ---
 

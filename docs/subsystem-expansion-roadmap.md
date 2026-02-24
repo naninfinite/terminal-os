@@ -1,8 +1,9 @@
-# Subsystem Expansion Roadmap (YOU / THIRD / CONNECT)
+# Subsystem Expansion Roadmap (M6 Program: YOU / THIRD / CONNECT)
 
-Status: Directional roadmap (captured from user planning notes)  
+Status: M6 planning baseline (no large one-shot implementation)  
 Date captured: 2026-02-08  
-Purpose: Preserve future intent so implementation stays aligned when we return to these subsystems.
+Last updated: 2026-02-24  
+Purpose: Preserve future intent so subsystem delivery stays aligned when we shift from ME-focused work into full panel parity.
 
 ---
 
@@ -11,125 +12,185 @@ Purpose: Preserve future intent so implementation stays aligned when we return t
 All four desktop panels should eventually follow the same interaction model as `ME.EXE`:
 
 - Live preview state visible in the desktop panel.
-- Clicking panel expands that same running instance to fullscreen.
-- Closing fullscreen returns to desktop with state preserved.
+- Enter fullscreen using the same running runtime (no duplicate instance).
+- Exit fullscreen back to desktop with state preserved.
 - Mode-aware behavior (`panel` lightweight, `fullscreen` full fidelity).
 
-This is architecture-first guidance, not an immediate requirement to ship all features now.
+This is architecture-first guidance and should be shipped incrementally.
 
 ---
 
-## 2) YOU Subsystem (Forum / Message Board)
+## 2) M6 Definition (Plain English)
 
-Target behavior:
+`M6` is the subsystem-parity milestone after ME shell closeout:
 
-- Panel mode:
-  - Message composer + recent message preview.
-- Fullscreen mode:
-  - Full thread/forum-style feed (90s board vibe).
-- Posting:
-  - Optional name.
-  - Anonymous fallback.
+- `THIRD.EXE` moves from visual demo to a real mode-aware subsystem.
+- `YOU.EXE` moves from placeholder/local-only behavior toward a persistent message-board architecture with moderation gates.
+- `CONNECT.EXE` moves from static placeholder to a deterministic game runtime baseline (`Pong` first, `Tron` target).
 
-Feasibility:
-
-- Local-only persistence is easy (single browser).
-- Shared public board requires backend persistence and API.
-
-Required for public launch:
-
-- Moderation/safety controls:
-  - Rate limiting.
-  - Abuse filtering/report flow.
-  - Basic moderation pipeline before broad release.
-
-Notes:
-
-- Concern about trolling/cyberbullying is valid and must be treated as a product + engineering requirement, not optional polish.
+M6 does not mean all advanced features launch at once.  
+M6 means each subsystem has a clear runtime/service boundary and reaches baseline panel/fullscreen parity.
 
 ---
 
-## 3) THIRD Subsystem (3D Wireframe Dimension)
+## 3) M6 Exit Criteria
 
-Target behavior:
+M6 is complete when all of the following are true:
 
-- Panel mode:
-  - Pause or heavily throttle scene simulation.
-  - Keep scene state preserved.
-- Fullscreen mode:
-  - Full interactive 3D playground.
-  - Add/remove/manipulate objects.
-
-Language direction:
-
-- UI text in Japanese (with heavier katakana if needed for accessibility).
-- Use localization keys/config, not hardcoded strings.
-
-Notes:
-
-- This follows the same shared-runtime principle as ME: one state model, two display modes.
+1. `THIRD`, `YOU`, and `CONNECT` each run as shared panel/fullscreen runtimes (same state instance).
+2. Each subsystem has an explicit service/store boundary (no ad-hoc component-owned persistence for core state).
+3. Fullscreen subsystem layers reserve global status bar space.
+4. Scope-aware menu entries for each subsystem are functional (not placeholder-only).
+5. Baseline safety/performance rules are active per subsystem (documented below).
 
 ---
 
-## 4) CONNECT Subsystem (Games Hub)
+## 4) Cross-Cutting Constraints (Applies to All M6 Tracks)
 
-Target behavior:
-
-- Panel mode:
-  - Lightweight hub/lobby snapshot.
-- Fullscreen mode:
-  - Active game hub or single game scene.
-
-Game targets:
-
-- Pong (2-player default).
-- Tron-like game (4-player target).
-
-Feasibility:
-
-- Local single-device prototypes are straightforward.
-- True multiplayer requires realtime backend/session infrastructure.
-
-Technical requirements for online multiplayer:
-
-- Room/session management.
-- Realtime state sync and reconnect handling.
-- Deterministic tick/update model (aligned with existing project principles).
-
-Notes:
-
-- There is no standard “Pong API”/“Tron API” that matches project styling out of the box.
-- Custom game implementation is the expected path for visual/style consistency.
+1. Terminal-OS styling remains primary; no broad aesthetic reset.
+2. Changes ship in small reviewable passes (one narrow goal at a time).
+3. Panel mode stays lightweight and readable; fullscreen mode carries full interaction depth.
+4. Menu and status bar remain global shell surfaces.
+5. Fullscreen must not overlap the global status bar.
 
 ---
 
-## 5) Cross-Cutting UX Constraint
+## 5) M6 Step-by-Step Delivery Order
 
-Fullscreen subsystem layers should not visually cover the global status bar.
+### Step 1 - Shared Subsystem Runtime Contract
 
-Current note:
+Required before deep subsystem work:
 
-- Status bar remains global.
-- Menu behavior may evolve by scope.
-- Fullscreen layout must reserve status bar space (tracked for shell polish).
+- Common `displayMode: panel | fullscreen` handling per subsystem.
+- Shared lifecycle hooks for pause/resume/throttle behavior.
+- Scope-aware menu wiring for subsystem-specific actions.
+
+Why first:
+
+- Prevents each subsystem from inventing incompatible runtime patterns.
+
+### Step 2 - `THIRD.EXE` Parity Track
+
+Goal: make THIRD the first non-ME subsystem with full parity behavior.
+
+Implementation slices:
+
+1. Extract scene/object state into a dedicated service/store.
+2. Panel profile:
+  - freeze or heavily throttle simulation/render loop;
+  - keep current scene state visible.
+3. Fullscreen profile:
+  - full object interaction (add/remove/transform).
+4. Localization foundation:
+  - Japanese labels via localization keys/config (no hardcoded strings).
+5. Theme/profile parity:
+  - scene and shell chrome must track active theme mode without remount instability.
+
+M6 acceptance for THIRD:
+
+- Returning between panel/fullscreen keeps the same scene instance.
+- Panel mode is visibly lighter-weight than fullscreen mode.
+- Japanese UI text can be changed centrally via localization map.
+
+### Step 3 - `YOU.EXE` Parity Track
+
+Goal: move from local demo behavior to architecture that can support a real public board.
+
+Implementation slices:
+
+1. Create message service boundary (CRUD + pagination primitives).
+2. Define message model:
+  - `id`, `body`, `displayName?`, `isAnon`, `createdAt`, moderation fields.
+3. Panel profile:
+  - compact composer + recent activity preview.
+4. Fullscreen profile:
+  - full board/thread view.
+5. Moderation baseline before public rollout:
+  - rate limiting, report flow, abuse filter hooks, hide/review path.
+
+M6 acceptance for YOU:
+
+- Subsystem runs with shared panel/fullscreen runtime.
+- Data model and service boundary are stable.
+- Moderation gate is present in architecture (even if policy tooling continues in M6.x).
+
+Launch note:
+
+- Local-only storage is acceptable for early internal milestones.
+- Public shared board requires backend persistence/API and moderation operations.
+
+### Step 4 - `CONNECT.EXE` Parity Track
+
+Goal: establish deterministic game runtime baseline and hub flow.
+
+Implementation slices:
+
+1. Build deterministic local game loop primitives first (fixed timestep).
+2. Implement local `Pong` baseline (2-player same device).
+3. Implement local `Tron` baseline target (4-player same device).
+4. Add hub runtime:
+  - panel shows lightweight lobby/session snapshot;
+  - fullscreen hosts active game/hub.
+5. Multiplayer phase (optional inside M6, otherwise M6.x):
+  - room/session management;
+  - realtime sync + reconnect handling;
+  - authority model for fair play.
+
+M6 acceptance for CONNECT:
+
+- Deterministic local game baseline exists and is stable.
+- Hub follows shared panel/fullscreen runtime pattern.
+- Multiplayer path is explicitly designed and staged, even if full online rollout is deferred.
 
 ---
 
-## 6) Suggested Execution Order
+## 6) Complexity Notes by Subsystem
 
-1. Generalize shared subsystem shell contract across all panels.
-2. Apply mode-aware panel/fullscreen state handling to `THIRD`.
-3. Build `YOU` forum data/service boundary and moderation-safe launch path.
-4. Build `CONNECT` game prototypes locally, then add realtime multiplayer.
-5. Final cross-subsystem polish (menu scopes, perf, accessibility, status bar layout rule).
+### `THIRD.EXE` Complexity
+
+- Primary complexity is runtime/performance control (render loop, simulation throttling, scene persistence).
+- Lower backend risk than YOU/CONNECT, making it a good first parity target.
+
+### `YOU.EXE` Complexity
+
+- Primary complexity is trust/safety and moderation operations, not UI rendering.
+- Architecture must assume public misuse from day one.
+
+### `CONNECT.EXE` Complexity
+
+- Primary complexity is deterministic multiplayer networking and session handling.
+- Game logic is straightforward relative to sync/reconnect/state authority concerns.
 
 ---
 
-## 7) Implementation Policy
+## 7) Suggested Sequencing (Pragmatic)
+
+1. Shared subsystem contract (Step 1).
+2. `THIRD` full parity baseline.
+3. `YOU` service + moderation baseline.
+4. `CONNECT` deterministic local baseline.
+5. `CONNECT` online multiplayer phase (if included in M6, otherwise M6.x).
+6. Cross-subsystem stabilization pass (menu scope polish, perf/a11y, status-bar consistency).
+
+---
+
+## 8) M7 Preview (After M6 Baseline)
+
+`M7` is a depth-and-quality milestone after subsystem parity is stable:
+
+- `YOU`: moderation tooling depth, identity/session improvements, richer thread UX.
+- `THIRD`: expanded editor tools, stronger localization coverage, higher-fidelity scene features.
+- `CONNECT`: production-ready multiplayer hardening, matchmaking/lobbies, replay/spectator options.
+- Shell-level polish: richer task grouping across panels and tighter cross-subsystem UX consistency.
+
+M7 should not start until M6 parity gates are met.
+
+---
+
+## 9) Implementation Policy
 
 This roadmap is preserved as directional memory and planning context.
 
 - It does not force immediate implementation out of milestone order.
-- Near-term work can continue on current plan while keeping this doc as source context.
-- When subsystem work starts, reference this roadmap and update milestone docs in the same PR.
-
+- Near-term ME work can continue while this remains the subsystem source-of-truth.
+- When subsystem work starts, update this roadmap and milestone docs in the same PR.
