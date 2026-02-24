@@ -1,54 +1,193 @@
 @use '../../styles/variables' as *;
 
 .root {
-    /* Full inner clickable area, matching ME inset hover footprint. */
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid transparent;
-    box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+  display: grid;
 }
 
 .root:hover,
 .root:focus-visible {
-    border-color: var(--ui-border);
-    box-shadow: var(--ui-shadow-focus);
+  border-color: var(--ui-border);
+  box-shadow: var(--ui-shadow-focus);
 }
 
-.content {
-    /* Keep existing narrow form layout inside the full-size hover frame. */
-    display: grid;
-    gap: 8px;
-    width: min(320px, 80vw);
-    margin: 0 auto;
+.rootFullscreen {
+  border-color: var(--ui-border);
+  box-shadow: none;
 }
-.input {
-    /* Terminal-like text field style with full-width hit area. */
-    border: $border;
-    background: $bg-black;
-    color: $phosphor-green;
-    padding: 6px 8px;
-    width: 100%;
+
+.board {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  gap: 8px;
+  padding: 8px;
+  border: $border;
+  background: $bg-black;
+  box-sizing: border-box;
 }
-.save {
-    /* Left-aligned command-style button with simple state transition. */
-    border: $border;
-    background: $bg-black;
-    color: $phosphor-green;
-    padding: 4px 10px;
-    justify-self: start;
-    transition: background 160ms ease, color 160ms ease;
+
+.topRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
-.saved {
-    /* Inverted colors make save success obvious without extra copy. */
-    background: $phosphor-green;
-    color: $bg-black;
+
+.stateToken {
+  font-size: $font-xs;
+  color: var(--ui-text-muted);
 }
-.status {
-    font-size: $font-xs;
-    opacity: 0.9;
+
+.modeBtn {
+  border: $border;
+  background: $bg-black;
+  color: $phosphor-green;
+  padding: 2px 8px;
+  font-size: $font-xs;
+}
+
+.composer {
+  display: grid;
+  gap: 6px;
+}
+
+.nameInput,
+.messageInput {
+  border: $border;
+  background: var(--ui-bg-elevated);
+  color: $phosphor-green;
+  font: inherit;
+  letter-spacing: inherit;
+  padding: 6px 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.messageInput {
+  resize: vertical;
+  min-height: 48px;
+  max-height: 220px;
+}
+
+.actionRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.actionBtn {
+  border: $border;
+  background: var(--ui-fill-soft);
+  color: $phosphor-green;
+  padding: 3px 10px;
+  font-size: $font-xs;
+}
+
+.actionBtn:disabled {
+  opacity: 0.6;
+}
+
+.cooldown {
+  font-size: $font-xs;
+  color: var(--ui-text-muted);
+}
+
+.feed {
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--ui-border-soft);
+  background: var(--ui-fill-soft);
+  padding: 6px;
+  display: grid;
+  gap: 6px;
+  scrollbar-width: thin;
+}
+
+.message {
+  border: 1px solid var(--ui-border-soft);
+  background: var(--ui-fill-soft);
+  padding: 6px;
+  display: grid;
+  gap: 4px;
+}
+
+.messageHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: baseline;
+  font-size: $font-xs;
+}
+
+.author {
+  color: $phosphor-cyan;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.time {
+  color: var(--ui-text-muted);
+  white-space: nowrap;
+}
+
+.body {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: $font-xs;
+}
+
+.empty {
+  margin: 0;
+  color: var(--ui-text-muted);
+  font-size: $font-xs;
+}
+
+.previewHint {
+  margin: 0;
+  font-size: $font-xs;
+  color: var(--ui-text-muted);
+}
+
+.loadOlderBtn {
+  border: $border;
+  background: var(--ui-fill-soft);
+  color: $phosphor-green;
+  padding: 3px 10px;
+  font-size: $font-xs;
+  justify-self: start;
+}
+
+.loadOlderBtn:disabled {
+  opacity: 0.6;
+}
+
+.errorText {
+  margin: 0;
+  font-size: $font-xs;
+  color: var(--ui-text-alert, #ff6b6b);
+}
+
+.fullscreenLayer {
+  position: fixed;
+  inset: 0 0 $status-height 0;
+  z-index: 32;
+  border: $border;
+  background: var(--ui-overlay-bg);
+  box-sizing: border-box;
+  padding: 0;
+}
+
+.fullscreenSurface {
+  height: 100%;
+  min-height: 0;
 }

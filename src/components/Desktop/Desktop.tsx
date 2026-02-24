@@ -27,7 +27,7 @@ const Desktop: React.FC = () => {
       >
         <ME />
       </Panel>
-      {/* Small persisted input panel. */}
+      {/* Shared message-board panel (YOU runtime, preview mode). */}
       <Panel title="YOU.EXE" scopeId="you" bodyClassName={styles.panelBodyFlush} onActivate={() => setActiveScope('you')}><YOU /></Panel>
       {/* Canvas app needs a stretching body so WebGL can fill available height. */}
       <Panel title="THIRD.EXE" scopeId="third" stretchBody bodyClassName={styles.panelBodyFlush} onActivate={() => setActiveScope('third')}><THIRD /></Panel>

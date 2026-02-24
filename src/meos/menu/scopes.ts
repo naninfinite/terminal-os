@@ -55,8 +55,8 @@ export const MENU_SCOPE_CONFIG: Record<MenuScopeId, MenuScopeConfig> = {
     title: 'YOU',
     items: [
       { id: 'focus_you_panel', label: 'FOCUS YOU PANEL' },
-      { id: 'you_save_input', label: 'SAVE INPUT' },
-      { id: 'you_clear_input', label: 'CLEAR INPUT' },
+      { id: 'you_save_input', label: 'POST MESSAGE' },
+      { id: 'you_clear_input', label: 'CLEAR DRAFT' },
       ...THEME_MENU_ITEMS,
     ],
   },
