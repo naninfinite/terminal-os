@@ -10,6 +10,7 @@ describe('subsystemContextMenu model', () => {
       youHasDraft: false,
       youUnreadCount: 0,
       thirdNotificationCount: 0,
+      thirdMode: 'play',
       connectNotificationCount: 0,
     });
 
@@ -42,6 +43,7 @@ describe('subsystemContextMenu model', () => {
       youHasDraft: false,
       youUnreadCount: 0,
       thirdNotificationCount: 0,
+      thirdMode: 'play',
       connectNotificationCount: 0,
     });
 
@@ -80,6 +82,7 @@ describe('subsystemContextMenu model', () => {
       youHasDraft: false,
       youUnreadCount: 2,
       thirdNotificationCount: 0,
+      thirdMode: 'play',
       connectNotificationCount: 0,
     });
     const noDraftActions = noDraft.rows
@@ -95,6 +98,7 @@ describe('subsystemContextMenu model', () => {
       youHasDraft: true,
       youUnreadCount: 1,
       thirdNotificationCount: 0,
+      thirdMode: 'play',
       connectNotificationCount: 0,
     });
     const withDraftActions = withDraft.rows
@@ -104,7 +108,7 @@ describe('subsystemContextMenu model', () => {
     expect(withDraftActions.find((row) => row.id === 'you_clear_input')?.disabled).toBe(false);
   });
 
-  it('builds THIRD and CONNECT menus with disabled TODO placeholders', () => {
+  it('builds THIRD menu with mode switch action and CONNECT TODO placeholder', () => {
     const third = buildSubsystemContextMenu({
       scope: 'third',
       origin: 'dock',
@@ -112,6 +116,7 @@ describe('subsystemContextMenu model', () => {
       youHasDraft: false,
       youUnreadCount: 0,
       thirdNotificationCount: 0,
+      thirdMode: 'play',
       connectNotificationCount: 0,
     });
     const connect = buildSubsystemContextMenu({
@@ -121,15 +126,18 @@ describe('subsystemContextMenu model', () => {
       youHasDraft: false,
       youUnreadCount: 0,
       thirdNotificationCount: 0,
+      thirdMode: 'edit',
       connectNotificationCount: 0,
     });
 
-    const thirdTodo = third.rows.find((row) => row.kind === 'action' && row.id === 'todo_third_new_shape');
+    const thirdModeAction = third.rows.find(
+      (row) => row.kind === 'action' && row.id === 'third_set_edit_mode'
+    );
     const connectTodo = connect.rows.find(
       (row) => row.kind === 'action' && row.id === 'todo_connect_notifications'
     );
 
-    expect(thirdTodo && thirdTodo.kind === 'action' ? thirdTodo.disabled : undefined).toBe(true);
+    expect(thirdModeAction && thirdModeAction.kind === 'action' ? thirdModeAction.disabled : undefined).toBeFalsy();
     expect(connectTodo && connectTodo.kind === 'action' ? connectTodo.disabled : undefined).toBe(true);
   });
 });

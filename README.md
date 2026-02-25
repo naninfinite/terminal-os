@@ -11,6 +11,7 @@ Implemented now:
 - ME runtime foundation: windowing, focus/z-order, minimize/maximize, fullscreen layer.
 - FileMan + viewer apps inside ME (`text`, `image`, `video`, `project`).
 - `YOU.EXE` persistent message board backed by Supabase Edge Function.
+- `THIRD.EXE` object-mode playground baseline (primitives, edit/play modes, physics grab, local autosave).
 - Permanent subsystem dock navbar (`ME`, `YOU`, `THIRD`, `CONNECT`) with fullscreen/focus routing.
 - `YOU.EXE` dock indicator with session-only draft/unread signals.
 - Unified right-click / long-press context menus for subsystem dock + desktop panel roots (V1 scope).

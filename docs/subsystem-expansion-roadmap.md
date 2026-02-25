@@ -73,6 +73,23 @@ Why first:
 
 Goal: make THIRD the first non-ME subsystem with full parity behavior.
 
+Current implementation checkpoint (2026-02-25):
+
+- Runtime/provider boundary is now active:
+  - shared scene state for panel + fullscreen;
+  - local autosave persistence with versioned payload;
+  - menu/context actions can switch `PLAY`/`EDIT` mode.
+- V1 object-mode baseline is now active:
+  - default grid + axes + cube scene bootstrap;
+  - primitive add/select/duplicate/delete;
+  - edit gizmo (`move/rotate/scale`) + snap toggle.
+- V1 play interaction baseline is now active:
+  - `cannon-es` rigid-body world;
+  - fixed-depth grab/drag constraint;
+  - orbit lock while grabbing (with touch two-finger camera override).
+- V1 animation preset baseline is now active:
+  - object-level `bounce`, `rotate`, `pulse` presets in edit mode.
+
 Implementation slices:
 
 1. Extract scene/object state into a dedicated service/store.

@@ -1052,3 +1052,56 @@ Why it matters:
 Risks / Notes:
 - V1 intentionally excludes new global FileMan create commands (`new file` / `new folder`) from dock menus.
 - Existing dock mobile compaction responsiveness issue remains tracked as a follow-up and was not addressed in this pass.
+
+---
+
+## Entry 58 - THIRD.EXE V1 Playground Baseline (Object-Mode + Physics + Local Autosave)
+
+Summary:
+- Replaced the placeholder rotating `THIRD` demo with a provider-owned V1 playground runtime.
+- Added runtime contract + persistence boundary:
+  - `src/third/types.ts`,
+  - `src/third/state.ts`,
+  - `src/third/storage.ts`,
+  - refactored `src/third/ThirdProvider.tsx`.
+- Implemented V1 scene baseline in `src/components/THIRD/THIRD.tsx`:
+  - default scene boot (`grid + axes + cube`),
+  - object list and primitive actions (`cube/sphere/cylinder/plane`),
+  - single-select, duplicate, delete.
+- Implemented `EDIT` mode behavior:
+  - physics pause,
+  - transform gizmo (`W/E/R`),
+  - snap toggle (`G`),
+  - visible `EDIT` indicator.
+- Implemented `PLAY` mode behavior with `cannon-es`:
+  - fixed timestep rigid-body stepping,
+  - fixed-depth ray grab constraint,
+  - orbit lock while grabbing,
+  - touch rule: one-finger grab + two-finger camera override while grabbed.
+- Added user-clickable animation presets in edit mode:
+  - `bounce`,
+  - `rotate`,
+  - `pulse`,
+  - metadata persisted per object.
+- Updated shell integration:
+  - start menu now includes THIRD mode toggle command,
+  - THIRD subsystem context menu now shows mode status + dynamic mode-switch action,
+  - reset action routes to provider reset.
+- Added/updated tests:
+  - `src/third/state.test.ts`,
+  - `src/third/storage.test.ts`,
+  - `src/meos/menu/scopes.test.ts`,
+  - `src/components/StatusBar/subsystemContextMenu.test.ts`.
+- Added docs source-of-truth:
+  - `docs/third-exe/THIRD-V1-RUNTIME-CONTRACT.md`,
+  - roadmap checkpoint update in `docs/subsystem-expansion-roadmap.md`.
+
+Why it matters:
+- Moves `THIRD.EXE` from visual placeholder to an interaction-capable subsystem aligned with M6 parity direction.
+- Establishes stable runtime/persistence contracts for future skybox and deeper editor features.
+- Keeps panel/fullscreen state shared via provider while preserving shell/menu consistency.
+
+Risks / Notes:
+- Local storage persistence remains single-device/browser profile only (expected for V1).
+- Added physics dependency increases client bundle size for THIRD runtime paths.
+- Scene interactions are verified by build/unit tests; deeper pointer/gesture behavior still requires in-browser manual validation.

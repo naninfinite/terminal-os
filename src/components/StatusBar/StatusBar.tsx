@@ -84,6 +84,10 @@ const StatusBar: React.FC = () => {
   } = useYouBoard();
   const {
     displayMode: thirdDisplayMode,
+    mode: thirdMode,
+    setMode: setThirdMode,
+    toggleMode: toggleThirdMode,
+    resetScene: resetThirdScene,
     openFullscreen: openThirdFullscreen,
     closeFullscreen: closeThirdFullscreen,
   } = useThirdRuntime();
@@ -446,8 +450,11 @@ const StatusBar: React.FC = () => {
       case 'focus_third_panel':
         focusPanel('third');
         break;
+      case 'third_toggle_mode':
+        toggleThirdMode();
+        break;
       case 'third_reset_scene':
-        dispatchShellEvent('terminalos:third:reset-scene');
+        resetThirdScene();
         break;
       case 'focus_connect_panel':
         focusPanel('connect');
@@ -500,13 +507,18 @@ const StatusBar: React.FC = () => {
       case 'you_clear_input':
         dispatchShellEvent('terminalos:you:clear-input');
         break;
+      case 'third_set_edit_mode':
+        setThirdMode('edit');
+        break;
+      case 'third_set_play_mode':
+        setThirdMode('play');
+        break;
       case 'third_reset_scene':
-        dispatchShellEvent('terminalos:third:reset-scene');
+        resetThirdScene();
         break;
       case 'connect_copy_banner':
         dispatchShellEvent('terminalos:connect:copy-banner');
         break;
-      case 'todo_third_new_shape':
       case 'todo_connect_notifications':
       default:
         break;
@@ -523,6 +535,7 @@ const StatusBar: React.FC = () => {
       youHasDraft: youDockState.hasDraft,
       youUnreadCount: youDockState.unreadCount,
       thirdNotificationCount,
+      thirdMode,
       connectNotificationCount,
     });
   }, [
@@ -530,6 +543,7 @@ const StatusBar: React.FC = () => {
     meWindowCount,
     subsystemMenu,
     thirdNotificationCount,
+    thirdMode,
     youDockState.hasDraft,
     youDockState.unreadCount,
   ]);
@@ -619,7 +633,11 @@ const StatusBar: React.FC = () => {
                 className={styles.menuItem}
                 onClick={() => runMenuAction(item.id)}
               >
-                {item.id === 'toggle_theme' ? getThemeToggleLabel(resolvedTheme) : item.label}
+                {item.id === 'toggle_theme'
+                  ? getThemeToggleLabel(resolvedTheme)
+                  : item.id === 'third_toggle_mode'
+                    ? (thirdMode === 'edit' ? 'SWITCH TO PLAY MODE' : 'SWITCH TO EDIT MODE')
+                    : item.label}
               </button>
             ))}
           </div>

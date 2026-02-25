@@ -13,6 +13,7 @@ export type MenuCommandId =
   | 'you_save_input'
   | 'you_clear_input'
   | 'focus_third_panel'
+  | 'third_toggle_mode'
   | 'third_reset_scene'
   | 'focus_connect_panel'
   | 'connect_copy_banner'
@@ -64,6 +65,7 @@ export const MENU_SCOPE_CONFIG: Record<MenuScopeId, MenuScopeConfig> = {
     title: 'THIRD',
     items: [
       { id: 'focus_third_panel', label: 'FOCUS THIRD PANEL' },
+      { id: 'third_toggle_mode', label: 'TOGGLE EDIT MODE' },
       { id: 'third_reset_scene', label: 'RESET SCENE' },
       ...THEME_MENU_ITEMS,
     ],

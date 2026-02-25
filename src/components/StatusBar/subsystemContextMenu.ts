@@ -1,5 +1,6 @@
 import type { ContextTriggerSource } from '../shared/useContextTrigger';
 import type { SubsystemScope } from './subsystemDock';
+import type { ThirdEditorMode } from '../../third/types';
 
 export const SUBSYSTEM_CONTEXT_MENU_EVENT = 'terminalos:subsystem-context-menu';
 
@@ -26,9 +27,10 @@ export type SubsystemContextMenuActionId =
   | 'open_media'
   | 'you_save_input'
   | 'you_clear_input'
+  | 'third_set_edit_mode'
+  | 'third_set_play_mode'
   | 'third_reset_scene'
   | 'connect_copy_banner'
-  | 'todo_third_new_shape'
   | 'todo_connect_notifications';
 
 export type SubsystemContextMenuRow =
@@ -48,6 +50,7 @@ type BuildSubsystemContextMenuArgs = {
   youHasDraft: boolean;
   youUnreadCount: number;
   thirdNotificationCount: number;
+  thirdMode: ThirdEditorMode;
   connectNotificationCount: number;
 };
 
@@ -124,22 +127,22 @@ export const buildSubsystemContextMenu = (args: BuildSubsystemContextMenuArgs): 
         ],
       };
     case 'third':
+      // Mode action is intentionally discoverable in context menus for V1.
+      {
+        const modeAction = args.thirdMode === 'edit'
+          ? { id: 'third_set_play_mode' as const, label: 'SWITCH TO PLAY MODE' }
+          : { id: 'third_set_edit_mode' as const, label: 'SWITCH TO EDIT MODE' };
       return {
         title,
         rows: [
           { key: 'status_notifications', kind: 'status', label: `NOTIFICATIONS: ${args.thirdNotificationCount}` },
+          { key: 'status_mode', kind: 'status', label: `MODE: ${args.thirdMode.toUpperCase()}` },
           { key: 'act_open_third', kind: 'action', id: 'open_third', label: openLabelForScope('third', args.origin) },
+          { key: 'act_third_mode', kind: 'action', id: modeAction.id, label: modeAction.label },
           { key: 'act_third_reset', kind: 'action', id: 'third_reset_scene', label: 'RESET SCENE' },
-          { key: 'div_todo', kind: 'divider' },
-          {
-            key: 'act_todo_shapes',
-            kind: 'action',
-            id: 'todo_third_new_shape',
-            label: 'TODO: NEW SHAPE (CUBE / SPHERE / TORUS)',
-            disabled: true,
-          },
         ],
       };
+      }
     case 'connect':
       return {
         title,

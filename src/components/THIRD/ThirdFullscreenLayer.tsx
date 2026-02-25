@@ -6,7 +6,7 @@ import { useMeOs } from '../../meos/shell/MeOsProvider';
 
 export const ThirdFullscreenLayer: React.FC = () => {
   const { displayMode, closeFullscreen } = useThirdRuntime();
-  const { setActiveScope } = useMeOs();
+  const { displayMode: meDisplayMode, setActiveScope } = useMeOs();
 
   useEffect(() => {
     if (displayMode !== 'fullscreen') return;
@@ -24,6 +24,13 @@ export const ThirdFullscreenLayer: React.FC = () => {
     setActiveScope('third');
     return () => setActiveScope(null);
   }, [displayMode, setActiveScope]);
+
+  useEffect(() => {
+    if (displayMode !== 'fullscreen') return;
+    if (meDisplayMode === 'fullscreen') {
+      closeFullscreen();
+    }
+  }, [closeFullscreen, displayMode, meDisplayMode]);
 
   if (displayMode !== 'fullscreen') return null;
 
