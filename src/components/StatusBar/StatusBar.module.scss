@@ -3,13 +3,14 @@
 
 .statusBar {
   /* Fixed bottom shell bar that stays visible over desktop content. */
+  --status-gutter: #{$grid-gap};
   background-color: $status-bg;
   border-top: $status-border;
   height: calc(#{$status-height} + env(safe-area-inset-bottom, 0px));
   padding-top: 0;
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  padding-left: calc(10px + env(safe-area-inset-left, 0px));
-  padding-right: calc(10px + env(safe-area-inset-right, 0px));
+  padding-left: calc(var(--status-gutter) + env(safe-area-inset-left, 0px));
+  padding-right: calc(var(--status-gutter) + env(safe-area-inset-right, 0px));
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -87,9 +88,9 @@
   position: absolute;
   left: 0;
   bottom: calc(100% + 8px);
-  min-width: min(210px, calc(100vw - 20px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
-  width: min(280px, calc(100vw - 20px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
-  max-width: calc(100vw - 20px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+  min-width: min(210px, calc(100dvw - var(--status-gutter) - var(--status-gutter) - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+  width: min(280px, calc(100dvw - var(--status-gutter) - var(--status-gutter) - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+  max-width: calc(100dvw - var(--status-gutter) - var(--status-gutter) - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
   border: $border;
   background: $bg-black;
   padding: 6px;
@@ -146,9 +147,7 @@
 
 @media (max-width: $bp-tablet) {
   .statusBar {
-    /* Match mobile/tablet desktop panel gutter so MENU aligns with panel frame. */
-    padding-left: calc(#{math.div($grid-gap, 2)} + env(safe-area-inset-left, 0px));
-    padding-right: calc(#{math.div($grid-gap, 2)} + env(safe-area-inset-right, 0px));
+    --status-gutter: #{math.div($grid-gap, 2)};
     gap: 8px;
   }
 
