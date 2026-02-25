@@ -1,3 +1,4 @@
+@use 'sass:math';
 @use '../../styles/variables' as *;
 
 .statusBar {
@@ -145,6 +146,9 @@
 
 @media (max-width: $bp-tablet) {
   .statusBar {
+    /* Match mobile/tablet desktop panel gutter so MENU aligns with panel frame. */
+    padding-left: calc(#{math.div($grid-gap, 2)} + env(safe-area-inset-left, 0px));
+    padding-right: calc(#{math.div($grid-gap, 2)} + env(safe-area-inset-right, 0px));
     gap: 8px;
   }
 
