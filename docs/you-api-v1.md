@@ -1,7 +1,7 @@
 # YOU.EXE API v1 (Supabase Live Contract)
 
 Status: Active (Supabase configured and deployed)  
-Date: 2026-02-24
+Date: 2026-02-25
 
 ## 1) Current backend state
 
@@ -21,10 +21,10 @@ Security baseline:
 
 - Function name: `you`
 - Routes:
-  - `GET /messages`
-  - `POST /messages`
+  - `GET /`
+  - `POST /`
 - Deployed URL shape:
-  - `https://<project-ref>.supabase.co/functions/v1/you/messages`
+  - `https://<project-ref>.supabase.co/functions/v1/you`
 
 ## 3) Frontend contract
 
@@ -33,29 +33,25 @@ Frontend API client lives in `src/you/service.ts`.
 ### URL behavior
 
 1. If `VITE_YOU_API_BASE_URL` is set:
-- Request `${base}/messages`
+- Request `${base}` with query params for list (`limit`, `before`) or JSON body for create.
 
 2. If `VITE_YOU_API_BASE_URL` is not set:
-- Request `/api/you/messages` (future same-origin proxy path)
+- Request `/api/you` (future same-origin proxy path)
 
-### Optional auth headers
+### Auth mode (current)
 
-If `VITE_YOU_API_ANON_KEY` is set, send:
-
-- `Authorization: Bearer <anon-key>`
-- `apikey: <anon-key>`
-
-If not set, send no auth headers.
+- Edge Function `verify_jwt` is currently disabled.
+- Frontend does not send `Authorization` / `apikey` headers in current mode.
 
 ## 4) Endpoint contract
 
-### GET `/messages?before=<ISO>&limit=<N>`
+### GET `/?before=<ISO>&limit=<N>`
 
 - Returns newest-first feed.
 - Default `limit=30`, max `limit=100`.
 - `before` is exclusive cursor for loading older messages.
 
-### POST `/messages`
+### POST `/`
 
 Request body:
 
@@ -80,33 +76,40 @@ No update/delete endpoints in M6.
 }
 ```
 
-## 6) Validation and rate limit rules
+## 6) CORS contract
+
+- Allow origins: localhost dev origin(s) and production domain(s).
+- Allow methods: `GET`, `POST`, `OPTIONS`.
+- Allow headers must include:
+  - `content-type`
+  - `x-you-client-key`
+  - `accept` (if used by clients)
+- `OPTIONS` preflight is handled by the Edge Function.
+
+## 7) Validation and rate limit rules
 
 1. Validation runs server-side and client-side.
 2. `body`: trimmed length `1..500`.
 3. `displayName`: optional, trimmed, max `32`.
 4. Empty/blank name is stored as anon (`isAnon=true`, `displayName=null`).
-5. Rate limit baseline: 1 post per 8 seconds via `you_allow_post`.
-6. Posts are immutable in M6.
+5. Rate limit baseline uses `you_allow_post(p_client_key text)`.
+6. `clientKey` is read from `x-you-client-key` when present; server may fall back to IP/UA identity.
+7. Posts are immutable in M6.
 
-## 7) Smoke test references
+## 8) Smoke test references
 
 GET:
 
 ```bash
-curl -i "https://<project-ref>.supabase.co/functions/v1/you/messages?limit=5"
+curl -i "https://<project-ref>.supabase.co/functions/v1/you?limit=5"
 ```
 
 POST:
 
 ```bash
-curl -i "https://<project-ref>.supabase.co/functions/v1/you/messages" \
+curl -i "https://<project-ref>.supabase.co/functions/v1/you" \
+  -H "Accept: application/json" \
   -H "Content-Type: application/json" \
+  -H "x-you-client-key: local-dev-client" \
   --data '{"body":"hello","displayName":"nan"}'
-```
-
-If `verify_jwt=true`, add:
-
-```bash
--H "Authorization: Bearer <anon-key>" -H "apikey: <anon-key>"
 ```

@@ -1,70 +1,80 @@
 # TERMINAL-OS
 
-Retro terminal-inspired UI (Severance Lumon terminals) built with React, Vite, TypeScript, and SCSS Modules.
+Terminal-OS is an OS-like retro UI built with React, Vite, TypeScript, and SCSS modules.  
+It combines panel-based desktop navigation with a persistent ME shell (`ME.EXE`) and subsystem apps (`YOU`, `THIRD`, `CONNECT`).
 
-## Stack
-- React + Vite + TypeScript
-- Styling: SCSS modules
+## Project status
 
-## Development
+Implemented now:
+- Landing flow with keyboard/click enter transition.
+- Desktop shell with panel grid, status bar, and scope-aware menu/task behavior.
+- ME runtime foundation: windowing, focus/z-order, minimize/maximize, fullscreen layer.
+- FileMan + viewer apps inside ME (`text`, `image`, `video`, `project`).
+- `YOU.EXE` persistent message board backed by Supabase Edge Function.
+- Mobile/tablet responsiveness baseline (shared breakpoints + safe-area handling).
+- Automated baseline: Vitest suite + production build checks.
+
+Planned / active direction:
+- M6 subsystem parity work for `YOU`, `THIRD`, and `CONNECT` (shared panel/fullscreen runtime quality and depth).
+
+## Phases / iteration method
+
+Milestone framing:
+- Phase 2: panel placeholders and shell baseline.
+- Phase 3+: ME shell/VFS/FileMan/viewers hardening and expansion.
+- M6: subsystem parity track (`YOU`/`THIRD`/`CONNECT`).
+
+Current milestone status:
+- M1: ME shell foundation complete.
+- M2: VFS foundation complete.
+- M3: FileMan explorer baseline complete.
+- M4: Viewer app baseline complete (`text` / `image` / `video` / `project`).
+- M5: ME shell polish closeout complete.
+- M6: subsystem parity in progress/planned (`YOU` / `THIRD` / `CONNECT`).
+
+Delivery rules:
+- Keep diffs small and reviewable.
+- One concern per commit/PR.
+- Update docs alongside behavior changes.
+- Keep tests/build green before merge.
+- Authority order for conflicts: code -> docs -> ADRs.
+
+## Dev workflow
+
+Install and run:
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
+pnpm test
+pnpm build
+pnpm preview
 ```
 
-## Build
-```bash
-npm run build
-npm run preview
-```
+Vite server baseline is configured in `vite.config.ts`:
+- `server.host: true`
+- `server.port: 5173`
+- `server.strictPort: true`
 
-## Phase 1 – Skeleton App Layout
-- App shell layout (`AppShell`) with CRT scanlines overlay
-- `Desktop` grid with four panels: `ME`, `YOU`, `THIRD`, `CONNECT`
-- `StatusBar` footer with basic system state and a live clock
+## Environment
 
-## Phase 0 – Landing Page
-- Fullscreen looping video background at `public/assets/landing-bg.mp4`.
-- Overlay framed box with "TERMINAL-OS" and "[ ENTER ]".
-- Enter key or click triggers fade-out transition.
-- Fallback poster image: `public/assets/landing-poster.jpg`.
+- Use `.env.local` for local overrides (not committed).
+- Use `.env.example` as the committed template.
+- `VITE_YOU_API_BASE_URL` should point to the Supabase function root:
+  - `https://<project-ref>.supabase.co/functions/v1/you`
+- Never commit secrets. Service-role credentials must stay only in Supabase Edge Function secrets/runtime.
 
-If the video fails, the poster + gradient background are used.
+## YOU.EXE persistence (high level)
 
-## Accessibility
-- Keyboard Enter triggers entry.
-- Visible focus ring via `:focus-visible`.
+- Frontend client reads/writes via Supabase Edge Function `you` at function root (`GET /`, `POST /`).
+- Current deployment runs with JWT verify disabled (no frontend `Authorization`/`apikey` requirement).
+- Client sends `x-you-client-key` on post requests; backend uses it for rate-limit identity and can fall back to IP/UA.
+- CORS must allow dev origins (`localhost`) and production domains, and include required headers (`content-type`, `x-you-client-key`, optionally `accept`).
 
-## Assets
-- Place in `public/assets/`:
-  - `landing-bg.mp4`
-  - `landing-poster.jpg`
-  - `me.png` (used by `ME` panel)
+## References
 
-## Changelog
-- Phase 1: App shell + StatusBar implemented.
-- Phase 0: Scaffold and landing implemented.
-
-Recent updates:
-- Added custom retro green mouse cursor (monospace glyph) with hover-enlarge behavior and reduced-motion support.
-- Fixed landing responsiveness (video box clamp) and enter transition timer cleanup.
-- Hardened mobile/tablet responsiveness across shell, panels, status bar, ME shell, YOU, FileMan, and viewers using shared breakpoint tokens and safe-area-aware layout guards.
-
-## Phase 2 — Panel placeholders
-
-Phase 2 completes the panel placeholder work and core behaviors. See `docs/phase-2.md` for a detailed, text-heavy explanation of the codebase and components.
-
-Detailed docs: `docs/phase-2.md`
-
-## Responsive Baseline (2026-02-25)
-
-- Breakpoint tokens are centralized in `src/styles/_variables.scss`:
-  - tablet: `1024px`
-  - compact: `760px`
-  - phone: `560px`
-  - narrow: `420px`
-- Responsive policy:
-  - mobile/tablet behavior is CSS-first and scoped to breakpoint/safe-area rules
-  - desktop behavior above tablet width is preserved
-- Reference doc: `docs/responsive-mobile-tablet-baseline.md`
-
+- `docs/overview.md`
+- `docs/phase-2.md`
+- `docs/fileman-v2-build-spec.md`
+- `docs/me-exe-evolution-plan.md`
+- `docs/responsive-mobile-tablet-baseline.md`
+- `docs/you-api-v1.md`
