@@ -5,7 +5,7 @@
   /* Fill the shell and leave room for fixed bottom status bar. */
   flex: 1;
   padding: $grid-gap;
-  padding-bottom: calc($grid-gap + $status-height);
+  padding-bottom: calc(#{$grid-gap} + #{$status-height} + env(safe-area-inset-bottom, 0px));
 
   /* Default desktop layout: 2x2 app matrix. */
   display: grid;
@@ -20,21 +20,27 @@
   overflow: auto;
   -webkit-overflow-scrolling: touch;
 
-  @media (max-width: 960px) {
+  @media (max-width: $bp-tablet) {
     /* Tablet: single-column stack with taller rows for content comfort. */
     grid-template-columns: 1fr;
     grid-template-rows: none;
-    grid-auto-rows: minmax(420px, 1fr);
+    grid-auto-rows: minmax(360px, 1fr);
     padding: math.div($grid-gap, 2);
-    padding-bottom: calc(#{math.div($grid-gap, 2)} + $status-height);
+    padding-bottom: calc(#{math.div($grid-gap, 2)} + #{$status-height} + env(safe-area-inset-bottom, 0px));
   }
 
-  @media (max-width: 600px) {
-    /* Mobile: tighter gutters and reduced row floor for smaller screens. */
+  @media (max-width: $bp-phone) {
+    /* Mobile phones: tighter gutters and lower row floors. */
     padding: math.div($grid-gap, 2);
-    padding-bottom: calc(#{math.div($grid-gap, 2)} + $status-height);
+    padding-bottom: calc(#{math.div($grid-gap, 2)} + #{$status-height} + env(safe-area-inset-bottom, 0px));
     gap: math.div($grid-gap, 2);
-    grid-auto-rows: minmax(320px, 1fr);
+    grid-auto-rows: minmax(300px, 1fr);
+  }
+
+  @media (max-width: $bp-narrow) {
+    /* Narrow phones: keep panel stack readable without forcing tall rows. */
+    gap: 4px;
+    grid-auto-rows: minmax(250px, 1fr);
   }
 }
 

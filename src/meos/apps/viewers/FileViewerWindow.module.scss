@@ -16,6 +16,7 @@
   justify-content: space-between;
   gap: 8px;
   padding: 4px 8px;
+  min-width: 0;
 }
 
 .viewerKind {
@@ -23,12 +24,18 @@
   padding: 1px 6px;
   font-size: $font-xs;
   letter-spacing: 0.05em;
+  flex: 0 0 auto;
 }
 
 .viewerName {
   font-size: $font-xs;
   opacity: 0.85;
   text-align: right;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .missing {
@@ -92,6 +99,7 @@
   border-top: 1px solid var(--ui-border-soft);
   background: transparent;
   padding: 6px 8px;
+  min-width: 0;
 }
 
 .controlBtn {
@@ -125,6 +133,9 @@
   opacity: 0.9;
   text-align: right;
   min-width: 94px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 @media (max-width: 620px) {
@@ -140,6 +151,28 @@
   .timecode {
     text-align: left;
     min-width: 0;
+  }
+}
+
+@media (max-width: $bp-phone) {
+  .videoControls {
+    gap: 6px;
+    padding: 4px 6px;
+  }
+
+  .controlBtn {
+    min-width: 52px;
+    padding: 1px 6px;
+  }
+}
+
+@media (max-width: $bp-narrow) {
+  .videoControls {
+    grid-template-columns: 1fr;
+  }
+
+  .timeline {
+    order: initial;
   }
 }
 

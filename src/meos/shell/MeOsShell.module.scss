@@ -103,16 +103,23 @@
   padding: 4px 6px;
   border-bottom: $border-thin solid $phosphor-green;
   cursor: move;
+  min-width: 0;
 }
 
 .windowTitle {
   font-size: $font-xs;
   letter-spacing: $letter-spacing;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .windowActions {
   display: flex;
   gap: 4px;
+  flex: 0 0 auto;
 }
 
 .windowBtn {
@@ -396,17 +403,67 @@
 .fullscreenLayer {
   /* Fullscreen ME.OS overlay mounted above desktop shell. */
   position: fixed;
-  inset: 0 0 $status-height 0;
+  inset: 0 0 calc(#{$status-height} + env(safe-area-inset-bottom, 0px)) 0;
   z-index: 40;
   border: $border;
   background: var(--ui-overlay-bg);
-  padding: 0;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
   box-sizing: border-box;
 }
 
-@media (max-width: 720px) {
+@media (max-width: $bp-tablet) {
+  .launchGrid {
+    width: min(130px, calc(100% - 16px));
+  }
+
+  .launchBtn {
+    min-height: 28px;
+    min-width: 112px;
+    padding: 3px 6px;
+  }
+
+  .windowHeader {
+    padding: 3px 5px;
+    gap: 6px;
+  }
+
+  .windowBody {
+    padding: 6px;
+  }
+}
+
+@media (max-width: $bp-phone) {
+  .launchGrid {
+    width: min(116px, calc(100% - 12px));
+    gap: 6px;
+  }
+
+  .launchBtn {
+    min-height: 26px;
+    min-width: 102px;
+    padding: 2px 6px;
+  }
+
+  .windowHeader {
+    padding: 2px 4px;
+    gap: 4px;
+  }
+
+  .windowActions {
+    gap: 2px;
+  }
+
+  .windowBtn {
+    min-width: 18px;
+    min-height: 14px;
+    padding: 0 4px;
+  }
+}
+
+@media (max-width: $bp-narrow) {
   .fullscreenLayer {
-    inset: 0 0 $status-height 0;
-    padding: 0;
+    border-left: 0;
+    border-right: 0;
   }
 }

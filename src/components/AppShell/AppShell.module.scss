@@ -3,6 +3,7 @@
 .shell {
   /* Root desktop shell container rendered after ENTER flow completes. */
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   background: $color-bg;
@@ -12,5 +13,4 @@
   /* Keep overflow visible so panel effects/cursor layers are not clipped. */
   overflow: visible;
 }
-
 

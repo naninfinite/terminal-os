@@ -44,6 +44,12 @@
   box-sizing: border-box;
 }
 
+@media (max-width: $bp-narrow) {
+  .panel {
+    min-height: 160px;
+  }
+}
+
 .panel::after {
   content: '';
   position: absolute;

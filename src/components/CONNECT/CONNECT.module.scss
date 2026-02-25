@@ -22,6 +22,7 @@
 .banner {
   /* Keep ASCII centered inside the panel regardless of panel width. */
   text-align: center;
+  max-width: 100%;
   margin: 0;
   /* Prevent browser typography rules from collapsing ASCII line alignment. */
   white-space: pre;
@@ -29,7 +30,13 @@
   font-family: $font-mono;
   /* Slightly tighter spacing keeps the banner readable in smaller panels. */
   line-height: 1.1;
-  font-size: $font-sm;
+  font-size: clamp(6px, 2vw, $font-sm);
   /* Prevent inner horizontal scrollbar in the CONNECT panel. */
   overflow: hidden;
+}
+
+@media (max-width: $bp-phone) {
+  .banner {
+    line-height: 1.05;
+  }
 }

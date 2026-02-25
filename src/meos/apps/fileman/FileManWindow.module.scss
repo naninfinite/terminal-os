@@ -13,6 +13,7 @@
   grid-template-columns: auto auto auto 1fr auto auto auto auto auto;
   gap: 6px;
   align-items: center;
+  min-width: 0;
 }
 
 .btn {
@@ -214,7 +215,8 @@
   background: $bg-black;
   color: $phosphor-green;
   padding: 3px 8px;
-  min-width: 120px;
+  width: 100%;
+  min-width: 0;
 }
 
 .body {
@@ -313,6 +315,7 @@
   padding: 5px 7px;
   text-align: left;
   transition: background 120ms ease, border-color 120ms ease;
+  min-width: 0;
 }
 
 .row:hover {
@@ -322,7 +325,7 @@
 
 .rowList {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
 }
@@ -374,6 +377,10 @@
 
 .name {
   font-size: $font-sm;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .kind {
@@ -421,7 +428,7 @@
   padding: 4px 8px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: $bp-tablet) {
   .toolbar {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -432,5 +439,20 @@
 
   .body {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: $bp-phone) {
+  .toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .btn {
+    padding: 2px 6px;
+  }
+
+  .btnContent {
+    gap: 4px;
   }
 }

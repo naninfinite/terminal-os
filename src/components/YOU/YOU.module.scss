@@ -38,11 +38,16 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  min-width: 0;
 }
 
 .stateToken {
   font-size: $font-xs;
   color: var(--ui-text-muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .modeBtn {
@@ -129,10 +134,13 @@
   gap: 8px;
   align-items: baseline;
   font-size: $font-xs;
+  min-width: 0;
 }
 
 .author {
   color: $phosphor-cyan;
+  min-width: 0;
+  flex: 1 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -141,6 +149,7 @@
 .time {
   color: var(--ui-text-muted);
   white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .body {
@@ -188,15 +197,57 @@
 
 .fullscreenLayer {
   position: fixed;
-  inset: 0 0 $status-height 0;
+  inset: 0 0 calc(#{$status-height} + env(safe-area-inset-bottom, 0px)) 0;
   z-index: 32;
   border: $border;
   background: var(--ui-overlay-bg);
   box-sizing: border-box;
-  padding: 0;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 .fullscreenSurface {
   height: 100%;
   min-height: 0;
+}
+
+@media (max-width: $bp-compact) {
+  .board {
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .topRow {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: $bp-phone) {
+  .board {
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .modeBtn,
+  .actionBtn,
+  .loadOlderBtn {
+    padding: 2px 8px;
+  }
+
+  .actionRow {
+    gap: 6px;
+  }
+
+  .feed {
+    padding: 4px;
+    gap: 4px;
+  }
+}
+
+@media (max-width: $bp-narrow) {
+  .messageHead {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 2px;
+  }
 }
