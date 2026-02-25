@@ -2,9 +2,10 @@
  * YOU.EXE message board client.
  * Runtime state is service-backed via `YouProvider` (no board localStorage writes).
  */
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './YOU.module.scss';
 import { useYouBoard } from '../../you/YouProvider';
+import { PANEL_PREVIEW_DEFAULT_COUNT, derivePanelPreviewLimit } from './panelPreview';
 
 type YouProps = {
   mode?: 'panel' | 'fullscreen';
@@ -26,7 +27,6 @@ const formatTimestamp = (iso: string): string => {
 const YOU: React.FC<YouProps> = ({ mode = 'panel' }) => {
   const {
     messages,
-    previewMessages,
     draftName,
     draftBody,
     loadingInitial,
@@ -46,8 +46,15 @@ const YOU: React.FC<YouProps> = ({ mode = 'panel' }) => {
     closeFullscreen,
   } = useYouBoard();
 
-  const visibleMessages = mode === 'panel' ? previewMessages : messages;
-  const hiddenCount = Math.max(0, messages.length - previewMessages.length);
+  const panelFeedRef = useRef<HTMLDivElement | null>(null);
+  const [panelPreviewLimit, setPanelPreviewLimit] = useState(PANEL_PREVIEW_DEFAULT_COUNT);
+  const panelVisibleCount = mode === 'panel'
+    ? Math.min(messages.length, panelPreviewLimit)
+    : messages.length;
+  const visibleMessages = mode === 'panel'
+    ? messages.slice(0, panelVisibleCount)
+    : messages;
+  const hiddenCount = Math.max(0, messages.length - panelVisibleCount);
   const cooldownText = useMemo(() => {
     if (!rateLimitedUntil) return null;
     const remaining = Math.ceil((rateLimitedUntil - Date.now()) / 1000);
@@ -65,6 +72,36 @@ const YOU: React.FC<YouProps> = ({ mode = 'panel' }) => {
       window.removeEventListener('terminalos:you:clear-input', onClear as EventListener);
     };
   }, [clearDraft, mode, submitDraft]);
+
+  useEffect(() => {
+    if (mode !== 'panel') return undefined;
+    const feedNode = panelFeedRef.current;
+    if (!feedNode) return undefined;
+
+    let rafId: number | null = null;
+    const updatePreviewLimit = () => {
+      if (rafId != null) window.cancelAnimationFrame(rafId);
+      rafId = window.requestAnimationFrame(() => {
+        setPanelPreviewLimit(derivePanelPreviewLimit(feedNode.clientHeight));
+      });
+    };
+
+    updatePreviewLimit();
+
+    const resizeObserver = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(() => updatePreviewLimit())
+      : null;
+    resizeObserver?.observe(feedNode);
+    window.addEventListener('resize', updatePreviewLimit);
+    window.addEventListener('orientationchange', updatePreviewLimit);
+
+    return () => {
+      window.removeEventListener('resize', updatePreviewLimit);
+      window.removeEventListener('orientationchange', updatePreviewLimit);
+      resizeObserver?.disconnect();
+      if (rafId != null) window.cancelAnimationFrame(rafId);
+    };
+  }, [mode, messages.length]);
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -119,7 +156,7 @@ const YOU: React.FC<YouProps> = ({ mode = 'panel' }) => {
           </div>
         </form>
 
-        <div className={styles.feed} aria-live="polite" aria-atomic="false">
+        <div className={styles.feed} ref={panelFeedRef} aria-live="polite" aria-atomic="false">
           {loadingInitial ? <p className={styles.empty}>LOADING BOARD...</p> : null}
           {!loadingInitial && visibleMessages.length === 0 ? <p className={styles.empty}>NO MESSAGES YET.</p> : null}
           {visibleMessages.map((message) => (
