@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { MENU_SCOPE_CONFIG, resolveMenuScope } from './scopes';
 
 describe('menu scopes', () => {
-  it('includes THIRD mode-toggle command in third scope menu', () => {
+  it('includes THIRD mode and physics commands in third scope menu', () => {
     const ids = MENU_SCOPE_CONFIG.third.items.map((item) => item.id);
     expect(ids).toContain('third_toggle_mode');
+    expect(ids).toContain('third_toggle_physics');
     expect(ids).toContain('third_reset_scene');
   });
 

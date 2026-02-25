@@ -6,6 +6,7 @@ describe('third storage sanitization', () => {
     const scene = sanitizePersistedThirdScene({
       version: 1,
       skyboxId: 'default',
+      physicsEnabled: true,
       objects: [
         {
           id: 'cube_1',
@@ -20,6 +21,7 @@ describe('third storage sanitization', () => {
             color: '#00ff66',
             wireframe: true,
           },
+          physicsEnabled: true,
           animationPreset: 'bounce',
         },
       ],
@@ -32,8 +34,11 @@ describe('third storage sanitization', () => {
     expect(scene).not.toBeNull();
     if (!scene) return;
     expect(scene.version).toBe(1);
+    expect(scene.physicsEnabled).toBe(true);
     expect(scene.objects).toHaveLength(1);
     expect(scene.objects[0].animationPreset).toBe('bounce');
+    expect(scene.objects[0].physicsEnabled).toBe(true);
+    expect(scene.objects[0].material.wireframe).toBe(false);
   });
 
   it('drops invalid payloads', () => {
@@ -50,6 +55,7 @@ describe('third storage sanitization', () => {
     const scene = sanitizePersistedThirdScene({
       version: 1,
       skyboxId: 'default',
+      physicsEnabled: false,
       objects: [
         {
           id: 'obj_1',
@@ -60,6 +66,7 @@ describe('third storage sanitization', () => {
             rotation: { x: 0, y: 0, z: 0 },
             scale: { x: 1, y: 1, z: 1 },
           },
+          physicsEnabled: false,
           animationPreset: 'spinny',
         },
       ],
@@ -68,5 +75,64 @@ describe('third storage sanitization', () => {
     expect(scene).not.toBeNull();
     if (!scene) return;
     expect(scene.objects[0].animationPreset).toBe('none');
+  });
+
+  it('defaults missing legacy physics fields to false', () => {
+    const scene = sanitizePersistedThirdScene({
+      version: 1,
+      skyboxId: 'default',
+      objects: [
+        {
+          id: 'obj_legacy',
+          name: 'Legacy Cube',
+          type: 'cube',
+          transform: {
+            position: { x: 0, y: 0.5, z: 0 },
+            rotation: { x: 0, y: 0, z: 0 },
+            scale: { x: 1, y: 1, z: 1 },
+          },
+        },
+      ],
+    });
+
+    expect(scene).not.toBeNull();
+    if (!scene) return;
+    expect(scene.physicsEnabled).toBe(false);
+    expect(scene.objects[0].physicsEnabled).toBe(false);
+  });
+
+  it('round-trips persisted global and object physics flags through JSON payload', () => {
+    const rawPayload = {
+      version: 1,
+      skyboxId: 'default',
+      physicsEnabled: true,
+      objects: [
+        {
+          id: 'obj_rt',
+          name: 'Roundtrip Cube',
+          type: 'cube',
+          transform: {
+            position: { x: 0, y: 0.5, z: 0 },
+            rotation: { x: 0, y: 0, z: 0 },
+            scale: { x: 1, y: 1, z: 1 },
+          },
+          material: {
+            color: '#00ff66',
+            wireframe: false,
+          },
+          physicsEnabled: true,
+          animationPreset: 'none',
+        },
+      ],
+      cameraState: {
+        position: { x: 4, y: 4, z: 6 },
+        target: { x: 0, y: 0.5, z: 0 },
+      },
+    };
+    const restored = sanitizePersistedThirdScene(JSON.parse(JSON.stringify(rawPayload)));
+    expect(restored).not.toBeNull();
+    if (!restored) return;
+    expect(restored.physicsEnabled).toBe(true);
+    expect(restored.objects[0].physicsEnabled).toBe(true);
   });
 });

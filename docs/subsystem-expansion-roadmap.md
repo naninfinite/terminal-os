@@ -2,7 +2,7 @@
 
 Status: M6 planning baseline (no large one-shot implementation)  
 Date captured: 2026-02-08  
-Last updated: 2026-02-24  
+Last updated: 2026-02-25  
 Purpose: Preserve future intent so subsystem delivery stays aligned when we shift from ME-focused work into full panel parity.
 
 ---
@@ -89,6 +89,12 @@ Current implementation checkpoint (2026-02-25):
   - orbit lock while grabbing (with touch two-finger camera override).
 - V1 animation preset baseline is now active:
   - object-level `bounce`, `rotate`, `pulse` presets in edit mode.
+- V1 tweak pass baseline is now active:
+  - global physics master toggle defaults `OFF`;
+  - per-object physics toggle defaults `OFF`;
+  - play-mode simulation/grab requires global + object physics `ON`;
+  - primitives render as solid accent materials (wireframe retired);
+  - axes helper keeps default RGB colors for visibility.
 
 Implementation slices:
 

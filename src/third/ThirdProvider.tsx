@@ -10,11 +10,14 @@ import {
   setAnimationPreset,
   setCameraState,
   setEditorMode,
+  setObjectPhysicsEnabled,
+  setPhysicsEnabled,
   setSelection,
   setSkyboxId,
   setSnapEnabled,
   setTransformMode,
   toggleEditorMode,
+  togglePhysics,
   toggleSnap,
   updateObjectTransform,
 } from './state';
@@ -40,6 +43,7 @@ type ThirdContextValue = {
   objects: ReturnType<typeof createDefaultThirdRuntimeState>['objects'];
   selectionId: string | null;
   mode: ThirdEditorMode;
+  physicsEnabled: boolean;
   snapEnabled: boolean;
   skyboxId: string;
   cameraState: ThirdCameraState;
@@ -48,6 +52,9 @@ type ThirdContextValue = {
   closeFullscreen: () => void;
   setMode: (mode: ThirdEditorMode) => void;
   toggleMode: () => void;
+  setPhysicsEnabled: (enabled: boolean) => void;
+  togglePhysics: () => void;
+  setObjectPhysicsEnabled: (id: string, enabled: boolean) => void;
   setTransformMode: (mode: ThirdTransformMode) => void;
   setSnapEnabled: (enabled: boolean) => void;
   toggleSnap: () => void;
@@ -120,6 +127,15 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const toggleMode = useCallback(() => {
     setState((prev) => toggleEditorMode(prev));
   }, []);
+  const setPhysicsEnabledAction = useCallback((enabled: boolean) => {
+    setState((prev) => setPhysicsEnabled(prev, enabled));
+  }, []);
+  const togglePhysicsAction = useCallback(() => {
+    setState((prev) => togglePhysics(prev));
+  }, []);
+  const setObjectPhysicsEnabledAction = useCallback((id: string, enabled: boolean) => {
+    setState((prev) => setObjectPhysicsEnabled(prev, id, enabled));
+  }, []);
   const setTransformModeAction = useCallback((mode: ThirdTransformMode) => {
     setState((prev) => setTransformMode(prev, mode));
   }, []);
@@ -182,23 +198,27 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     };
     const onToggleMode = () => toggleMode();
+    const onTogglePhysics = () => togglePhysicsAction();
 
     window.addEventListener('terminalos:third:reset-scene', onResetScene as EventListener);
     window.addEventListener('terminalos:third:set-mode', onSetMode as EventListener);
     window.addEventListener('terminalos:third:toggle-mode', onToggleMode as EventListener);
+    window.addEventListener('terminalos:third:toggle-physics', onTogglePhysics as EventListener);
 
     return () => {
       window.removeEventListener('terminalos:third:reset-scene', onResetScene as EventListener);
       window.removeEventListener('terminalos:third:set-mode', onSetMode as EventListener);
       window.removeEventListener('terminalos:third:toggle-mode', onToggleMode as EventListener);
+      window.removeEventListener('terminalos:third:toggle-physics', onTogglePhysics as EventListener);
     };
-  }, [resetScene, setMode, toggleMode]);
+  }, [resetScene, setMode, toggleMode, togglePhysicsAction]);
 
   const value = useMemo<ThirdContextValue>(() => ({
     displayMode,
     objects: state.objects,
     selectionId: state.selectionId,
     mode: state.mode,
+    physicsEnabled: state.physicsEnabled,
     snapEnabled: state.snapEnabled,
     skyboxId: state.skyboxId,
     cameraState: state.cameraState,
@@ -207,6 +227,9 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     closeFullscreen,
     setMode,
     toggleMode,
+    setPhysicsEnabled: setPhysicsEnabledAction,
+    togglePhysics: togglePhysicsAction,
+    setObjectPhysicsEnabled: setObjectPhysicsEnabledAction,
     setTransformMode: setTransformModeAction,
     setSnapEnabled: setSnapEnabledAction,
     toggleSnap: toggleSnapAction,
@@ -236,6 +259,8 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     selectObject,
     setCameraStateAction,
     setMode,
+    setObjectPhysicsEnabledAction,
+    setPhysicsEnabledAction,
     setObjectAnimationPreset,
     setSkyboxIdAction,
     setSnapEnabledAction,
@@ -243,11 +268,13 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     state.cameraState,
     state.mode,
     state.objects,
+    state.physicsEnabled,
     state.selectionId,
     state.skyboxId,
     state.snapEnabled,
     state.transformMode,
     toggleMode,
+    togglePhysicsAction,
     toggleSnapAction,
     updateObjectTransformAction,
   ]);

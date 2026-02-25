@@ -80,10 +80,10 @@
 
 .btn {
   /* Start-like command button style, matching terminal framing language. */
-  border: $border;
+  border: $border-thick solid var(--ui-accent);
   padding: 2px 10px;
   background: $bg-black;
-  color: $phosphor-green;
+  color: var(--ui-accent);
   white-space: nowrap;
   line-height: 1;
   flex: 0 0 auto;
@@ -111,9 +111,9 @@
 }
 
 .menuItem {
-  border: 1px solid var(--ui-border-soft);
+  border: 1px solid var(--ui-accent);
   background: var(--ui-fill-soft);
-  color: $phosphor-green;
+  color: var(--ui-accent);
   text-align: left;
   padding: 4px 8px;
   font-size: $font-xs;
@@ -139,9 +139,9 @@
 }
 
 .meDockMenuItem {
-  border: 1px solid var(--ui-border-soft);
+  border: 1px solid var(--ui-accent);
   background: var(--ui-fill-soft);
-  color: $phosphor-green;
+  color: var(--ui-accent);
   text-align: left;
   padding: 4px 8px;
   font-size: $font-xs;
@@ -151,9 +151,9 @@
 }
 
 .meDockMenuAction {
-  border: 1px solid var(--ui-border-soft);
+  border: 1px solid var(--ui-accent);
   background: var(--ui-fill-soft);
-  color: $phosphor-green;
+  color: var(--ui-accent);
   text-align: left;
   padding: 4px 8px;
   font-size: $font-xs;
@@ -202,9 +202,9 @@
 }
 
 .subsystemMenuItem {
-  border: 1px solid var(--ui-border-soft);
+  border: 1px solid var(--ui-accent);
   background: var(--ui-fill-soft);
-  color: $phosphor-green;
+  color: var(--ui-accent);
   text-align: left;
   padding: 4px 8px;
   font-size: $font-xs;
@@ -230,9 +230,9 @@
 }
 
 .taskBtn {
-  border: 1px solid var(--ui-border-soft);
+  border: 1px solid var(--ui-accent);
   background: var(--ui-fill-hover);
-  color: $phosphor-green;
+  color: var(--ui-accent);
   padding: 2px 8px;
   font-size: $font-xs;
   white-space: nowrap;

@@ -13,6 +13,7 @@ V1 includes:
 - `PLAY` and `EDIT` modes,
 - edit gizmo with snap,
 - play-mode physics grab/drag,
+- global + per-object physics opt-in controls,
 - local autosave persistence,
 - preset object animations (`bounce`, `rotate`, `pulse`).
 
@@ -38,6 +39,7 @@ Primary runtime fields:
 - `objects: ThirdSceneObject[]`
 - `selectionId: string | null`
 - `mode: 'play' | 'edit'`
+- `physicsEnabled: boolean` (global master toggle)
 - `snapEnabled: boolean`
 - `transformMode: 'translate' | 'rotate' | 'scale'`
 - `skyboxId: string`
@@ -51,6 +53,8 @@ Key provider actions:
 - `duplicateSelected()`
 - `setObjectAnimationPreset(id, preset)`
 - `setMode(mode)` / `toggleMode()`
+- `setPhysicsEnabled(enabled)` / `togglePhysics()`
+- `setObjectPhysicsEnabled(id, enabled)`
 - `setTransformMode(mode)` / `toggleSnap()`
 - `applyObjectTransforms(patches)`
 - `setCameraState(cameraState)`
@@ -62,7 +66,7 @@ On first load / destructive reset:
 - Grid helper on XZ plane (`y-up`).
 - Axes helper at origin.
 - One default cube.
-- Wireframe material style.
+- Solid green-accent material style (`wireframe=false`).
 - Orbit camera control.
 
 ## 5) Interaction Contract
@@ -85,12 +89,17 @@ On first load / destructive reset:
 
 ### PLAY mode
 
-- Physics stepping enabled (`cannon-es`, fixed timestep loop).
+- Physics stepping runs only when global `physicsEnabled` is `ON`.
+- Object simulation/grab eligibility requires strict AND:
+  - global `physicsEnabled === true`,
+  - object `physicsEnabled === true`.
 - Grab/drag uses raycast hit, fixed initial camera depth, and point-to-point constraint.
+- Disabling global physics during play releases active grab and freezes bodies at current transforms.
 - Orbit controls disabled while mouse grab is active.
+- Orbit panning is enabled in standard controls when not actively grabbing.
 - Touch behavior:
   - one-finger press on object grabs,
-  - two-finger gesture enables camera manipulation while grab is active.
+  - two-finger gesture enables dolly/pan camera manipulation.
 
 ## 6) Preset Animations
 
@@ -113,6 +122,8 @@ Storage key:
 Persisted payload:
 - versioned JSON metadata only,
 - `objects`,
+- global `physicsEnabled`,
+- per-object `physicsEnabled`,
 - `skyboxId`,
 - optional `cameraState`.
 
@@ -131,11 +142,13 @@ Persistence behavior:
 Start menu (`THIRD` scope):
 - `FOCUS THIRD PANEL`
 - mode toggle action (dynamic `EDIT`/`PLAY` label)
+- physics toggle action (`PHYSICS: ON/OFF`)
 - `RESET SCENE`
 
 Subsystem right-click menu (`THIRD`):
-- status rows include current mode,
+- status rows include current mode + physics state,
 - dynamic mode-switch action for discoverable edit entry,
+- dynamic physics toggle action,
 - reset action.
 
 ## 9) Test Coverage

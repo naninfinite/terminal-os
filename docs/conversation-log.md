@@ -1105,3 +1105,34 @@ Risks / Notes:
 - Local storage persistence remains single-device/browser profile only (expected for V1).
 - Added physics dependency increases client bundle size for THIRD runtime paths.
 - Scene interactions are verified by build/unit tests; deeper pointer/gesture behavior still requires in-browser manual validation.
+
+---
+
+## Entry 59 - THIRD.EXE Tweak Pass (Optional Physics + Solid Materials + Visibility/Theme Polish)
+
+Summary:
+- Updated THIRD runtime state and persistence contract to support optional physics:
+  - global `physicsEnabled` master toggle (default `OFF`),
+  - per-object `physicsEnabled` flags (default `OFF`).
+- Updated shell integration for physics controls:
+  - added `third_toggle_physics` to start menu scope,
+  - added THIRD context-menu physics status + action row,
+  - wired physics toggle action handling in status bar.
+- Updated THIRD scene behavior:
+  - play-mode simulation/grab now requires global + object physics enabled,
+  - turning global physics off during play safely releases grab and freezes objects at current transforms,
+  - right-mouse pan and touch two-finger dolly/pan remain available when not actively grabbing.
+- Updated THIRD visuals:
+  - retired wireframe for primitives and normalized legacy wireframe state to solid rendering,
+  - switched THIRD control styling to accent-driven green in light theme,
+  - restored default AxesHelper RGB coloring.
+- Added/updated tests for state/storage/menu/context physics behavior.
+
+Why it matters:
+- Makes physics a deliberate user choice rather than always-on behavior.
+- Improves light-theme readability and keeps THIRD visuals aligned with system accent styling.
+- Preserves compatibility with existing saved scenes while extending persisted scene metadata safely.
+
+Risks / Notes:
+- Existing saved scenes migrate with missing physics fields defaulting to `false`.
+- Full interaction correctness still depends on in-browser manual pointer/touch validation in addition to unit/build checks.

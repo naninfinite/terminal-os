@@ -11,6 +11,7 @@ describe('subsystemContextMenu model', () => {
       youUnreadCount: 0,
       thirdNotificationCount: 0,
       thirdMode: 'play',
+      thirdPhysicsEnabled: false,
       connectNotificationCount: 0,
     });
 
@@ -44,6 +45,7 @@ describe('subsystemContextMenu model', () => {
       youUnreadCount: 0,
       thirdNotificationCount: 0,
       thirdMode: 'play',
+      thirdPhysicsEnabled: false,
       connectNotificationCount: 0,
     });
 
@@ -83,6 +85,7 @@ describe('subsystemContextMenu model', () => {
       youUnreadCount: 2,
       thirdNotificationCount: 0,
       thirdMode: 'play',
+      thirdPhysicsEnabled: false,
       connectNotificationCount: 0,
     });
     const noDraftActions = noDraft.rows
@@ -99,6 +102,7 @@ describe('subsystemContextMenu model', () => {
       youUnreadCount: 1,
       thirdNotificationCount: 0,
       thirdMode: 'play',
+      thirdPhysicsEnabled: false,
       connectNotificationCount: 0,
     });
     const withDraftActions = withDraft.rows
@@ -108,7 +112,7 @@ describe('subsystemContextMenu model', () => {
     expect(withDraftActions.find((row) => row.id === 'you_clear_input')?.disabled).toBe(false);
   });
 
-  it('builds THIRD menu with mode switch action and CONNECT TODO placeholder', () => {
+  it('builds THIRD menu with mode + physics actions and CONNECT TODO placeholder', () => {
     const third = buildSubsystemContextMenu({
       scope: 'third',
       origin: 'dock',
@@ -117,6 +121,7 @@ describe('subsystemContextMenu model', () => {
       youUnreadCount: 0,
       thirdNotificationCount: 0,
       thirdMode: 'play',
+      thirdPhysicsEnabled: false,
       connectNotificationCount: 0,
     });
     const connect = buildSubsystemContextMenu({
@@ -127,17 +132,26 @@ describe('subsystemContextMenu model', () => {
       youUnreadCount: 0,
       thirdNotificationCount: 0,
       thirdMode: 'edit',
+      thirdPhysicsEnabled: true,
       connectNotificationCount: 0,
     });
 
     const thirdModeAction = third.rows.find(
       (row) => row.kind === 'action' && row.id === 'third_set_edit_mode'
     );
+    const thirdPhysicsAction = third.rows.find(
+      (row) => row.kind === 'action' && row.id === 'third_toggle_physics'
+    );
+    const thirdPhysicsStatus = third.rows.find(
+      (row) => row.kind === 'status' && row.key === 'status_physics'
+    );
     const connectTodo = connect.rows.find(
       (row) => row.kind === 'action' && row.id === 'todo_connect_notifications'
     );
 
     expect(thirdModeAction && thirdModeAction.kind === 'action' ? thirdModeAction.disabled : undefined).toBeFalsy();
+    expect(thirdPhysicsAction && thirdPhysicsAction.kind === 'action' ? thirdPhysicsAction.disabled : undefined).toBeFalsy();
+    expect(thirdPhysicsStatus && thirdPhysicsStatus.kind === 'status' ? thirdPhysicsStatus.label : undefined).toBe('PHYSICS: OFF');
     expect(connectTodo && connectTodo.kind === 'action' ? connectTodo.disabled : undefined).toBe(true);
   });
 });

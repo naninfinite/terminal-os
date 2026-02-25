@@ -62,9 +62,9 @@
 }
 
 .toolBtn {
-  border: $border-thin solid var(--ui-border);
+  border: $border-thin solid var(--ui-accent);
   background: rgb(0 0 0 / 0.72);
-  color: var(--ui-text);
+  color: var(--ui-accent);
   padding: 3px 6px;
   font-size: $font-xs;
   letter-spacing: 0.04em;
@@ -76,7 +76,7 @@
 }
 
 .toolBtnActive {
-  border-color: var(--ui-text);
+  border-color: var(--ui-accent);
   box-shadow: var(--ui-shadow-focus);
 }
 
@@ -88,26 +88,47 @@
   padding-right: 2px;
 }
 
+.objectRow {
+  display: flex;
+  gap: 4px;
+}
+
 .objectItem {
-  border: $border-thin solid var(--ui-border);
+  border: $border-thin solid var(--ui-accent);
   background: rgb(0 0 0 / 0.72);
-  color: var(--ui-text);
+  color: var(--ui-accent);
   text-align: left;
   padding: 3px 6px;
   font-size: $font-xs;
   letter-spacing: 0.03em;
+  flex: 1 1 auto;
 }
 
 .objectItemActive {
-  border-color: var(--ui-text);
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-shadow-focus);
+}
+
+.objectPhysicsBtn {
+  border: $border-thin solid var(--ui-accent);
+  background: rgb(0 0 0 / 0.72);
+  color: var(--ui-accent);
+  padding: 3px 6px;
+  font-size: $font-xs;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.objectPhysicsBtnActive {
+  border-color: var(--ui-accent);
   box-shadow: var(--ui-shadow-focus);
 }
 
 .editTag {
   justify-self: start;
-  border: $border-thin solid var(--ui-text);
+  border: $border-thin solid var(--ui-accent);
   background: rgb(0 0 0 / 0.82);
-  color: var(--ui-text);
+  color: var(--ui-accent);
   padding: 2px 8px;
   font-size: $font-xs;
   letter-spacing: 0.08em;
@@ -139,7 +160,7 @@
   gap: 8px;
   min-width: 0;
   padding: 4px 8px;
-  border-bottom: $border-thin solid $phosphor-green;
+  border-bottom: $border-thin solid var(--ui-accent);
 }
 
 .fullscreenTitle {
@@ -152,9 +173,9 @@
 }
 
 .fullscreenCloseBtn {
-  border: $border;
+  border: $border-thick solid var(--ui-accent);
   background: $bg-black;
-  color: $phosphor-green;
+  color: var(--ui-accent);
   padding: 2px 8px;
   flex: 0 0 auto;
 }

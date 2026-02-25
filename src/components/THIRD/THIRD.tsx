@@ -26,11 +26,11 @@ const toThreeHex = (value: string, fallback: number): number => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-const getThirdPalette = (theme: ResolvedTheme): { background: number; wireframe: number } => {
+const getThirdPalette = (theme: ResolvedTheme): { background: number; accent: number } => {
   const palette = RUNTIME_THEME_PALETTE[theme];
   return {
     background: toThreeHex(palette.background, 0x000000),
-    wireframe: toThreeHex(palette.text, 0x00ff66),
+    accent: toThreeHex(palette.accent, 0x00ff66),
   };
 };
 
@@ -150,6 +150,7 @@ type RuntimeObjectEntry = {
     rotation: THREE.Euler;
     scale: THREE.Vector3;
   };
+  physicsEnabled: boolean;
   animationPreset: ThirdAnimationPreset;
 };
 
@@ -184,6 +185,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     objects,
     selectionId,
     mode: editorMode,
+    physicsEnabled,
     snapEnabled,
     transformMode,
     cameraState,
@@ -193,6 +195,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     deleteSelected,
     setTransformMode,
     toggleSnap,
+    togglePhysics,
+    setObjectPhysicsEnabled,
     setObjectAnimationPreset,
     applyObjectTransforms,
     setCameraState,
@@ -205,6 +209,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const engineRef = useRef<RuntimeEngine | null>(null);
   const rafRef = useRef(0);
   const modeRef = useRef(editorMode);
+  const physicsEnabledRef = useRef(physicsEnabled);
+  const objectPhysicsRef = useRef(new Map<string, boolean>());
   const selectionIdRef = useRef(selectionId);
   const transformModeRef = useRef(transformMode);
   const snapEnabledRef = useRef(snapEnabled);
@@ -221,6 +227,14 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   useEffect(() => {
     modeRef.current = editorMode;
   }, [editorMode]);
+
+  useEffect(() => {
+    physicsEnabledRef.current = physicsEnabled;
+  }, [physicsEnabled]);
+
+  useEffect(() => {
+    objectPhysicsRef.current = new Map(objects.map((object) => [object.id, object.physicsEnabled]));
+  }, [objects]);
 
   useEffect(() => {
     selectionIdRef.current = selectionId;
@@ -256,7 +270,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     renderer.domElement.style.touchAction = 'none';
     mount.appendChild(renderer.domElement);
 
-    const grid = new THREE.GridHelper(48, 48, palette.wireframe, palette.wireframe);
+    const grid = new THREE.GridHelper(48, 48, palette.accent, palette.accent);
     const initialGridMaterials = Array.isArray(grid.material) ? grid.material : [grid.material];
     initialGridMaterials.forEach((material) => {
       material.transparent = true;
@@ -270,10 +284,13 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const orbit = new OrbitControls(camera, renderer.domElement);
     orbit.enableDamping = true;
     orbit.dampingFactor = 0.08;
-    orbit.enablePan = false;
+    orbit.enablePan = true;
     orbit.target.set(cameraState.target.x, cameraState.target.y, cameraState.target.z);
-    orbit.touches.ONE = THREE.TOUCH.PAN;
-    orbit.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
+    orbit.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
+    orbit.mouseButtons.MIDDLE = THREE.MOUSE.DOLLY;
+    orbit.mouseButtons.RIGHT = THREE.MOUSE.PAN;
+    orbit.touches.ONE = THREE.TOUCH.ROTATE;
+    orbit.touches.TWO = THREE.TOUCH.DOLLY_PAN;
     orbit.update();
 
     const transform = new TransformControls(camera, renderer.domElement);
@@ -362,6 +379,27 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       entry.mesh.scale.copy(entry.base.scale);
     };
 
+    const shouldObjectSimulate = (id: string): boolean => (
+      modeRef.current === 'play'
+      && physicsEnabledRef.current
+      && (objectPhysicsRef.current.get(id) ?? false)
+    );
+
+    const applyBodySimulationMode = (entry: RuntimeObjectEntry) => {
+      if (shouldObjectSimulate(entry.id)) {
+        entry.body.type = CANNON.Body.DYNAMIC;
+        entry.body.mass = 1;
+        entry.body.updateMassProperties();
+        entry.body.wakeUp();
+        return;
+      }
+      entry.body.type = CANNON.Body.STATIC;
+      entry.body.mass = 0;
+      entry.body.updateMassProperties();
+      syncBodyFromBase(entry);
+      syncMeshFromBase(entry);
+    };
+
     const commitRuntimeTransforms = (ids?: Set<string>) => {
       const patches: ThirdTransformPatch[] = [];
       engine.entries.forEach((entry) => {
@@ -400,10 +438,17 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       return true;
     };
 
-    const pickObject = (clientX: number, clientY: number): { id: string; hitPoint: THREE.Vector3 } | null => {
+    const pickObject = (
+      clientX: number,
+      clientY: number,
+      requirePhysicsEligible = false
+    ): { id: string; hitPoint: THREE.Vector3 } | null => {
       if (!toNdc(clientX, clientY)) return null;
       raycaster.setFromCamera(pointerNdc, camera);
-      const meshes = [...engine.entries.values()].map((entry) => entry.mesh);
+      const meshes = [...engine.entries.values()]
+        .filter((entry) => !requirePhysicsEligible || shouldObjectSimulate(entry.id))
+        .map((entry) => entry.mesh);
+      if (meshes.length === 0) return null;
       const hit = raycaster.intersectObjects(meshes, false)[0];
       if (!hit) return null;
       const id = (hit.object as THREE.Object3D).userData.thirdObjectId as string | undefined;
@@ -534,9 +579,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         engine.touchPointers.add(event.pointerId);
       }
 
-      const picked = pickObject(event.clientX, event.clientY);
-
       if (modeRef.current === 'edit') {
+        const picked = pickObject(event.clientX, event.clientY);
         if (picked) {
           selectObject(picked.id);
           selectionIdRef.current = picked.id;
@@ -547,6 +591,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
       if (modeRef.current !== 'play') return;
       if (event.button !== 0 && event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
+      if (!physicsEnabledRef.current) return;
+      const picked = pickObject(event.clientX, event.clientY, true);
       if (!picked) return;
 
       renderer.domElement.setPointerCapture(event.pointerId);
@@ -618,20 +664,38 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       engine.orbit.update();
 
       if (modeRef.current === 'play') {
-        physicsAccumulator += delta;
-        while (physicsAccumulator >= FIXED_TIMESTEP_SECONDS) {
-          engine.world.step(FIXED_TIMESTEP_SECONDS, FIXED_TIMESTEP_SECONDS, MAX_PHYSICS_SUBSTEPS);
-          physicsAccumulator -= FIXED_TIMESTEP_SECONDS;
-        }
+        engine.entries.forEach((entry) => applyBodySimulationMode(entry));
 
-        engine.entries.forEach((entry) => {
-          syncBaseFromBody(entry);
-        });
+        if (physicsEnabledRef.current) {
+          physicsAccumulator += delta;
+          while (physicsAccumulator >= FIXED_TIMESTEP_SECONDS) {
+            engine.world.step(FIXED_TIMESTEP_SECONDS, FIXED_TIMESTEP_SECONDS, MAX_PHYSICS_SUBSTEPS);
+            physicsAccumulator -= FIXED_TIMESTEP_SECONDS;
+          }
 
-        physicsCommitAccumulatorRef.current += delta;
-        if (physicsCommitAccumulatorRef.current >= PHYSICS_COMMIT_INTERVAL_SECONDS) {
-          commitRuntimeTransforms();
+          const updatedIds = new Set<string>();
+          engine.entries.forEach((entry) => {
+            if (!shouldObjectSimulate(entry.id)) {
+              syncBodyFromBase(entry);
+              syncMeshFromBase(entry);
+              return;
+            }
+            syncBaseFromBody(entry);
+            updatedIds.add(entry.id);
+          });
+
+          physicsCommitAccumulatorRef.current += delta;
+          if (physicsCommitAccumulatorRef.current >= PHYSICS_COMMIT_INTERVAL_SECONDS) {
+            commitRuntimeTransforms(updatedIds);
+            physicsCommitAccumulatorRef.current = 0;
+          }
+        } else {
+          physicsAccumulator = 0;
           physicsCommitAccumulatorRef.current = 0;
+          engine.entries.forEach((entry) => {
+            syncBodyFromBase(entry);
+            syncMeshFromBase(entry);
+          });
         }
       } else {
         engine.entries.forEach((entry) => {
@@ -696,15 +760,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       : [engine.grid.material];
     gridMaterials.forEach((material) => {
       if (!('color' in material)) return;
-      (material as THREE.Material & { color: THREE.Color }).color.setHex(palette.wireframe);
-    });
-
-    const axesMaterials = Array.isArray(engine.axes.material)
-      ? engine.axes.material
-      : [engine.axes.material];
-    axesMaterials.forEach((material) => {
-      if (!('color' in material)) return;
-      (material as THREE.Material & { color: THREE.Color }).color.setHex(palette.wireframe);
+      (material as THREE.Material & { color: THREE.Color }).color.setHex(palette.accent);
     });
     engine.renderer.render(engine.scene, engine.camera);
   }, [resolvedTheme]);
@@ -733,8 +789,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       if (!existing) {
         const geometry = createGeometry(object.type);
         const material = new THREE.MeshBasicMaterial({
-          color: object.material.color || palette.wireframe,
-          wireframe: object.material.wireframe,
+          color: palette.accent,
+          wireframe: false,
         });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.userData.thirdObjectId = object.id;
@@ -782,14 +838,16 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
             rotation: mesh.rotation.clone(),
             scale: mesh.scale.clone(),
           },
+          physicsEnabled: object.physicsEnabled,
           animationPreset: object.animationPreset,
         });
         return;
       }
 
+      existing.physicsEnabled = object.physicsEnabled;
       existing.animationPreset = object.animationPreset;
-      existing.material.wireframe = object.material.wireframe;
-      existing.material.color.set(object.material.color || palette.wireframe);
+      existing.material.wireframe = false;
+      existing.material.color.setHex(palette.accent);
 
       if (existing.shapeKey !== shapeKey) {
         engine.world.removeBody(existing.body);
@@ -830,7 +888,16 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         object.transform.scale.z
       );
 
-      if (modeRef.current !== 'play') {
+      const shouldSimulate = modeRef.current === 'play' && physicsEnabled && object.physicsEnabled;
+      if (shouldSimulate) {
+        existing.body.type = CANNON.Body.DYNAMIC;
+        existing.body.mass = 1;
+        existing.body.updateMassProperties();
+        existing.body.wakeUp();
+      } else {
+        existing.body.type = CANNON.Body.STATIC;
+        existing.body.mass = 0;
+        existing.body.updateMassProperties();
         existing.mesh.position.copy(existing.base.position);
         existing.mesh.rotation.set(
           existing.base.rotation.x,
@@ -853,7 +920,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         existing.body.angularVelocity.set(0, 0, 0);
       }
     });
-  }, [objects, resolvedTheme]);
+  }, [objects, physicsEnabled, resolvedTheme]);
 
   useEffect(() => {
     const engine = engineRef.current;
@@ -896,6 +963,72 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     engine.transform.enabled = true;
     engine.transform.attach(selected.mesh);
   }, [editorMode, selectionId, snapEnabled, transformMode]);
+
+  useEffect(() => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    if (editorMode !== 'play' || physicsEnabled) return;
+
+    releaseGrabRef.current();
+    const updatedIds = new Set<string>();
+    engine.entries.forEach((entry) => {
+      entry.base.position.set(entry.body.position.x, entry.body.position.y, entry.body.position.z);
+      entry.base.rotation.setFromQuaternion(new THREE.Quaternion(
+        entry.body.quaternion.x,
+        entry.body.quaternion.y,
+        entry.body.quaternion.z,
+        entry.body.quaternion.w
+      ), 'XYZ');
+      entry.mesh.position.copy(entry.base.position);
+      entry.mesh.rotation.set(entry.base.rotation.x, entry.base.rotation.y, entry.base.rotation.z);
+      entry.mesh.scale.copy(entry.base.scale);
+      entry.body.type = CANNON.Body.STATIC;
+      entry.body.mass = 0;
+      entry.body.updateMassProperties();
+      entry.body.position.set(entry.base.position.x, entry.base.position.y, entry.base.position.z);
+      entry.body.quaternion.setFromEuler(entry.base.rotation.x, entry.base.rotation.y, entry.base.rotation.z, 'XYZ');
+      entry.body.velocity.set(0, 0, 0);
+      entry.body.angularVelocity.set(0, 0, 0);
+      updatedIds.add(entry.id);
+    });
+    commitRuntimeRef.current(updatedIds);
+    forceSave();
+  }, [editorMode, forceSave, physicsEnabled]);
+
+  useEffect(() => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    if (editorMode !== 'play') return;
+    const activeGrab = engine.activeGrab;
+    if (!activeGrab) return;
+
+    const grabbedObject = objects.find((object) => object.id === activeGrab.objectId);
+    if (physicsEnabled && grabbedObject?.physicsEnabled) return;
+
+    releaseGrabRef.current(activeGrab.pointerId);
+    const entry = engine.entries.get(activeGrab.objectId);
+    if (entry) {
+      entry.base.position.set(entry.body.position.x, entry.body.position.y, entry.body.position.z);
+      entry.base.rotation.setFromQuaternion(new THREE.Quaternion(
+        entry.body.quaternion.x,
+        entry.body.quaternion.y,
+        entry.body.quaternion.z,
+        entry.body.quaternion.w
+      ), 'XYZ');
+      entry.mesh.position.copy(entry.base.position);
+      entry.mesh.rotation.set(entry.base.rotation.x, entry.base.rotation.y, entry.base.rotation.z);
+      entry.mesh.scale.copy(entry.base.scale);
+      entry.body.type = CANNON.Body.STATIC;
+      entry.body.mass = 0;
+      entry.body.updateMassProperties();
+      entry.body.position.set(entry.base.position.x, entry.base.position.y, entry.base.position.z);
+      entry.body.quaternion.setFromEuler(entry.base.rotation.x, entry.base.rotation.y, entry.base.rotation.z, 'XYZ');
+      entry.body.velocity.set(0, 0, 0);
+      entry.body.angularVelocity.set(0, 0, 0);
+      commitRuntimeRef.current(new Set([activeGrab.objectId]));
+      forceSave();
+    }
+  }, [editorMode, forceSave, objects, physicsEnabled]);
 
   useEffect(() => {
     const engine = engineRef.current;
@@ -968,6 +1101,13 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
           <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('plane')}>+ PLANE</button>
           <button type="button" className={styles.toolBtn} onClick={duplicateSelected} disabled={!selectionId}>DUP</button>
           <button type="button" className={styles.toolBtn} onClick={deleteSelected} disabled={!selectionId}>DEL</button>
+          <button
+            type="button"
+            className={`${styles.toolBtn} ${physicsEnabled ? styles.toolBtnActive : ''}`.trim()}
+            onClick={togglePhysics}
+          >
+            PHYSICS: {physicsEnabled ? 'ON' : 'OFF'}
+          </button>
         </div>
 
         {editorMode === 'edit' ? (
@@ -1042,14 +1182,22 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
         <div className={styles.objectList} aria-label="THIRD objects">
           {objects.map((object) => (
-            <button
-              key={object.id}
-              type="button"
-              className={`${styles.objectItem} ${selectionId === object.id ? styles.objectItemActive : ''}`.trim()}
-              onClick={() => selectObject(object.id)}
-            >
-              {object.name}
-            </button>
+            <div key={object.id} className={styles.objectRow}>
+              <button
+                type="button"
+                className={`${styles.objectItem} ${selectionId === object.id ? styles.objectItemActive : ''}`.trim()}
+                onClick={() => selectObject(object.id)}
+              >
+                {object.name}
+              </button>
+              <button
+                type="button"
+                className={`${styles.objectPhysicsBtn} ${object.physicsEnabled ? styles.objectPhysicsBtnActive : ''}`.trim()}
+                onClick={() => setObjectPhysicsEnabled(object.id, !object.physicsEnabled)}
+              >
+                {object.physicsEnabled ? 'REMOVE PHYSICS' : 'ADD PHYSICS'}
+              </button>
+            </div>
           ))}
         </div>
       </div>

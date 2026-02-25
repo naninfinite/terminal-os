@@ -32,6 +32,7 @@ export type ThirdSceneObject = {
   type: ThirdPrimitiveType;
   transform: ThirdObjectTransform;
   material: ThirdMaterialParams;
+  physicsEnabled: boolean;
   animationPreset: ThirdAnimationPreset;
 };
 
@@ -39,6 +40,7 @@ export type ThirdRuntimeState = {
   objects: ThirdSceneObject[];
   selectionId: string | null;
   mode: ThirdEditorMode;
+  physicsEnabled: boolean;
   snapEnabled: boolean;
   skyboxId: string;
   cameraState: ThirdCameraState;
@@ -48,6 +50,7 @@ export type ThirdRuntimeState = {
 export type ThirdPersistedSceneV1 = {
   version: 1;
   objects: ThirdSceneObject[];
+  physicsEnabled: boolean;
   skyboxId: string;
   cameraState?: ThirdCameraState;
 };

@@ -87,6 +87,8 @@ const StatusBar: React.FC = () => {
     mode: thirdMode,
     setMode: setThirdMode,
     toggleMode: toggleThirdMode,
+    physicsEnabled: thirdPhysicsEnabled,
+    togglePhysics: toggleThirdPhysics,
     resetScene: resetThirdScene,
     openFullscreen: openThirdFullscreen,
     closeFullscreen: closeThirdFullscreen,
@@ -453,6 +455,9 @@ const StatusBar: React.FC = () => {
       case 'third_toggle_mode':
         toggleThirdMode();
         break;
+      case 'third_toggle_physics':
+        toggleThirdPhysics();
+        break;
       case 'third_reset_scene':
         resetThirdScene();
         break;
@@ -513,6 +518,9 @@ const StatusBar: React.FC = () => {
       case 'third_set_play_mode':
         setThirdMode('play');
         break;
+      case 'third_toggle_physics':
+        toggleThirdPhysics();
+        break;
       case 'third_reset_scene':
         resetThirdScene();
         break;
@@ -536,6 +544,7 @@ const StatusBar: React.FC = () => {
       youUnreadCount: youDockState.unreadCount,
       thirdNotificationCount,
       thirdMode,
+      thirdPhysicsEnabled,
       connectNotificationCount,
     });
   }, [
@@ -544,6 +553,7 @@ const StatusBar: React.FC = () => {
     subsystemMenu,
     thirdNotificationCount,
     thirdMode,
+    thirdPhysicsEnabled,
     youDockState.hasDraft,
     youDockState.unreadCount,
   ]);
@@ -637,6 +647,8 @@ const StatusBar: React.FC = () => {
                   ? getThemeToggleLabel(resolvedTheme)
                   : item.id === 'third_toggle_mode'
                     ? (thirdMode === 'edit' ? 'SWITCH TO PLAY MODE' : 'SWITCH TO EDIT MODE')
+                    : item.id === 'third_toggle_physics'
+                      ? `PHYSICS: ${thirdPhysicsEnabled ? 'ON' : 'OFF'}`
                     : item.label}
               </button>
             ))}

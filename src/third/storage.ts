@@ -68,8 +68,9 @@ const sanitizeSceneObject = (raw: unknown): ThirdSceneObject | null => {
       color: typeof materialData.color === 'string' && materialData.color.trim()
         ? materialData.color
         : THIRD_DEFAULT_COLOR,
-      wireframe: materialData.wireframe !== false,
+      wireframe: false,
     },
+    physicsEnabled: data.physicsEnabled === true,
     animationPreset,
   };
 };
@@ -102,6 +103,7 @@ export const sanitizePersistedThirdScene = (raw: unknown): ThirdPersistedSceneV1
   return {
     version: THIRD_STORAGE_VERSION,
     objects,
+    physicsEnabled: data.physicsEnabled === true,
     skyboxId,
     cameraState: sanitizeCameraState(data.cameraState),
   };

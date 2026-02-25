@@ -41,7 +41,9 @@ const cloneObject = (value: ThirdSceneObject): ThirdSceneObject => ({
   },
   material: {
     ...value.material,
+    wireframe: false,
   },
+  physicsEnabled: Boolean(value.physicsEnabled),
 });
 
 const primitiveLabel = (type: ThirdPrimitiveType): string => {
@@ -115,8 +117,9 @@ export const createSceneObject = (args: {
     },
     material: {
       color: THIRD_DEFAULT_COLOR,
-      wireframe: true,
+      wireframe: false,
     },
+    physicsEnabled: false,
     animationPreset: args.animationPreset ?? 'none',
   };
 };
@@ -127,6 +130,7 @@ export const createDefaultThirdRuntimeState = (): ThirdRuntimeState => {
     objects: [cube],
     selectionId: cube.id,
     mode: 'play',
+    physicsEnabled: false,
     snapEnabled: false,
     skyboxId: THIRD_DEFAULT_SKYBOX_ID,
     cameraState: {
@@ -140,6 +144,16 @@ export const createDefaultThirdRuntimeState = (): ThirdRuntimeState => {
 export const setEditorMode = (state: ThirdRuntimeState, mode: ThirdEditorMode): ThirdRuntimeState => ({
   ...state,
   mode,
+});
+
+export const setPhysicsEnabled = (state: ThirdRuntimeState, enabled: boolean): ThirdRuntimeState => ({
+  ...state,
+  physicsEnabled: enabled,
+});
+
+export const togglePhysics = (state: ThirdRuntimeState): ThirdRuntimeState => ({
+  ...state,
+  physicsEnabled: !state.physicsEnabled,
 });
 
 export const toggleEditorMode = (state: ThirdRuntimeState): ThirdRuntimeState => (
@@ -166,6 +180,17 @@ export const toggleSnap = (state: ThirdRuntimeState): ThirdRuntimeState => ({
 export const setSelection = (state: ThirdRuntimeState, selectionId: string | null): ThirdRuntimeState => ({
   ...state,
   selectionId,
+});
+
+export const setObjectPhysicsEnabled = (
+  state: ThirdRuntimeState,
+  id: string,
+  enabled: boolean
+): ThirdRuntimeState => ({
+  ...state,
+  objects: state.objects.map((object) => (
+    object.id === id ? { ...object, physicsEnabled: enabled } : object
+  )),
 });
 
 export const setSkyboxId = (state: ThirdRuntimeState, skyboxId: string): ThirdRuntimeState => ({
@@ -287,6 +312,7 @@ export const serializeStateForPersistence = (
 ): ThirdPersistedSceneV1 => ({
   version: THIRD_STORAGE_VERSION,
   objects: state.objects.map(cloneObject),
+  physicsEnabled: state.physicsEnabled,
   skyboxId: state.skyboxId,
   cameraState: {
     position: cloneVec3(state.cameraState.position),
@@ -303,6 +329,7 @@ export const hydrateStateFromPersistence = (
     objects: persisted.objects.map(cloneObject).slice(0, THIRD_MAX_OBJECTS),
     selectionId: persisted.objects[0]?.id ?? null,
     mode: 'play',
+    physicsEnabled: persisted.physicsEnabled === true,
     snapEnabled: false,
     skyboxId: persisted.skyboxId || THIRD_DEFAULT_SKYBOX_ID,
     cameraState: persisted.cameraState
