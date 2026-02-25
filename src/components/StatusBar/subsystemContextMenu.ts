@@ -15,9 +15,12 @@ export type SubsystemContextMenuEventDetail = {
 
 export type SubsystemContextMenuActionId =
   | 'open_me'
+  | 'open_me_recent'
   | 'open_you'
   | 'open_third'
   | 'open_connect'
+  | 'me_new_file'
+  | 'me_new_folder'
   | 'open_file'
   | 'open_projects'
   | 'open_media'
@@ -75,6 +78,7 @@ export const buildSubsystemContextMenu = (args: BuildSubsystemContextMenuArgs): 
 
   switch (args.scope) {
     case 'me':
+      // Keep ME context actions compact for now; creation/recent actions are deferred.
       return {
         title,
         rows: [

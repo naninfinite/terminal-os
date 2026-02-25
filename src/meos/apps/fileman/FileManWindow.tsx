@@ -11,6 +11,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useMeOsVfs } from '../../vfs/MeOsVfsProvider';
 import type { VfsNode, VfsSnapshot } from '../../vfs/types';
 import { useMeOs } from '../../shell/MeOsProvider';
+import { FILEMAN_COMMAND_EVENT, type FileManCommandDetail } from './commands';
 import styles from './FileManWindow.module.scss';
 
 type NavState = {
@@ -339,6 +340,22 @@ const FileManWindow: React.FC = () => {
     setSelectedId(file.id);
     startRename(file.id);
   };
+
+  useEffect(() => {
+    const onCommand = (event: Event) => {
+      const detail = (event as CustomEvent<FileManCommandDetail>).detail;
+      if (!detail) return;
+      if (detail.id === 'new_file') {
+        createDefaultFile();
+        return;
+      }
+      if (detail.id === 'new_folder') {
+        createDefaultFolder();
+      }
+    };
+    window.addEventListener(FILEMAN_COMMAND_EVENT, onCommand as EventListener);
+    return () => window.removeEventListener(FILEMAN_COMMAND_EVENT, onCommand as EventListener);
+  }, [createDefaultFile, createDefaultFolder]);
 
   const toolbarNavActions: ToolbarAction[] = [
     {

@@ -26,7 +26,12 @@ describe('subsystemContextMenu model', () => {
     const actionIds = model.rows
       .filter((row): row is Extract<typeof row, { kind: 'action' }> => row.kind === 'action')
       .map((row) => row.id);
-    expect(actionIds).toEqual(['open_me', 'open_file', 'open_projects', 'open_media']);
+    expect(actionIds).toEqual([
+      'open_me',
+      'open_file',
+      'open_projects',
+      'open_media',
+    ]);
   });
 
   it('builds YOU menu with draft/unread status and deterministic disable rules', () => {

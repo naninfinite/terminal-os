@@ -10,6 +10,11 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { useYouBoard } from '../../you/YouProvider';
 import { useThirdRuntime } from '../../third/ThirdProvider';
 import { useConnectRuntime } from '../../connect/ConnectProvider';
+import {
+  FILEMAN_COMMAND_EVENT,
+  type FileManCommandDetail,
+  type FileManCommandId,
+} from '../../meos/apps/fileman/commands';
 import { useContextTrigger } from '../shared/useContextTrigger';
 import { nextLocationCaseMode } from './locationCase';
 import { getNextThemeMode, getThemeToggleLabel } from './themeMenu';
@@ -301,6 +306,21 @@ const StatusBar: React.FC = () => {
     window.dispatchEvent(new CustomEvent(eventName));
   };
 
+  const dispatchFileManCommand = (commandId: FileManCommandId) => {
+    const emit = () => {
+      window.dispatchEvent(new CustomEvent<FileManCommandDetail>(FILEMAN_COMMAND_EVENT, {
+        detail: { id: commandId },
+      }));
+    };
+    const fileWindowOpen = orderedWindows.some((win) => win.appId === 'file');
+    if (!fileWindowOpen) {
+      openAppForScope('file');
+      window.requestAnimationFrame(() => window.requestAnimationFrame(emit));
+      return;
+    }
+    emit();
+  };
+
   const closeAllFullscreen = () => {
     closeMeFullscreen();
     closeYouFullscreen();
@@ -354,6 +374,16 @@ const StatusBar: React.FC = () => {
       openMeFullscreen();
     }
     restoreWindow(windowId);
+  };
+
+  const openMostRecentMeWindow = () => {
+    setSubsystemMenu(null);
+    const recentWindow = meWindowsLadder[0];
+    if (!recentWindow) {
+      openAppForScope('file');
+      return;
+    }
+    focusMeWindowFromDock(recentWindow.id);
   };
 
   useEffect(() => {
@@ -437,6 +467,9 @@ const StatusBar: React.FC = () => {
       case 'open_me':
         onSubsystemDockClick('me');
         return;
+      case 'open_me_recent':
+        openMostRecentMeWindow();
+        return;
       case 'open_you':
         onSubsystemDockClick('you');
         return;
@@ -446,6 +479,12 @@ const StatusBar: React.FC = () => {
       case 'open_connect':
         onSubsystemDockClick('connect');
         return;
+      case 'me_new_file':
+        dispatchFileManCommand('new_file');
+        break;
+      case 'me_new_folder':
+        dispatchFileManCommand('new_folder');
+        break;
       case 'open_file':
         openAppForScope('file');
         break;
