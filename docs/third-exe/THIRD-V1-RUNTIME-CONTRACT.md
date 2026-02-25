@@ -12,10 +12,12 @@ V1 includes:
 - primitive spawn/select/delete/duplicate,
 - `PLAY` and `EDIT` modes,
 - edit gizmo with snap,
-- Unity-style transform inspector (transform-only),
+- Unity-style transform inspector sections (scene/objects/transform/animation/physics/material),
+- right-click viewport menu with grouped quick actions,
 - play-mode physics grab/drag,
 - global + per-object physics opt-in controls,
-- per-object material selector (`matte`, `gloss`, `glass`, `neon`) + color,
+- per-object material selector (`matte`, `gloss`, `glass`, `neon`) + color + wireframe,
+- camera projection toggle (`perspective`/`orthographic`) + preset view actions (`top`/`front`/`right`) + reset,
 - local autosave persistence,
 - preset object animations (`bounce`, `rotate`, `pulse`).
 
@@ -45,7 +47,7 @@ Primary runtime fields:
 - `snapEnabled: boolean`
 - `transformMode: 'translate' | 'rotate' | 'scale'`
 - `skyboxId: string`
-- `cameraState: { position, target }`
+- `cameraState: { position, target, projectionMode }`
 - `displayMode: 'panel' | 'fullscreen'`
 
 Key provider actions:
@@ -59,6 +61,7 @@ Key provider actions:
 - `setObjectPhysicsEnabled(id, enabled)`
 - `setObjectMaterialPreset(id, preset)`
 - `setObjectMaterialColor(id, color)`
+- `setObjectMaterialWireframe(id, enabled)`
 - `setTransformMode(mode)` / `toggleSnap()`
 - `applyObjectTransforms(patches)`
 - `setCameraState(cameraState)`
@@ -70,7 +73,7 @@ On first load / destructive reset:
 - Grid helper on XZ plane (`y-up`).
 - Axes helper at origin.
 - One default cube.
-- Solid green-accent material style (`wireframe=false`, default `matte` preset).
+- Solid green-accent material style (default `wireframe=false`, default `matte` preset).
 - Orbit camera control.
 
 ## 5) Interaction Contract
@@ -79,7 +82,9 @@ On first load / destructive reset:
 
 - Physics stepping is paused.
 - `TransformControls` enabled for selected object.
-- Right-docked inspector shows selected object transform (`Position` / `Rotation` / `Scale`).
+- Right-docked inspector is visible by default, hideable, and section-collapsible.
+- Full edit workflow lives inside inspector sections:
+  - `SCENE`, `OBJECTS`, `TRANSFORM`, `ANIMATION`, `PHYSICS`, `MATERIAL`.
 - Rotation fields display degrees and convert to radians in runtime state.
 - Valid numeric inspector edits apply live while typing.
 - Hotkeys:
@@ -95,7 +100,8 @@ On first load / destructive reset:
 - Preset animation buttons are enabled only in `EDIT`.
 - Material controls are enabled only in `EDIT` for the selected object:
   - preset buttons (`MATTE` / `GLOSS` / `GLASS` / `NEON`),
-  - swatch buttons + color picker.
+  - swatch buttons + color picker,
+  - wireframe toggle.
 
 ### PLAY mode
 
@@ -110,6 +116,18 @@ On first load / destructive reset:
 - Touch behavior:
   - one-finger press on object grabs,
   - two-finger gesture enables dolly/pan camera manipulation.
+
+### Viewport right-click menu
+
+- Right-click opens a local viewport menu at cursor position.
+- Right-drag continues camera pan and does not open the menu (movement tolerance guard).
+- Menu groups:
+  - `ADD` (cube/sphere/cylinder/plane),
+  - `CAMERA` (projection toggle, top/front/right, reset),
+  - `SCENE` (mode/snap/physics),
+  - `OBJECT` (duplicate/delete/object physics),
+  - `INSPECTOR` (show/hide/collapse all/expand all).
+- If right-click raycast hits an object, that object is selected before menu actions.
 
 ## 6) Preset Animations
 
@@ -132,11 +150,11 @@ Storage key:
 Persisted payload:
 - versioned JSON metadata only,
 - `objects`,
-  - each object includes material metadata (`color`, `preset`, `wireframe=false`),
+  - each object includes material metadata (`color`, `preset`, `wireframe`),
 - global `physicsEnabled`,
 - per-object `physicsEnabled`,
 - `skyboxId`,
-- optional `cameraState`.
+- optional `cameraState` (`position`, `target`, `projectionMode`).
 
 Not persisted:
 - binary skybox assets/HDR files,
@@ -168,6 +186,7 @@ Added/updated tests:
 - `src/third/state.test.ts`
 - `src/third/storage.test.ts`
 - `src/components/THIRD/transformInspector.test.ts`
+- `src/components/THIRD/thirdViewportMenu.test.ts`
 - `src/components/StatusBar/subsystemContextMenu.test.ts`
 - `src/meos/menu/scopes.test.ts`
 

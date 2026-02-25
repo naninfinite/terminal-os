@@ -3,6 +3,7 @@ import type {
   ThirdCameraState,
   ThirdEditorMode,
   ThirdMaterialPreset,
+  ThirdProjectionMode,
   ThirdPersistedSceneV1,
   ThirdPrimitiveType,
   ThirdRuntimeState,
@@ -21,6 +22,7 @@ export const THIRD_MAX_OBJECTS = 120;
 export const THIRD_DEFAULT_CAMERA_STATE: ThirdCameraState = {
   position: { x: 4.5, y: 4.2, z: 6.8 },
   target: { x: 0, y: 0.5, z: 0 },
+  projectionMode: 'perspective',
 };
 
 const DUPLICATE_OFFSET = 0.6;
@@ -51,6 +53,10 @@ const normalizeMaterialColor = (value: unknown): string => {
   return /^#[0-9a-f]{6}$/.test(normalized) ? normalized : THIRD_DEFAULT_COLOR;
 };
 
+const normalizeProjectionMode = (value: unknown): ThirdProjectionMode => (
+  value === 'orthographic' ? 'orthographic' : 'perspective'
+);
+
 const cloneObject = (value: ThirdSceneObject): ThirdSceneObject => ({
   ...value,
   transform: {
@@ -60,7 +66,7 @@ const cloneObject = (value: ThirdSceneObject): ThirdSceneObject => ({
   },
   material: {
     color: normalizeMaterialColor(value.material.color),
-    wireframe: false,
+    wireframe: Boolean(value.material.wireframe),
     preset: normalizeMaterialPreset(value.material.preset),
   },
   physicsEnabled: Boolean(value.physicsEnabled),
@@ -157,6 +163,7 @@ export const createDefaultThirdRuntimeState = (): ThirdRuntimeState => {
     cameraState: {
       position: cloneVec3(THIRD_DEFAULT_CAMERA_STATE.position),
       target: cloneVec3(THIRD_DEFAULT_CAMERA_STATE.target),
+      projectionMode: normalizeProjectionMode(THIRD_DEFAULT_CAMERA_STATE.projectionMode),
     },
     transformMode: 'translate',
   };
@@ -226,7 +233,6 @@ export const setObjectMaterialPreset = (
         ...object,
         material: {
           ...object.material,
-          wireframe: false,
           preset: normalizeMaterialPreset(preset),
         },
       }
@@ -246,8 +252,26 @@ export const setObjectMaterialColor = (
         ...object,
         material: {
           ...object.material,
-          wireframe: false,
           color: normalizeMaterialColor(color),
+        },
+      }
+      : object
+  )),
+});
+
+export const setObjectMaterialWireframe = (
+  state: ThirdRuntimeState,
+  id: string,
+  enabled: boolean
+): ThirdRuntimeState => ({
+  ...state,
+  objects: state.objects.map((object) => (
+    object.id === id
+      ? {
+        ...object,
+        material: {
+          ...object.material,
+          wireframe: enabled,
         },
       }
       : object
@@ -264,6 +288,7 @@ export const setCameraState = (state: ThirdRuntimeState, cameraState: ThirdCamer
   cameraState: {
     position: cloneVec3(cameraState.position),
     target: cloneVec3(cameraState.target),
+    projectionMode: normalizeProjectionMode(cameraState.projectionMode),
   },
 });
 
@@ -378,6 +403,7 @@ export const serializeStateForPersistence = (
   cameraState: {
     position: cloneVec3(state.cameraState.position),
     target: cloneVec3(state.cameraState.target),
+    projectionMode: normalizeProjectionMode(state.cameraState.projectionMode),
   },
 });
 
@@ -397,10 +423,12 @@ export const hydrateStateFromPersistence = (
       ? {
         position: cloneVec3(persisted.cameraState.position),
         target: cloneVec3(persisted.cameraState.target),
+        projectionMode: normalizeProjectionMode(persisted.cameraState.projectionMode),
       }
       : {
         position: cloneVec3(THIRD_DEFAULT_CAMERA_STATE.position),
         target: cloneVec3(THIRD_DEFAULT_CAMERA_STATE.target),
+        projectionMode: normalizeProjectionMode(THIRD_DEFAULT_CAMERA_STATE.projectionMode),
       },
     transformMode: 'translate',
   };

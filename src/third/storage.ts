@@ -1,6 +1,7 @@
 import { getItemSafe, setItemSafe } from '../utils/storage';
 import {
   THIRD_DEFAULT_COLOR,
+  THIRD_DEFAULT_CAMERA_STATE,
   THIRD_DEFAULT_MATERIAL_PRESET,
   THIRD_DEFAULT_SKYBOX_ID,
   THIRD_MAX_OBJECTS,
@@ -79,7 +80,7 @@ const sanitizeSceneObject = (raw: unknown): ThirdSceneObject | null => {
     },
     material: {
       color: sanitizeMaterialColor(materialData.color),
-      wireframe: false,
+      wireframe: materialData.wireframe === true,
       preset: sanitizeMaterialPreset(materialData.preset),
     },
     physicsEnabled: data.physicsEnabled === true,
@@ -93,6 +94,9 @@ const sanitizeCameraState = (raw: unknown): ThirdPersistedSceneV1['cameraState']
   return {
     position: sanitizeVec3(data.position, { x: 4.5, y: 4.2, z: 6.8 }),
     target: sanitizeVec3(data.target, { x: 0, y: 0.5, z: 0 }),
+    projectionMode: data.projectionMode === 'orthographic'
+      ? 'orthographic'
+      : THIRD_DEFAULT_CAMERA_STATE.projectionMode,
   };
 };
 

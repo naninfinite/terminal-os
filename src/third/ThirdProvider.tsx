@@ -12,6 +12,7 @@ import {
   setEditorMode,
   setObjectMaterialColor,
   setObjectMaterialPreset,
+  setObjectMaterialWireframe,
   setObjectPhysicsEnabled,
   setPhysicsEnabled,
   setSelection,
@@ -60,6 +61,7 @@ type ThirdContextValue = {
   setObjectPhysicsEnabled: (id: string, enabled: boolean) => void;
   setObjectMaterialPreset: (id: string, preset: ThirdMaterialPreset) => void;
   setObjectMaterialColor: (id: string, color: string) => void;
+  setObjectMaterialWireframe: (id: string, enabled: boolean) => void;
   setTransformMode: (mode: ThirdTransformMode) => void;
   setSnapEnabled: (enabled: boolean) => void;
   toggleSnap: () => void;
@@ -146,6 +148,9 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
   const setObjectMaterialColorAction = useCallback((id: string, color: string) => {
     setState((prev) => setObjectMaterialColor(prev, id, color));
+  }, []);
+  const setObjectMaterialWireframeAction = useCallback((id: string, enabled: boolean) => {
+    setState((prev) => setObjectMaterialWireframe(prev, id, enabled));
   }, []);
   const setTransformModeAction = useCallback((mode: ThirdTransformMode) => {
     setState((prev) => setTransformMode(prev, mode));
@@ -243,6 +248,7 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setObjectPhysicsEnabled: setObjectPhysicsEnabledAction,
     setObjectMaterialPreset: setObjectMaterialPresetAction,
     setObjectMaterialColor: setObjectMaterialColorAction,
+    setObjectMaterialWireframe: setObjectMaterialWireframeAction,
     setTransformMode: setTransformModeAction,
     setSnapEnabled: setSnapEnabledAction,
     toggleSnap: toggleSnapAction,
@@ -274,6 +280,7 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setMode,
     setObjectMaterialColorAction,
     setObjectMaterialPresetAction,
+    setObjectMaterialWireframeAction,
     setObjectPhysicsEnabledAction,
     setPhysicsEnabledAction,
     setObjectAnimationPreset,

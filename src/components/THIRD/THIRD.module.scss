@@ -24,6 +24,11 @@
   box-shadow: none;
 }
 
+.canvasHost {
+  position: absolute;
+  inset: 0;
+}
+
 .canvas {
   width: 100%;
   height: 100%;
@@ -31,45 +36,109 @@
   background: $bg-black;
 }
 
-.canvasHost {
+.viewportMenu {
   position: absolute;
-  inset: 0;
+  z-index: 4;
+  min-width: 138px;
+  border: $border-thin solid var(--ui-accent);
+  background: rgb(0 0 0 / 0.92);
+  box-shadow: var(--ui-shadow-focus);
 }
 
-.hud {
-  position: absolute;
-  inset: 8px auto auto 8px;
-  max-width: min(340px, calc(100% - 16px));
-  display: grid;
-  gap: 6px;
-  z-index: 2;
-  pointer-events: none;
+.viewportMenuGroup {
+  position: relative;
 }
 
-.hud[data-mode='edit'] {
-  max-width: min(340px, max(160px, calc(100% - 356px)));
+.viewportMenuGroupBtn,
+.viewportMenuItem {
+  width: 100%;
+  border: 0;
+  border-bottom: $border-thin solid rgb(15 143 99 / 25%);
+  background: transparent;
+  color: var(--ui-accent);
+  text-align: left;
+  padding: 4px 8px;
+  font-size: $font-xs;
+  letter-spacing: 0.04em;
+}
+
+.viewportMenuGroupBtn::after {
+  content: '›';
+  float: right;
+}
+
+.viewportMenuGroup:last-child .viewportMenuGroupBtn {
+  border-bottom: 0;
+}
+
+.viewportMenuGroupBtn:hover,
+.viewportMenuGroupBtn:focus-visible,
+.viewportMenuItem:hover,
+.viewportMenuItem:focus-visible {
+  background: rgb(15 143 99 / 20%);
+  outline: none;
+}
+
+.viewportSubmenu {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 1px);
+  min-width: 196px;
+  border: $border-thin solid var(--ui-accent);
+  background: rgb(0 0 0 / 0.92);
+  box-shadow: var(--ui-shadow-focus);
+}
+
+.viewportMenuItem:disabled {
+  opacity: 0.45;
+}
+
+.viewportMenuItem:last-child {
+  border-bottom: 0;
+}
+
+.inspectorRevealBtn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  border: $border-thin solid var(--ui-accent);
+  background: rgb(0 0 0 / 0.75);
+  color: var(--ui-accent);
+  font-size: $font-xs;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
 }
 
 .inspector {
   position: absolute;
   top: 8px;
   right: 8px;
-  width: min(340px, calc(100% - 16px));
+  width: min(336px, calc(100% - 16px));
   max-height: calc(100% - 16px);
   overflow: auto;
   display: grid;
   gap: 6px;
-  z-index: 2;
+  z-index: 3;
   pointer-events: auto;
   border: $border-thin solid var(--ui-accent);
-  background: rgb(0 0 0 / 0.8);
+  background: rgb(0 0 0 / 0.86);
   padding: 6px;
   box-sizing: border-box;
 }
 
 .inspectorHeader {
   display: grid;
-  gap: 3px;
+  gap: 4px;
+}
+
+.inspectorHeaderTop,
+.inspectorHeaderMeta,
+.inspectorHeaderActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
 }
 
 .inspectorTitle {
@@ -84,25 +153,155 @@
   font-size: $font-xs;
   letter-spacing: 0.04em;
   color: var(--ui-accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editTag {
+  border: $border-thin solid var(--ui-accent);
+  background: rgb(0 0 0 / 0.82);
+  color: var(--ui-accent);
+  padding: 2px 6px;
+  font-size: $font-xs;
+  letter-spacing: 0.08em;
+}
+
+.editTagActive {
+  box-shadow: var(--ui-shadow-focus);
 }
 
 .inspectorSection {
   border: $border-thin solid var(--ui-accent);
+  display: grid;
+}
+
+.inspectorSectionToggle {
+  border: 0;
+  border-bottom: $border-thin solid rgb(15 143 99 / 25%);
+  background: transparent;
+  color: var(--ui-accent);
+  padding: 4px 6px;
+  text-align: left;
+  font-size: $font-xs;
+  letter-spacing: 0.06em;
+}
+
+.inspectorSectionToggle::after {
+  content: '−';
+  float: right;
+}
+
+.inspectorSectionToggle[aria-expanded='false']::after {
+  content: '+';
+}
+
+.inspectorSectionToggle:focus-visible {
+  outline: 1px solid var(--ui-accent);
+  outline-offset: -1px;
+}
+
+.inspectorSectionBody {
   padding: 6px;
   display: grid;
   gap: 6px;
 }
 
-.inspectorSectionTitle {
-  margin: 0;
-  font-size: $font-xs;
-  letter-spacing: 0.06em;
+.toolRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.inlineStatus {
+  border: $border-thin solid rgb(15 143 99 / 35%);
   color: var(--ui-accent);
+  padding: 3px 6px;
+  font-size: $font-xs;
+  letter-spacing: 0.04em;
+  background: rgb(0 0 0 / 0.62);
+}
+
+.toolBtn {
+  border: $border-thin solid var(--ui-accent);
+  background: rgb(0 0 0 / 0.72);
+  color: var(--ui-accent);
+  padding: 3px 6px;
+  font-size: $font-xs;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.toolBtn:disabled {
+  opacity: 0.45;
+}
+
+.toolBtnActive {
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-shadow-focus);
+}
+
+.objectList {
+  max-height: min(170px, 32vh);
+  overflow: auto;
+  display: grid;
+  gap: 4px;
+  padding-right: 2px;
+}
+
+.objectRow {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.objectItem {
+  border: $border-thin solid var(--ui-accent);
+  background: rgb(0 0 0 / 0.72);
+  color: var(--ui-accent);
+  text-align: left;
+  padding: 3px 6px;
+  font-size: $font-xs;
+  letter-spacing: 0.03em;
+  flex: 1 1 auto;
+}
+
+.objectItemActive {
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-shadow-focus);
+}
+
+.objectMeta {
+  font-size: $font-xs;
+  color: var(--ui-text-muted);
+  letter-spacing: 0.03em;
+  min-width: 44px;
+  text-align: right;
+}
+
+.objectPhysicsBtn {
+  border: $border-thin solid var(--ui-accent);
+  background: rgb(0 0 0 / 0.72);
+  color: var(--ui-accent);
+  padding: 3px 6px;
+  font-size: $font-xs;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.objectPhysicsBtn:disabled {
+  opacity: 0.45;
+}
+
+.objectPhysicsBtnActive {
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-shadow-focus);
 }
 
 .inspectorGrid {
   display: grid;
   gap: 4px;
+  padding: 6px;
 }
 
 .inspectorVectorRow {
@@ -149,86 +348,8 @@
   margin: 0;
   font-size: $font-xs;
   color: var(--ui-text-muted);
-}
-
-.toolbar,
-.editTools,
-.animationTools,
-.materialTools,
-.objectList {
-  pointer-events: auto;
-}
-
-.toolbar,
-.editTools,
-.animationTools,
-.materialTools {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.toolBtn {
-  border: $border-thin solid var(--ui-accent);
-  background: rgb(0 0 0 / 0.72);
-  color: var(--ui-accent);
-  padding: 3px 6px;
-  font-size: $font-xs;
-  letter-spacing: 0.04em;
-  line-height: 1.2;
-}
-
-.toolBtn:disabled {
-  opacity: 0.45;
-}
-
-.toolBtnActive {
-  border-color: var(--ui-accent);
-  box-shadow: var(--ui-shadow-focus);
-}
-
-.objectList {
-  max-height: min(160px, 36vh);
-  overflow: auto;
-  display: grid;
-  gap: 4px;
-  padding-right: 2px;
-}
-
-.objectRow {
-  display: flex;
-  gap: 4px;
-}
-
-.objectItem {
-  border: $border-thin solid var(--ui-accent);
-  background: rgb(0 0 0 / 0.72);
-  color: var(--ui-accent);
-  text-align: left;
-  padding: 3px 6px;
-  font-size: $font-xs;
-  letter-spacing: 0.03em;
-  flex: 1 1 auto;
-}
-
-.objectItemActive {
-  border-color: var(--ui-accent);
-  box-shadow: var(--ui-shadow-focus);
-}
-
-.objectPhysicsBtn {
-  border: $border-thin solid var(--ui-accent);
-  background: rgb(0 0 0 / 0.72);
-  color: var(--ui-accent);
-  padding: 3px 6px;
-  font-size: $font-xs;
-  letter-spacing: 0.03em;
-  white-space: nowrap;
-}
-
-.objectPhysicsBtnActive {
-  border-color: var(--ui-accent);
-  box-shadow: var(--ui-shadow-focus);
+  letter-spacing: 0.02em;
+  padding: 0 1px;
 }
 
 .materialSwatchRow {
@@ -276,16 +397,6 @@
 
 .materialColorInput:disabled {
   opacity: 0.45;
-}
-
-.editTag {
-  justify-self: start;
-  border: $border-thin solid var(--ui-accent);
-  background: rgb(0 0 0 / 0.82);
-  color: var(--ui-accent);
-  padding: 2px 8px;
-  font-size: $font-xs;
-  letter-spacing: 0.08em;
 }
 
 .fullscreenLayer {
@@ -339,39 +450,52 @@
 }
 
 @media (max-width: $bp-phone) {
-  .hud {
-    inset: 6px auto auto 6px;
-    max-width: calc(100% - 12px);
-    gap: 4px;
-  }
-
-  .hud[data-mode='edit'] {
-    max-width: calc(100% - 12px);
-  }
-
   .inspector {
     top: auto;
     left: 6px;
     right: 6px;
     bottom: 6px;
     width: auto;
-    max-height: min(48%, 250px);
+    max-height: min(52%, 290px);
+  }
+
+  .inspectorRevealBtn {
+    top: auto;
+    right: 6px;
+    bottom: 6px;
+  }
+
+  .viewportMenu {
+    min-width: 126px;
+  }
+
+  .viewportSubmenu {
+    left: auto;
+    right: 100%;
+    min-width: 164px;
   }
 
   .toolBtn,
   .objectItem,
   .materialColorLabel,
-  .inspectorInput {
+  .inspectorInput,
+  .viewportMenuGroupBtn,
+  .viewportMenuItem,
+  .inlineStatus,
+  .objectPhysicsBtn,
+  .inspectorRevealBtn {
     font-size: 9px;
     padding: 2px 5px;
   }
 
   .inspectorTitle,
   .inspectorObjectName,
-  .inspectorSectionTitle,
   .inspectorVectorLabel,
   .inspectorAxisToken,
-  .inspectorEmpty {
+  .inspectorEmpty,
+  .objectMeta,
+  .editTag,
+  .inspectorSectionToggle {
     font-size: 9px;
   }
 
@@ -385,7 +509,7 @@
   }
 
   .objectList {
-    max-height: min(132px, 30vh);
+    max-height: min(126px, 24vh);
   }
 
   .fullscreenHeader {

@@ -10,6 +10,7 @@ import {
   setAnimationPreset,
   setObjectMaterialColor,
   setObjectMaterialPreset,
+  setObjectMaterialWireframe,
   setObjectPhysicsEnabled,
   setPhysicsEnabled,
   setSelection,
@@ -28,6 +29,7 @@ describe('third state helpers', () => {
     expect(state.mode).toBe('play');
     expect(state.physicsEnabled).toBe(false);
     expect(state.snapEnabled).toBe(false);
+    expect(state.cameraState.projectionMode).toBe('perspective');
   });
 
   it('adds and duplicates primitives while keeping selection single-target', () => {
@@ -109,6 +111,7 @@ describe('third state helpers', () => {
     expect(hydrated.physicsEnabled).toBe(true);
     expect(hydrated.objects[0].physicsEnabled).toBe(true);
     expect(hydrated.objects[0].transform.position).toEqual({ x: 1, y: 2, z: 3 });
+    expect(hydrated.cameraState.projectionMode).toBe('perspective');
   });
 
   it('updates object material preset and color with sanitization', () => {
@@ -122,5 +125,26 @@ describe('third state helpers', () => {
 
     const invalidColor = setObjectMaterialColor(colorUpdated, firstId, 'bad-color');
     expect(invalidColor.objects[0].material.color).toBe('#00ff66');
+  });
+
+  it('persists wireframe and projection mode in camera state serialization', () => {
+    const seeded = createDefaultThirdRuntimeState();
+    const firstId = seeded.objects[0].id;
+    const wireframeOn = setObjectMaterialWireframe(seeded, firstId, true);
+    const withOrtho = {
+      ...wireframeOn,
+      cameraState: {
+        ...wireframeOn.cameraState,
+        projectionMode: 'orthographic' as const,
+      },
+    };
+
+    const persisted = serializeStateForPersistence(withOrtho);
+    expect(persisted.cameraState?.projectionMode).toBe('orthographic');
+    expect(persisted.objects[0].material.wireframe).toBe(true);
+
+    const hydrated = hydrateStateFromPersistence(persisted);
+    expect(hydrated.cameraState.projectionMode).toBe('orthographic');
+    expect(hydrated.objects[0].material.wireframe).toBe(true);
   });
 });

@@ -5,6 +5,14 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import styles from './THIRD.module.scss';
 import {
+  buildThirdViewportMenu,
+  isCameraPresetId,
+  resolveCameraPresetPosition,
+  type ThirdCameraPresetId,
+  type ThirdViewportMenuActionId,
+  type ThirdViewportMenuGroupId,
+} from './thirdViewportMenu';
+import {
   clampInspectorScale,
   degToRad,
   formatInspectorNumber,
@@ -15,10 +23,12 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { RUNTIME_THEME_PALETTE } from '../../theme/runtimePalette';
 import type { ResolvedTheme } from '../../theme/types';
 import { useThirdRuntime } from '../../third/ThirdProvider';
+import { THIRD_DEFAULT_CAMERA_STATE } from '../../third/state';
 import type {
   ThirdAnimationPreset,
   ThirdMaterialPreset,
   ThirdPrimitiveType,
+  ThirdProjectionMode,
   ThirdSceneObject,
   ThirdTransformPatch,
   ThirdVec3,
@@ -28,6 +38,9 @@ const FIXED_TIMESTEP_SECONDS = 1 / 60;
 const MAX_PHYSICS_SUBSTEPS = 3;
 const PHYSICS_COMMIT_INTERVAL_SECONDS = 0.4;
 const CAMERA_SAVE_DEBOUNCE_MS = 250;
+const RIGHT_CLICK_OPEN_TOLERANCE_PX = 6;
+const MIN_CAMERA_DISTANCE = 1.2;
+const ORTHOGRAPHIC_FRUSTUM_HEIGHT = 11;
 const MATERIAL_PRESETS: ReadonlyArray<ThirdMaterialPreset> = ['matte', 'gloss', 'glass', 'neon'];
 const MATERIAL_SWATCHES: ReadonlyArray<string> = [
   '#00ff66',
@@ -39,11 +52,27 @@ const MATERIAL_SWATCHES: ReadonlyArray<string> = [
 ];
 const INSPECTOR_GROUPS = ['position', 'rotation', 'scale'] as const;
 const INSPECTOR_AXES = ['x', 'y', 'z'] as const;
+const INSPECTOR_SECTION_IDS = ['scene', 'objects', 'transform', 'animation', 'physics', 'material'] as const;
 
 type InspectorGroup = typeof INSPECTOR_GROUPS[number];
 type InspectorAxis = typeof INSPECTOR_AXES[number];
 type InspectorFieldKey = `${InspectorGroup}.${InspectorAxis}`;
 type InspectorDraft = Record<InspectorFieldKey, string>;
+type InspectorSectionId = typeof INSPECTOR_SECTION_IDS[number];
+type InspectorSectionState = Record<InspectorSectionId, boolean>;
+
+type ViewportMenuState = {
+  x: number;
+  y: number;
+  openGroupId: ThirdViewportMenuGroupId | null;
+};
+
+type RightClickCandidate = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  moved: boolean;
+};
 
 const toThreeHex = (value: string, fallback: number): number => {
   const parsed = Number.parseInt(value.replace('#', ''), 16);
@@ -65,7 +94,7 @@ const applyMaterialParams = (
   const color = new THREE.Color(colorHex);
 
   material.color.copy(color);
-  material.wireframe = false;
+  material.wireframe = params.wireframe === true;
   material.transparent = false;
   material.opacity = 1;
   material.depthWrite = true;
@@ -273,6 +302,45 @@ const withAxisValue = (value: ThirdVec3, axis: InspectorAxis, next: number): Thi
   z: axis === 'z' ? next : value.z,
 });
 
+const createInspectorSectionState = (expanded = true): InspectorSectionState => (
+  INSPECTOR_SECTION_IDS.reduce((acc, section) => {
+    acc[section] = expanded;
+    return acc;
+  }, {} as InspectorSectionState)
+);
+
+const projectionLabel = (mode: ThirdProjectionMode): string => (
+  mode === 'orthographic' ? 'ORTHOGRAPHIC' : 'PERSPECTIVE'
+);
+
+const updateOrthographicBounds = (
+  camera: THREE.OrthographicCamera,
+  width: number,
+  height: number
+): void => {
+  const safeWidth = Math.max(1, width);
+  const safeHeight = Math.max(1, height);
+  const aspect = safeWidth / safeHeight;
+  const halfHeight = ORTHOGRAPHIC_FRUSTUM_HEIGHT / 2;
+  camera.left = -halfHeight * aspect;
+  camera.right = halfHeight * aspect;
+  camera.top = halfHeight;
+  camera.bottom = -halfHeight;
+  camera.updateProjectionMatrix();
+};
+
+const copyCameraPose = (
+  source: THREE.Camera,
+  target: THREE.Camera
+): void => {
+  target.position.copy(source.position);
+  target.quaternion.copy(source.quaternion);
+};
+
+const withClampedDistance = (distance: number): number => (
+  Number.isFinite(distance) ? Math.max(MIN_CAMERA_DISTANCE, distance) : MIN_CAMERA_DISTANCE
+);
+
 type ThirdProps = {
   mode?: 'panel' | 'fullscreen';
 };
@@ -295,7 +363,10 @@ type RuntimeObjectEntry = {
 
 type RuntimeEngine = {
   scene: THREE.Scene;
-  camera: THREE.PerspectiveCamera;
+  perspectiveCamera: THREE.PerspectiveCamera;
+  orthographicCamera: THREE.OrthographicCamera;
+  camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
+  projectionMode: ThirdProjectionMode;
   renderer: THREE.WebGLRenderer;
   world: CANNON.World;
   grid: THREE.GridHelper;
@@ -332,12 +403,14 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     selectObject,
     duplicateSelected,
     deleteSelected,
+    toggleMode,
     setTransformMode,
     toggleSnap,
     togglePhysics,
     setObjectPhysicsEnabled,
     setObjectMaterialPreset,
     setObjectMaterialColor,
+    setObjectMaterialWireframe,
     setObjectAnimationPreset,
     updateObjectTransform,
     applyObjectTransforms,
@@ -364,12 +437,37 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const transformSyncRafRef = useRef<number | null>(null);
   const pendingTransformPatchRef = useRef<ThirdTransformPatch | null>(null);
   const focusedInspectorFieldsRef = useRef(new Set<InspectorFieldKey>());
+  const rightClickCandidateRef = useRef<RightClickCandidate | null>(null);
+  const viewportMenuRef = useRef<HTMLDivElement | null>(null);
+  const projectionModeRef = useRef<ThirdProjectionMode>(cameraState.projectionMode);
 
   const selectedObject = useMemo(
     () => objects.find((object) => object.id === selectionId) ?? null,
     [objects, selectionId]
   );
   const [inspectorDraft, setInspectorDraft] = useState<InspectorDraft>(() => createInspectorDraft(selectedObject));
+  const [inspectorVisible, setInspectorVisible] = useState(true);
+  const [inspectorSections, setInspectorSections] = useState<InspectorSectionState>(
+    () => createInspectorSectionState(true)
+  );
+  const [viewportMenu, setViewportMenu] = useState<ViewportMenuState | null>(null);
+  const isEditMode = editorMode === 'edit';
+  const viewportMenuGroups = useMemo(() => buildThirdViewportMenu({
+    mode: editorMode,
+    snapEnabled,
+    physicsEnabled,
+    projectionMode: cameraState.projectionMode,
+    inspectorVisible,
+    hasSelection: selectedObject != null,
+    selectedObjectPhysicsEnabled: selectedObject?.physicsEnabled ?? false,
+  }), [
+    cameraState.projectionMode,
+    editorMode,
+    inspectorVisible,
+    physicsEnabled,
+    selectedObject,
+    snapEnabled,
+  ]);
 
   const setInspectorFieldDraft = useCallback((key: InspectorFieldKey, value: string) => {
     setInspectorDraft((prev) => (prev[key] === value ? prev : { ...prev, [key]: value }));
@@ -457,6 +555,209 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     applyInspectorNumericValue(group, axis, normalized);
   }, [applyInspectorNumericValue, inspectorDraft, setInspectorFieldDraft]);
 
+  const toggleInspectorSection = useCallback((section: InspectorSectionId) => {
+    setInspectorSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  }, []);
+
+  const setAllInspectorSections = useCallback((expanded: boolean) => {
+    setInspectorSections(createInspectorSectionState(expanded));
+  }, []);
+
+  const closeViewportMenu = useCallback(() => {
+    setViewportMenu(null);
+  }, []);
+
+  const toggleViewportGroup = useCallback((groupId: ThirdViewportMenuGroupId) => {
+    setViewportMenu((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        openGroupId: prev.openGroupId === groupId ? null : groupId,
+      };
+    });
+  }, []);
+
+  const openViewportMenu = useCallback((clientX: number, clientY: number, openGroupId: ThirdViewportMenuGroupId = 'add') => {
+    const root = rootRef.current;
+    if (!root) return;
+    const rect = root.getBoundingClientRect();
+    const localX = clientX - rect.left;
+    const localY = clientY - rect.top;
+    const clampedX = Math.max(6, Math.min(rect.width - 6, localX));
+    const clampedY = Math.max(6, Math.min(rect.height - 6, localY));
+
+    setViewportMenu({
+      x: clampedX,
+      y: clampedY,
+      openGroupId,
+    });
+  }, []);
+
+  const setProjectionMode = useCallback((projectionMode: ThirdProjectionMode) => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    if (engine.projectionMode === projectionMode) return;
+
+    const previousCamera = engine.camera;
+    const nextCamera = projectionMode === 'orthographic'
+      ? engine.orthographicCamera
+      : engine.perspectiveCamera;
+
+    copyCameraPose(previousCamera, nextCamera);
+
+    if (projectionMode === 'orthographic') {
+      const distance = previousCamera.position.distanceTo(engine.orbit.target);
+      const perspectiveFov = THREE.MathUtils.degToRad(engine.perspectiveCamera.fov);
+      const visibleHeight = 2 * withClampedDistance(distance) * Math.tan(perspectiveFov / 2);
+      const zoom = ORTHOGRAPHIC_FRUSTUM_HEIGHT / Math.max(visibleHeight, 0.0001);
+      engine.orthographicCamera.zoom = THREE.MathUtils.clamp(zoom, 0.2, 8);
+      engine.orthographicCamera.updateProjectionMatrix();
+    }
+
+    engine.camera = nextCamera;
+    engine.projectionMode = projectionMode;
+    projectionModeRef.current = projectionMode;
+    (engine.orbit as OrbitControls & { object: THREE.Camera }).object = nextCamera;
+    (engine.transform as TransformControls & { camera: THREE.Camera }).camera = nextCamera;
+    engine.orbit.update();
+  }, []);
+
+  const saveCameraFromRuntime = useCallback(() => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    setCameraState({
+      position: vec3FromThree(engine.camera.position),
+      target: vec3FromThree(engine.orbit.target),
+      projectionMode: engine.projectionMode,
+    });
+  }, [setCameraState]);
+
+  const applyCameraPreset = useCallback((preset: ThirdCameraPresetId) => {
+    const engine = engineRef.current;
+    if (!engine) return;
+
+    const distance = withClampedDistance(
+      engine.camera.position.distanceTo(engine.orbit.target)
+    );
+    const nextPosition = resolveCameraPresetPosition({
+      preset,
+      target: vec3FromThree(engine.orbit.target),
+      distance,
+    });
+
+    engine.camera.position.set(nextPosition.x, nextPosition.y, nextPosition.z);
+    if (preset === 'top') {
+      engine.camera.up.set(0, 0, -1);
+    } else {
+      engine.camera.up.set(0, 1, 0);
+    }
+    engine.camera.lookAt(engine.orbit.target);
+    engine.orbit.update();
+    saveCameraFromRuntime();
+  }, [saveCameraFromRuntime]);
+
+  const resetCameraView = useCallback(() => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    engine.camera.position.set(
+      THIRD_DEFAULT_CAMERA_STATE.position.x,
+      THIRD_DEFAULT_CAMERA_STATE.position.y,
+      THIRD_DEFAULT_CAMERA_STATE.position.z
+    );
+    engine.orbit.target.set(
+      THIRD_DEFAULT_CAMERA_STATE.target.x,
+      THIRD_DEFAULT_CAMERA_STATE.target.y,
+      THIRD_DEFAULT_CAMERA_STATE.target.z
+    );
+    engine.camera.up.set(0, 1, 0);
+    engine.orbit.update();
+    saveCameraFromRuntime();
+  }, [saveCameraFromRuntime]);
+
+  const runViewportMenuAction = useCallback((actionId: ThirdViewportMenuActionId) => {
+    switch (actionId) {
+      case 'add_cube':
+        addPrimitive('cube');
+        break;
+      case 'add_sphere':
+        addPrimitive('sphere');
+        break;
+      case 'add_cylinder':
+        addPrimitive('cylinder');
+        break;
+      case 'add_plane':
+        addPrimitive('plane');
+        break;
+      case 'camera_toggle_projection': {
+        const nextProjection = projectionModeRef.current === 'orthographic'
+          ? 'perspective'
+          : 'orthographic';
+        setProjectionMode(nextProjection);
+        saveCameraFromRuntime();
+        break;
+      }
+      case 'camera_view_top':
+      case 'camera_view_front':
+      case 'camera_view_right': {
+        const presetId = actionId.replace('camera_view_', '');
+        if (isCameraPresetId(presetId)) {
+          applyCameraPreset(presetId);
+        }
+        break;
+      }
+      case 'camera_reset':
+        resetCameraView();
+        break;
+      case 'scene_toggle_mode':
+        toggleMode();
+        break;
+      case 'scene_toggle_snap':
+        toggleSnap();
+        break;
+      case 'scene_toggle_physics':
+        togglePhysics();
+        break;
+      case 'object_duplicate':
+        duplicateSelected();
+        break;
+      case 'object_delete':
+        deleteSelected();
+        break;
+      case 'object_toggle_physics':
+        if (selectedObject) {
+          setObjectPhysicsEnabled(selectedObject.id, !selectedObject.physicsEnabled);
+        }
+        break;
+      case 'inspector_toggle_visibility':
+        setInspectorVisible((prev) => !prev);
+        break;
+      case 'inspector_collapse_all':
+        setAllInspectorSections(false);
+        break;
+      case 'inspector_expand_all':
+        setAllInspectorSections(true);
+        break;
+      default:
+        break;
+    }
+    closeViewportMenu();
+  }, [
+    addPrimitive,
+    applyCameraPreset,
+    closeViewportMenu,
+    deleteSelected,
+    duplicateSelected,
+    resetCameraView,
+    saveCameraFromRuntime,
+    selectedObject,
+    setAllInspectorSections,
+    setObjectPhysicsEnabled,
+    setProjectionMode,
+    toggleMode,
+    togglePhysics,
+    toggleSnap,
+  ]);
+
   useEffect(() => {
     modeRef.current = editorMode;
   }, [editorMode]);
@@ -468,6 +769,10 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   useEffect(() => {
     physicsEnabledRef.current = physicsEnabled;
   }, [physicsEnabled]);
+
+  useEffect(() => {
+    projectionModeRef.current = cameraState.projectionMode;
+  }, [cameraState.projectionMode]);
 
   useEffect(() => {
     objectPhysicsRef.current = new Map(objects.map((object) => [object.id, object.physicsEnabled]));
@@ -514,12 +819,29 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(palette.background);
 
-    const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 400);
-    camera.position.set(
+    const perspectiveCamera = new THREE.PerspectiveCamera(55, 1, 0.1, 400);
+    perspectiveCamera.position.set(
       cameraState.position.x,
       cameraState.position.y,
       cameraState.position.z
     );
+
+    const orthographicCamera = new THREE.OrthographicCamera(-5, 5, 5, -5, 0.1, 400);
+    orthographicCamera.position.set(
+      cameraState.position.x,
+      cameraState.position.y,
+      cameraState.position.z
+    );
+    orthographicCamera.zoom = 1;
+    updateOrthographicBounds(orthographicCamera, container.clientWidth, container.clientHeight);
+
+    const initialProjectionMode: ThirdProjectionMode = cameraState.projectionMode === 'orthographic'
+      ? 'orthographic'
+      : 'perspective';
+    projectionModeRef.current = initialProjectionMode;
+    const initialCamera = initialProjectionMode === 'orthographic'
+      ? orthographicCamera
+      : perspectiveCamera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -544,7 +866,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     scene.add(ambientLight);
     scene.add(keyLight);
 
-    const orbit = new OrbitControls(camera, renderer.domElement);
+    const orbit = new OrbitControls(initialCamera, renderer.domElement);
     orbit.enableDamping = true;
     orbit.dampingFactor = 0.08;
     orbit.enablePan = true;
@@ -556,7 +878,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     orbit.touches.TWO = THREE.TOUCH.DOLLY_PAN;
     orbit.update();
 
-    const transform = new TransformControls(camera, renderer.domElement);
+    const transform = new TransformControls(initialCamera, renderer.domElement);
     transform.setMode(transformModeRef.current);
     const transformHelper = transform.getHelper();
     scene.add(transformHelper);
@@ -587,7 +909,10 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
     const engine: RuntimeEngine = {
       scene,
-      camera,
+      perspectiveCamera,
+      orthographicCamera,
+      camera: initialCamera,
+      projectionMode: initialProjectionMode,
       renderer,
       world,
       grid,
@@ -707,7 +1032,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       requirePhysicsEligible = false
     ): { id: string; hitPoint: THREE.Vector3 } | null => {
       if (!toNdc(clientX, clientY)) return null;
-      raycaster.setFromCamera(pointerNdc, camera);
+      raycaster.setFromCamera(pointerNdc, engine.camera);
       const meshes = [...engine.entries.values()]
         .filter((entry) => !requirePhysicsEligible || shouldObjectSimulate(entry.id))
         .map((entry) => entry.mesh);
@@ -726,7 +1051,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       const activeGrab = engine.activeGrab;
       if (!activeGrab || activeGrab.touchCameraOverride) return;
       if (!toNdc(clientX, clientY)) return;
-      raycaster.setFromCamera(pointerNdc, camera);
+      raycaster.setFromCamera(pointerNdc, engine.camera);
       const target = raycaster.ray.origin.clone().addScaledVector(raycaster.ray.direction, activeGrab.depth);
       engine.dragBody.position.set(target.x, target.y, target.z);
       engine.dragBody.velocity.set(0, 0, 0);
@@ -761,7 +1086,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       engine.activeGrab = {
         pointerId: args.pointerId,
         pointerType: args.pointerType,
-        depth: camera.position.distanceTo(args.hitPoint),
+        depth: engine.camera.position.distanceTo(args.hitPoint),
         objectId: args.objectId,
         constraint,
         touchCameraOverride: false,
@@ -844,8 +1169,9 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       }
       cameraSaveTimerRef.current = window.setTimeout(() => {
         setCameraState({
-          position: vec3FromThree(camera.position),
+          position: vec3FromThree(engine.camera.position),
           target: vec3FromThree(orbit.target),
+          projectionMode: engine.projectionMode,
         });
         cameraSaveTimerRef.current = null;
       }, CAMERA_SAVE_DEBOUNCE_MS);
@@ -856,7 +1182,17 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         engine.touchPointers.add(event.pointerId);
       }
 
+      if (event.button === 2 && event.pointerType !== 'touch') {
+        rightClickCandidateRef.current = {
+          pointerId: event.pointerId,
+          startX: event.clientX,
+          startY: event.clientY,
+          moved: false,
+        };
+      }
+
       if (modeRef.current === 'edit') {
+        if (event.button === 2 && event.pointerType !== 'touch') return;
         const picked = pickObject(event.clientX, event.clientY);
         if (picked) {
           selectObject(picked.id);
@@ -887,12 +1223,37 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     };
 
     const onPointerMove = (event: PointerEvent) => {
+      const rightClickCandidate = rightClickCandidateRef.current;
+      if (rightClickCandidate && rightClickCandidate.pointerId === event.pointerId) {
+        const distance = Math.hypot(
+          event.clientX - rightClickCandidate.startX,
+          event.clientY - rightClickCandidate.startY
+        );
+        if (distance > RIGHT_CLICK_OPEN_TOLERANCE_PX) {
+          rightClickCandidate.moved = true;
+        }
+      }
+
       const activeGrab = engine.activeGrab;
       if (!activeGrab || activeGrab.pointerId !== event.pointerId) return;
       moveGrabTarget(event.clientX, event.clientY);
     };
 
     const onPointerUpOrCancel = (event: PointerEvent) => {
+      const rightClickCandidate = rightClickCandidateRef.current;
+      if (rightClickCandidate && rightClickCandidate.pointerId === event.pointerId) {
+        rightClickCandidateRef.current = null;
+        if (event.pointerType !== 'touch' && event.button === 2 && !rightClickCandidate.moved) {
+          const picked = pickObject(event.clientX, event.clientY);
+          if (picked) {
+            selectObject(picked.id);
+            selectionIdRef.current = picked.id;
+            updateTransformAttachment();
+          }
+          openViewportMenu(event.clientX, event.clientY);
+        }
+      }
+
       if (event.pointerType === 'touch') {
         engine.touchPointers.delete(event.pointerId);
       }
@@ -912,12 +1273,17 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       }
     };
 
+    const onContextMenu = (event: MouseEvent) => {
+      event.preventDefault();
+    };
+
     const resize = () => {
       const width = container.clientWidth;
       const height = container.clientHeight;
       if (width <= 0 || height <= 0) return;
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
+      engine.perspectiveCamera.aspect = width / height;
+      engine.perspectiveCamera.updateProjectionMatrix();
+      updateOrthographicBounds(engine.orthographicCamera, width, height);
       renderer.setSize(width, height);
     };
     resize();
@@ -933,6 +1299,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     renderer.domElement.addEventListener('pointermove', onPointerMove);
     renderer.domElement.addEventListener('pointerup', onPointerUpOrCancel);
     renderer.domElement.addEventListener('pointercancel', onPointerUpOrCancel);
+    renderer.domElement.addEventListener('contextmenu', onContextMenu);
 
     const animate = () => {
       rafRef.current = window.requestAnimationFrame(animate);
@@ -980,7 +1347,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         });
       }
 
-      renderer.render(scene, camera);
+      renderer.render(scene, engine.camera);
     };
     animate();
 
@@ -1009,6 +1376,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       renderer.domElement.removeEventListener('pointermove', onPointerMove);
       renderer.domElement.removeEventListener('pointerup', onPointerUpOrCancel);
       renderer.domElement.removeEventListener('pointercancel', onPointerUpOrCancel);
+      renderer.domElement.removeEventListener('contextmenu', onContextMenu);
 
       engine.entries.forEach((entry) => {
         engine.world.removeBody(entry.body);
@@ -1070,9 +1438,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       const shapeKey = toShapeKey(object);
       if (!existing) {
         const geometry = createGeometry(object.type);
-        const material = new THREE.MeshPhongMaterial({
-          wireframe: false,
-        });
+        const material = new THREE.MeshPhongMaterial();
         applyMaterialParams(material, object.material, palette.accent);
         const mesh = new THREE.Mesh(geometry, material);
         mesh.userData.thirdObjectId = object.id;
@@ -1314,6 +1680,14 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   useEffect(() => {
     const engine = engineRef.current;
     if (!engine) return;
+    const nextProjectionMode: ThirdProjectionMode = cameraState.projectionMode === 'orthographic'
+      ? 'orthographic'
+      : 'perspective';
+
+    if (engine.projectionMode !== nextProjectionMode) {
+      setProjectionMode(nextProjectionMode);
+    }
+
     const cameraPos = engine.camera.position;
     const orbitTarget = engine.orbit.target;
 
@@ -1329,18 +1703,21 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     ));
 
     if (posDelta < 0.01 && targetDelta < 0.01) return;
+
     engine.camera.position.set(
       cameraState.position.x,
       cameraState.position.y,
       cameraState.position.z
     );
+    engine.perspectiveCamera.position.copy(engine.camera.position);
+    engine.orthographicCamera.position.copy(engine.camera.position);
     engine.orbit.target.set(
       cameraState.target.x,
       cameraState.target.y,
       cameraState.target.z
     );
     engine.orbit.update();
-  }, [cameraState]);
+  }, [cameraState, setProjectionMode]);
 
   useEffect(() => {
     const onReset = () => {
@@ -1366,6 +1743,26 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [editorMode, setTransformMode, toggleSnap]);
 
+  useEffect(() => {
+    if (!viewportMenu) return;
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (target && viewportMenuRef.current?.contains(target)) return;
+      closeViewportMenu();
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeViewportMenu();
+      }
+    };
+    window.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [closeViewportMenu, viewportMenu]);
+
   return (
     <div
       ref={rootRef}
@@ -1373,196 +1770,376 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     >
       <div ref={canvasHostRef} className={styles.canvasHost} />
 
-      <div className={styles.hud} data-mode={editorMode}>
-        {editorMode === 'edit' ? <span className={styles.editTag}>EDIT</span> : null}
-        <div className={styles.toolbar}>
-          <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('cube')}>+ CUBE</button>
-          <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('sphere')}>+ SPHERE</button>
-          <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('cylinder')}>+ CYLINDER</button>
-          <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('plane')}>+ PLANE</button>
-          <button type="button" className={styles.toolBtn} onClick={duplicateSelected} disabled={!selectionId}>DUP</button>
-          <button type="button" className={styles.toolBtn} onClick={deleteSelected} disabled={!selectionId}>DEL</button>
-          <button
-            type="button"
-            className={`${styles.toolBtn} ${physicsEnabled ? styles.toolBtnActive : ''}`.trim()}
-            onClick={togglePhysics}
-          >
-            PHYSICS: {physicsEnabled ? 'ON' : 'OFF'}
-          </button>
-        </div>
-
-        {editorMode === 'edit' ? (
-          <div className={styles.editTools}>
-            <button
-              type="button"
-              className={`${styles.toolBtn} ${transformMode === 'translate' ? styles.toolBtnActive : ''}`.trim()}
-              onClick={() => setTransformMode('translate')}
-            >
-              MOVE [W]
-            </button>
-            <button
-              type="button"
-              className={`${styles.toolBtn} ${transformMode === 'rotate' ? styles.toolBtnActive : ''}`.trim()}
-              onClick={() => setTransformMode('rotate')}
-            >
-              ROTATE [E]
-            </button>
-            <button
-              type="button"
-              className={`${styles.toolBtn} ${transformMode === 'scale' ? styles.toolBtnActive : ''}`.trim()}
-              onClick={() => setTransformMode('scale')}
-            >
-              SCALE [R]
-            </button>
-            <button
-              type="button"
-              className={`${styles.toolBtn} ${snapEnabled ? styles.toolBtnActive : ''}`.trim()}
-              onClick={toggleSnap}
-            >
-              SNAP [G]: {snapEnabled ? 'ON' : 'OFF'}
-            </button>
-          </div>
-        ) : null}
-
-        {editorMode === 'edit' ? (
-          <div className={styles.animationTools}>
-            <button
-              type="button"
-              className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'none' ? styles.toolBtnActive : ''}`.trim()}
-              onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'none')}
-              disabled={!selectionId}
-            >
-              ANIM: NONE
-            </button>
-            <button
-              type="button"
-              className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'bounce' ? styles.toolBtnActive : ''}`.trim()}
-              onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'bounce')}
-              disabled={!selectionId}
-            >
-              BOUNCE
-            </button>
-            <button
-              type="button"
-              className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'rotate' ? styles.toolBtnActive : ''}`.trim()}
-              onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'rotate')}
-              disabled={!selectionId}
-            >
-              ROTATE
-            </button>
-            <button
-              type="button"
-              className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'pulse' ? styles.toolBtnActive : ''}`.trim()}
-              onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'pulse')}
-              disabled={!selectionId}
-            >
-              PULSE
-            </button>
-          </div>
-        ) : null}
-
-        {editorMode === 'edit' ? (
-          <div className={styles.materialTools}>
-            {MATERIAL_PRESETS.map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                className={`${styles.toolBtn} ${selectedObject?.material.preset === preset ? styles.toolBtnActive : ''}`.trim()}
-                onClick={() => selectionId && setObjectMaterialPreset(selectionId, preset)}
-                disabled={!selectionId}
+      {viewportMenu ? (
+        <div
+          ref={viewportMenuRef}
+          className={styles.viewportMenu}
+          style={{ left: `${viewportMenu.x}px`, top: `${viewportMenu.y}px` }}
+          role="menu"
+          aria-label="THIRD viewport menu"
+        >
+          {viewportMenuGroups.map((group) => {
+            const open = viewportMenu.openGroupId === group.id;
+            return (
+              <div
+                key={group.id}
+                className={styles.viewportMenuGroup}
+                onMouseEnter={() => setViewportMenu((prev) => (prev ? { ...prev, openGroupId: group.id } : prev))}
               >
-                {`MAT: ${preset.toUpperCase()}`}
-              </button>
-            ))}
-            <div className={styles.materialSwatchRow} role="group" aria-label="Material color swatches">
-              {MATERIAL_SWATCHES.map((swatch) => (
                 <button
-                  key={swatch}
                   type="button"
-                  className={`${styles.materialSwatch} ${selectedObject?.material.color.toLowerCase() === swatch ? styles.materialSwatchActive : ''}`.trim()}
-                  style={{ backgroundColor: swatch }}
-                  onClick={() => selectionId && setObjectMaterialColor(selectionId, swatch)}
-                  disabled={!selectionId}
-                  aria-label={`Set material color ${swatch}`}
-                  title={swatch}
-                />
-              ))}
-            </div>
-            <label className={styles.materialColorLabel}>
-              COLOR
-              <input
-                type="color"
-                className={styles.materialColorInput}
-                value={selectedObject?.material.color ?? '#00ff66'}
-                onChange={(event) => selectionId && setObjectMaterialColor(selectionId, event.target.value)}
-                disabled={!selectionId}
-                aria-label="Material custom color"
-              />
-            </label>
-          </div>
-        ) : null}
-
-        <div className={styles.objectList} aria-label="THIRD objects">
-          {objects.map((object) => (
-            <div key={object.id} className={styles.objectRow}>
-              <button
-                type="button"
-                className={`${styles.objectItem} ${selectionId === object.id ? styles.objectItemActive : ''}`.trim()}
-                onClick={() => selectObject(object.id)}
-              >
-                {object.name}
-              </button>
-              <button
-                type="button"
-                className={`${styles.objectPhysicsBtn} ${object.physicsEnabled ? styles.objectPhysicsBtnActive : ''}`.trim()}
-                onClick={() => setObjectPhysicsEnabled(object.id, !object.physicsEnabled)}
-              >
-                {object.physicsEnabled ? 'REMOVE PHYSICS' : 'ADD PHYSICS'}
-              </button>
-            </div>
-          ))}
+                  className={styles.viewportMenuGroupBtn}
+                  onClick={() => toggleViewportGroup(group.id)}
+                  aria-expanded={open}
+                >
+                  {group.label}
+                </button>
+                {open ? (
+                  <div className={styles.viewportSubmenu} role="menu" aria-label={`${group.label} menu`}>
+                    {group.items.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={styles.viewportMenuItem}
+                        onClick={() => runViewportMenuAction(item.id)}
+                        disabled={item.disabled}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
-      </div>
+      ) : null}
 
-      {editorMode === 'edit' ? (
+      {!inspectorVisible ? (
+        <button
+          type="button"
+          className={styles.inspectorRevealBtn}
+          onClick={() => setInspectorVisible(true)}
+        >
+          SHOW INSPECTOR
+        </button>
+      ) : null}
+
+      {inspectorVisible ? (
         <aside className={styles.inspector} aria-label="THIRD inspector">
           <header className={styles.inspectorHeader}>
-            <p className={styles.inspectorTitle}>INSPECTOR</p>
-            <p className={styles.inspectorObjectName}>{selectedObject?.name ?? 'NO SELECTION'}</p>
+            <div className={styles.inspectorHeaderTop}>
+              <p className={styles.inspectorTitle}>INSPECTOR</p>
+              <button
+                type="button"
+                className={styles.toolBtn}
+                onClick={() => setInspectorVisible(false)}
+              >
+                HIDE
+              </button>
+            </div>
+            <div className={styles.inspectorHeaderMeta}>
+              <span className={`${styles.editTag} ${isEditMode ? styles.editTagActive : ''}`.trim()}>
+                {isEditMode ? 'EDIT' : 'PLAY'}
+              </span>
+              <span className={styles.inspectorObjectName}>{selectedObject?.name ?? 'NO SELECTION'}</span>
+            </div>
+            <div className={styles.inspectorHeaderActions}>
+              <button type="button" className={styles.toolBtn} onClick={() => setAllInspectorSections(false)}>
+                COLLAPSE
+              </button>
+              <button type="button" className={styles.toolBtn} onClick={() => setAllInspectorSections(true)}>
+                EXPAND
+              </button>
+            </div>
           </header>
 
-          <section className={styles.inspectorSection} aria-labelledby="third-transform-heading">
-            <h3 id="third-transform-heading" className={styles.inspectorSectionTitle}>TRANSFORM</h3>
-            {selectedObject ? (
-              <div className={styles.inspectorGrid}>
-                {INSPECTOR_GROUPS.map((group) => (
-                  <div key={group} className={styles.inspectorVectorRow}>
-                    <span className={styles.inspectorVectorLabel}>{inspectorGroupLabel(group)}</span>
-                    {INSPECTOR_AXES.map((axis) => {
-                      const fieldKey = toInspectorFieldKey(group, axis);
-                      return (
-                        <label key={fieldKey} className={styles.inspectorAxisField}>
-                          <span className={styles.inspectorAxisToken}>{axis.toUpperCase()}</span>
-                          <input
-                            type="number"
-                            className={styles.inspectorInput}
-                            step={inspectorStepByGroup(group)}
-                            value={inspectorDraft[fieldKey] ?? ''}
-                            inputMode="decimal"
-                            onFocus={() => onInspectorFieldFocus(group, axis)}
-                            onChange={(event) => onInspectorFieldChange(group, axis, event.target.value)}
-                            onBlur={() => onInspectorFieldBlur(group, axis)}
-                            aria-label={`${inspectorGroupLabel(group)} ${axis.toUpperCase()}`}
-                          />
-                        </label>
-                      );
-                    })}
-                  </div>
-                ))}
+          <section className={styles.inspectorSection}>
+            <button
+              type="button"
+              className={styles.inspectorSectionToggle}
+              onClick={() => toggleInspectorSection('scene')}
+              aria-expanded={inspectorSections.scene}
+            >
+              SCENE
+            </button>
+            {inspectorSections.scene ? (
+              <div className={styles.inspectorSectionBody}>
+                <div className={styles.toolRow}>
+                  <button type="button" className={styles.toolBtn} onClick={toggleMode}>
+                    {isEditMode ? 'SWITCH TO PLAY' : 'SWITCH TO EDIT'}
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.toolBtn} ${snapEnabled ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={toggleSnap}
+                    disabled={!isEditMode}
+                  >
+                    SNAP [G]: {snapEnabled ? 'ON' : 'OFF'}
+                  </button>
+                </div>
+                <div className={styles.toolRow}>
+                  <button
+                    type="button"
+                    className={`${styles.toolBtn} ${physicsEnabled ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={togglePhysics}
+                  >
+                    PHYSICS: {physicsEnabled ? 'ON' : 'OFF'}
+                  </button>
+                  <span className={styles.inlineStatus}>CAMERA: {projectionLabel(cameraState.projectionMode)}</span>
+                </div>
+                <div className={styles.toolRow}>
+                  <button
+                    type="button"
+                    className={`${styles.toolBtn} ${transformMode === 'translate' ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={() => setTransformMode('translate')}
+                    disabled={!isEditMode}
+                  >
+                    MOVE [W]
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.toolBtn} ${transformMode === 'rotate' ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={() => setTransformMode('rotate')}
+                    disabled={!isEditMode}
+                  >
+                    ROTATE [E]
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.toolBtn} ${transformMode === 'scale' ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={() => setTransformMode('scale')}
+                    disabled={!isEditMode}
+                  >
+                    SCALE [R]
+                  </button>
+                </div>
               </div>
-            ) : (
-              <p className={styles.inspectorEmpty}>SELECT AN OBJECT TO EDIT TRANSFORM.</p>
-            )}
+            ) : null}
+          </section>
+
+          <section className={styles.inspectorSection}>
+            <button
+              type="button"
+              className={styles.inspectorSectionToggle}
+              onClick={() => toggleInspectorSection('objects')}
+              aria-expanded={inspectorSections.objects}
+            >
+              OBJECTS
+            </button>
+            {inspectorSections.objects ? (
+              <div className={styles.inspectorSectionBody}>
+                <div className={styles.toolRow}>
+                  <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('cube')}>+ CUBE</button>
+                  <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('sphere')}>+ SPHERE</button>
+                  <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('cylinder')}>+ CYLINDER</button>
+                  <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('plane')}>+ PLANE</button>
+                </div>
+                <div className={styles.toolRow}>
+                  <button type="button" className={styles.toolBtn} onClick={duplicateSelected} disabled={!selectionId}>DUP</button>
+                  <button type="button" className={styles.toolBtn} onClick={deleteSelected} disabled={!selectionId}>DEL</button>
+                </div>
+                <div className={styles.objectList} aria-label="THIRD objects">
+                  {objects.map((object) => (
+                    <div key={object.id} className={styles.objectRow}>
+                      <button
+                        type="button"
+                        className={`${styles.objectItem} ${selectionId === object.id ? styles.objectItemActive : ''}`.trim()}
+                        onClick={() => selectObject(object.id)}
+                      >
+                        {object.name}
+                      </button>
+                      <span className={styles.objectMeta}>{object.physicsEnabled ? 'PHYS' : 'STATIC'}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </section>
+
+          <section className={styles.inspectorSection}>
+            <button
+              type="button"
+              className={styles.inspectorSectionToggle}
+              onClick={() => toggleInspectorSection('transform')}
+              aria-expanded={inspectorSections.transform}
+            >
+              TRANSFORM
+            </button>
+            {inspectorSections.transform ? (
+              selectedObject ? (
+                isEditMode ? (
+                  <div className={styles.inspectorGrid}>
+                    {INSPECTOR_GROUPS.map((group) => (
+                      <div key={group} className={styles.inspectorVectorRow}>
+                        <span className={styles.inspectorVectorLabel}>{inspectorGroupLabel(group)}</span>
+                        {INSPECTOR_AXES.map((axis) => {
+                          const fieldKey = toInspectorFieldKey(group, axis);
+                          return (
+                            <label key={fieldKey} className={styles.inspectorAxisField}>
+                              <span className={styles.inspectorAxisToken}>{axis.toUpperCase()}</span>
+                              <input
+                                type="number"
+                                className={styles.inspectorInput}
+                                step={inspectorStepByGroup(group)}
+                                value={inspectorDraft[fieldKey] ?? ''}
+                                inputMode="decimal"
+                                onFocus={() => onInspectorFieldFocus(group, axis)}
+                                onChange={(event) => onInspectorFieldChange(group, axis, event.target.value)}
+                                onBlur={() => onInspectorFieldBlur(group, axis)}
+                                aria-label={`${inspectorGroupLabel(group)} ${axis.toUpperCase()}`}
+                              />
+                            </label>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={styles.inspectorEmpty}>SWITCH TO EDIT MODE TO ADJUST TRANSFORM NUMERIC FIELDS.</p>
+                )
+              ) : (
+                <p className={styles.inspectorEmpty}>SELECT AN OBJECT TO EDIT TRANSFORM.</p>
+              )
+            ) : null}
+          </section>
+
+          <section className={styles.inspectorSection}>
+            <button
+              type="button"
+              className={styles.inspectorSectionToggle}
+              onClick={() => toggleInspectorSection('animation')}
+              aria-expanded={inspectorSections.animation}
+            >
+              ANIMATION
+            </button>
+            {inspectorSections.animation ? (
+              <div className={styles.inspectorSectionBody}>
+                <div className={styles.toolRow}>
+                  <button
+                    type="button"
+                    className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'none' ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'none')}
+                    disabled={!selectionId || !isEditMode}
+                  >
+                    NONE
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'bounce' ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'bounce')}
+                    disabled={!selectionId || !isEditMode}
+                  >
+                    BOUNCE
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'rotate' ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'rotate')}
+                    disabled={!selectionId || !isEditMode}
+                  >
+                    ROTATE
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'pulse' ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'pulse')}
+                    disabled={!selectionId || !isEditMode}
+                  >
+                    PULSE
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </section>
+
+          <section className={styles.inspectorSection}>
+            <button
+              type="button"
+              className={styles.inspectorSectionToggle}
+              onClick={() => toggleInspectorSection('physics')}
+              aria-expanded={inspectorSections.physics}
+            >
+              PHYSICS
+            </button>
+            {inspectorSections.physics ? (
+              <div className={styles.inspectorSectionBody}>
+                <button
+                  type="button"
+                  className={`${styles.objectPhysicsBtn} ${selectedObject?.physicsEnabled ? styles.objectPhysicsBtnActive : ''}`.trim()}
+                  onClick={() => selectedObject && setObjectPhysicsEnabled(selectedObject.id, !selectedObject.physicsEnabled)}
+                  disabled={!selectedObject}
+                >
+                  {selectedObject?.physicsEnabled ? 'REMOVE PHYSICS' : 'ADD PHYSICS'}
+                </button>
+                <p className={styles.inspectorEmpty}>
+                  PLAY GRAB/SIM REQUIRES GLOBAL PHYSICS + OBJECT PHYSICS BOTH ON.
+                </p>
+              </div>
+            ) : null}
+          </section>
+
+          <section className={styles.inspectorSection}>
+            <button
+              type="button"
+              className={styles.inspectorSectionToggle}
+              onClick={() => toggleInspectorSection('material')}
+              aria-expanded={inspectorSections.material}
+            >
+              MATERIAL
+            </button>
+            {inspectorSections.material ? (
+              <div className={styles.inspectorSectionBody}>
+                <div className={styles.toolRow}>
+                  {MATERIAL_PRESETS.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      className={`${styles.toolBtn} ${selectedObject?.material.preset === preset ? styles.toolBtnActive : ''}`.trim()}
+                      onClick={() => selectionId && setObjectMaterialPreset(selectionId, preset)}
+                      disabled={!selectionId || !isEditMode}
+                    >
+                      {preset.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+                <div className={styles.materialSwatchRow} role="group" aria-label="Material color swatches">
+                  {MATERIAL_SWATCHES.map((swatch) => (
+                    <button
+                      key={swatch}
+                      type="button"
+                      className={`${styles.materialSwatch} ${selectedObject?.material.color.toLowerCase() === swatch ? styles.materialSwatchActive : ''}`.trim()}
+                      style={{ backgroundColor: swatch }}
+                      onClick={() => selectionId && setObjectMaterialColor(selectionId, swatch)}
+                      disabled={!selectionId || !isEditMode}
+                      aria-label={`Set material color ${swatch}`}
+                      title={swatch}
+                    />
+                  ))}
+                </div>
+                <div className={styles.toolRow}>
+                  <label className={styles.materialColorLabel}>
+                    COLOR
+                    <input
+                      type="color"
+                      className={styles.materialColorInput}
+                      value={selectedObject?.material.color ?? '#00ff66'}
+                      onChange={(event) => selectionId && setObjectMaterialColor(selectionId, event.target.value)}
+                      disabled={!selectionId || !isEditMode}
+                      aria-label="Material custom color"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className={`${styles.toolBtn} ${selectedObject?.material.wireframe ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={() => selectedObject && setObjectMaterialWireframe(selectedObject.id, !selectedObject.material.wireframe)}
+                    disabled={!selectedObject || !isEditMode}
+                  >
+                    WIREFRAME: {selectedObject?.material.wireframe ? 'ON' : 'OFF'}
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </section>
         </aside>
       ) : null}

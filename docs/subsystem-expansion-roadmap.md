@@ -93,8 +93,13 @@ Current implementation checkpoint (2026-02-25):
   - global physics master toggle defaults `OFF`;
   - per-object physics toggle defaults `OFF`;
   - play-mode simulation/grab requires global + object physics `ON`;
-  - primitives render as solid accent materials (wireframe retired);
+  - primitives default to solid accent materials with per-object wireframe option;
   - axes helper keeps default RGB colors for visibility.
+- V1.3 viewport workflow baseline is now active:
+  - floating left HUD replaced by right-docked inspector workflow;
+  - viewport right-click menu provides grouped quick actions;
+  - camera supports perspective/orthographic switching + top/front/right/reset actions;
+  - camera projection mode persists in autosave payload.
 
 Implementation slices:
 

@@ -4,6 +4,7 @@ export type ThirdTransformMode = 'translate' | 'rotate' | 'scale';
 export type ThirdPrimitiveType = 'cube' | 'sphere' | 'cylinder' | 'plane';
 export type ThirdAnimationPreset = 'none' | 'bounce' | 'rotate' | 'pulse';
 export type ThirdMaterialPreset = 'matte' | 'gloss' | 'glass' | 'neon';
+export type ThirdProjectionMode = 'perspective' | 'orthographic';
 
 export type ThirdVec3 = {
   x: number;
@@ -14,6 +15,7 @@ export type ThirdVec3 = {
 export type ThirdCameraState = {
   position: ThirdVec3;
   target: ThirdVec3;
+  projectionMode: ThirdProjectionMode;
 };
 
 export type ThirdMaterialParams = {

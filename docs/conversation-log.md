@@ -1196,3 +1196,41 @@ Why it matters:
 Risks / Notes:
 - Inspector is intentionally transform-only in this pass (no hierarchy/tag/layer/prefab concepts).
 - Undo/redo is still out of scope and remains a follow-up concern for heavy numeric editing sessions.
+
+---
+
+## Entry 62 - THIRD.EXE V1.3 Viewport Menu + Inspector Consolidation
+
+Summary:
+- Replaced blocking floating viewport HUD controls with an inspector-first layout.
+- Added a Blender-style viewport right-click menu with grouped actions:
+  - `ADD` (cube/sphere/cylinder/plane),
+  - `CAMERA` (projection toggle, top/front/right, reset),
+  - `SCENE` (play/edit, snap, global physics),
+  - `OBJECT` (duplicate/delete/object physics),
+  - `INSPECTOR` (show/hide/collapse/expand).
+- Added right-click drag tolerance so right-drag camera panning does not open the menu.
+- Added per-instance menu behavior to select an object on right-click hit before opening menu actions.
+- Consolidated all edit controls into a right-docked, collapsible/hideable inspector:
+  - scene controls,
+  - object management,
+  - transform fields,
+  - animation presets,
+  - object physics,
+  - material controls.
+- Added camera projection runtime support and persistence:
+  - perspective/orthographic switching,
+  - projection mode saved in camera state,
+  - camera preset view actions around current target.
+- Restored wireframe as a real per-object material option (default remains solid).
+- Added viewport menu helper and tests (`thirdViewportMenu.ts` + `thirdViewportMenu.test.ts`).
+
+Why it matters:
+- Keeps the viewport clear for interaction and aligns workflow with DCC-style discoverability.
+- Preserves existing shared-runtime architecture while adding practical camera/view tooling.
+- Brings material behavior in line with user expectation (wireframe optional, persisted).
+
+Risks / Notes:
+- Inspector visibility/collapse state is runtime-local and resets on reload by design.
+- Camera preset selection itself is not persisted; projection mode is persisted.
+- Interaction details (right-click tolerance, touch pan/grab interplay) are covered by unit/build checks and still require manual browser verification.

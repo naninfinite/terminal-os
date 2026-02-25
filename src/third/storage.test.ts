@@ -29,6 +29,7 @@ describe('third storage sanitization', () => {
       cameraState: {
         position: { x: 4, y: 4, z: 6 },
         target: { x: 0, y: 0.5, z: 0 },
+        projectionMode: 'orthographic',
       },
     });
 
@@ -39,8 +40,9 @@ describe('third storage sanitization', () => {
     expect(scene.objects).toHaveLength(1);
     expect(scene.objects[0].animationPreset).toBe('bounce');
     expect(scene.objects[0].physicsEnabled).toBe(true);
-    expect(scene.objects[0].material.wireframe).toBe(false);
+    expect(scene.objects[0].material.wireframe).toBe(true);
     expect(scene.objects[0].material.preset).toBe('neon');
+    expect(scene.cameraState?.projectionMode).toBe('orthographic');
   });
 
   it('drops invalid payloads', () => {
@@ -102,6 +104,7 @@ describe('third storage sanitization', () => {
     expect(scene.physicsEnabled).toBe(false);
     expect(scene.objects[0].physicsEnabled).toBe(false);
     expect(scene.objects[0].material.preset).toBe('matte');
+    expect(scene.objects[0].material.wireframe).toBe(false);
   });
 
   it('round-trips persisted global and object physics flags through JSON payload', () => {
@@ -131,6 +134,7 @@ describe('third storage sanitization', () => {
       cameraState: {
         position: { x: 4, y: 4, z: 6 },
         target: { x: 0, y: 0.5, z: 0 },
+        projectionMode: 'perspective',
       },
     };
     const restored = sanitizePersistedThirdScene(JSON.parse(JSON.stringify(rawPayload)));
@@ -139,5 +143,42 @@ describe('third storage sanitization', () => {
     expect(restored.physicsEnabled).toBe(true);
     expect(restored.objects[0].physicsEnabled).toBe(true);
     expect(restored.objects[0].material.preset).toBe('glass');
+    expect(restored.objects[0].material.wireframe).toBe(false);
+    expect(restored.cameraState?.projectionMode).toBe('perspective');
+  });
+
+  it('defaults missing legacy projection mode to perspective', () => {
+    const scene = sanitizePersistedThirdScene({
+      version: 1,
+      skyboxId: 'default',
+      physicsEnabled: false,
+      objects: [
+        {
+          id: 'obj_cam',
+          name: 'Camera Legacy Cube',
+          type: 'cube',
+          transform: {
+            position: { x: 0, y: 0.5, z: 0 },
+            rotation: { x: 0, y: 0, z: 0 },
+            scale: { x: 1, y: 1, z: 1 },
+          },
+          material: {
+            color: '#00ff66',
+            wireframe: false,
+            preset: 'matte',
+          },
+          physicsEnabled: false,
+          animationPreset: 'none',
+        },
+      ],
+      cameraState: {
+        position: { x: 3, y: 3, z: 3 },
+        target: { x: 0, y: 0.5, z: 0 },
+      },
+    });
+
+    expect(scene).not.toBeNull();
+    if (!scene) return;
+    expect(scene.cameraState?.projectionMode).toBe('perspective');
   });
 });
