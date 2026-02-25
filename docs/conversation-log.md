@@ -1015,3 +1015,19 @@ Why it matters:
 Risks / Notes:
 - Mobile dock responsiveness regression discovered after subsystem dock expansion remains unresolved in this pass by user request.
 - TODO: schedule a focused mobile/tablet dock compaction hardening pass for subsystem buttons + overflow behavior.
+
+---
+
+## Entry 56 - Dock Simplification: Remove ME Per-Window Task Buttons
+
+Summary:
+- Removed ME per-window task buttons from the global dock/task strip.
+- Kept ME window access via the new `ME.EXE` right-click window ladder popup.
+- Kept left-click ME dock behavior unchanged.
+
+Why it matters:
+- Reduces dock clutter now that ME window targeting is available through the ladder.
+- Preserves fast access to ME windows without duplicating dock affordances.
+
+Risks / Notes:
+- Mobile dock responsiveness TODO remains open and unchanged in this pass.

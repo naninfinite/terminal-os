@@ -109,16 +109,11 @@ const StatusBar: React.FC = () => {
     () => [...windows].sort((a, b) => a.zIndex - b.zIndex),
     [windows]
   );
-  const scopedWindows = useMemo(
-    () => (scope === 'meos' ? orderedWindows : []),
-    [orderedWindows, scope]
-  );
   const meWindowsLadder = useMemo(
     () => [...orderedWindows].sort((a, b) => b.zIndex - a.zIndex),
     [orderedWindows]
   );
   const meWindowCount = orderedWindows.length;
-  const showCollapsedMeTask = scope !== 'meos' && meWindowCount > 0;
   const thirdNotificationCount = 0;
   const youDockState = useMemo(
     () => deriveYouDockState({ draftBody, messages, lastSeenAt: youLastSeenAt }),
@@ -350,28 +345,6 @@ const StatusBar: React.FC = () => {
         >
           {formatGenericDockLabel('CONNECT.EXE', connectNotificationCount)}
         </button>
-        {showCollapsedMeTask ? (
-          <button
-            type="button"
-            className={styles.taskBtn}
-            onClick={openMeFullscreen}
-            onContextMenu={openMeDockWindowLadder}
-            title={`Open ME.EXE (${meWindowCount} window${meWindowCount === 1 ? '' : 's'})`}
-          >
-            {`ME.EXE (${meWindowCount})`}
-          </button>
-        ) : null}
-        {scopedWindows.map((win) => (
-          <button
-            key={win.id}
-            type="button"
-            className={`${styles.taskBtn} ${win.minimized ? styles.taskBtnMinimized : ''}`.trim()}
-            onClick={() => restoreWindow(win.id)}
-            title={win.title}
-          >
-            {win.title}
-          </button>
-        ))}
       </div>
       {meDockMenuAnchor ? (
         <div
