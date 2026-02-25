@@ -1,7 +1,7 @@
 # Terminal-OS Conversation Log
 
 Purpose: running summary of user/assistant decisions and direction.
-Updated: 2026-02-24
+Updated: 2026-02-25
 
 ---
 
@@ -952,3 +952,25 @@ Why it matters:
 Risks / Notes:
 - This pass is layout/chrome hardening only; no public API/type changes were introduced.
 - Manual viewport matrix checks remain required in-browser even though automated tests/build pass.
+
+---
+
+## Entry 53 - Session-Only YOU Dock Indicator (Status Bar)
+
+Summary:
+- Added an always-visible `YOU.EXE` task-strip item in the status bar.
+- Implemented session-only indicator rules:
+  - draft only: `YOU.EXE (•)`,
+  - unread only: `YOU.EXE (N)`,
+  - draft + unread: `YOU.EXE (N)` plus dot indicator.
+- Added local `youLastSeenAt` tracking in status-bar runtime only (no localStorage/sessionStorage badge persistence).
+- Added pure helper logic + unit tests for deterministic label/count/dot derivation.
+
+Why it matters:
+- Keeps `YOU.EXE` presence visible in shell navigation, even while users work elsewhere.
+- Gives low-noise signal for active draft and new messages without backend/API changes.
+- Preserves existing ME task-strip behavior while extending the strip with a YOU-focused entry.
+
+Risks / Notes:
+- Badge state intentionally resets on refresh (session-only by decision).
+- Unread resets when `YOU` is focused/open, including fullscreen.
