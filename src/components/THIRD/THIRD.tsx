@@ -42,6 +42,12 @@ const RIGHT_CLICK_OPEN_TOLERANCE_PX = 6;
 const MIN_CAMERA_DISTANCE = 1.2;
 const ORTHOGRAPHIC_FRUSTUM_HEIGHT = 11;
 const MATERIAL_PRESETS: ReadonlyArray<ThirdMaterialPreset> = ['matte', 'gloss', 'glass', 'neon'];
+const PRIMITIVE_MENU_OPTIONS: ReadonlyArray<{ type: ThirdPrimitiveType; label: string }> = [
+  { type: 'cube', label: 'CUBE' },
+  { type: 'sphere', label: 'SPHERE' },
+  { type: 'cylinder', label: 'CYLINDER' },
+  { type: 'plane', label: 'PLANE' },
+];
 const MATERIAL_SWATCHES: ReadonlyArray<string> = [
   '#00ff66',
   '#0f8f63',
@@ -447,6 +453,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const focusedInspectorFieldsRef = useRef(new Set<InspectorFieldKey>());
   const rightClickCandidateRef = useRef<RightClickCandidate | null>(null);
   const viewportMenuRef = useRef<HTMLDivElement | null>(null);
+  const addObjectMenuRef = useRef<HTMLDivElement | null>(null);
   const projectionModeRef = useRef<ThirdProjectionMode>(cameraState.projectionMode);
 
   const selectedObject = useMemo(
@@ -460,6 +467,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   );
   const [viewportMenu, setViewportMenu] = useState<ViewportMenuState | null>(null);
   const [hierarchyExpanded, setHierarchyExpanded] = useState(true);
+  const [addObjectMenuOpen, setAddObjectMenuOpen] = useState(false);
   const isEditMode = editorMode === 'edit';
   const viewportMenuGroups = useMemo(() => buildThirdViewportMenu({
     mode: editorMode,
@@ -1772,6 +1780,31 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     };
   }, [closeViewportMenu, viewportMenu]);
 
+  useEffect(() => {
+    if (!addObjectMenuOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (target && addObjectMenuRef.current?.contains(target)) return;
+      setAddObjectMenuOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setAddObjectMenuOpen(false);
+      }
+    };
+    window.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [addObjectMenuOpen]);
+
+  useEffect(() => {
+    if (inspectorVisible && inspectorSections.objects) return;
+    setAddObjectMenuOpen(false);
+  }, [inspectorSections.objects, inspectorVisible]);
+
   return (
     <div
       ref={rootRef}
@@ -2030,12 +2063,34 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
             {inspectorSections.objects ? (
               <div className={styles.inspectorSectionBody}>
                 <div className={styles.toolRow}>
-                  <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('cube')}>+ CUBE</button>
-                  <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('sphere')}>+ SPHERE</button>
-                  <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('cylinder')}>+ CYLINDER</button>
-                  <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('plane')}>+ PLANE</button>
-                </div>
-                <div className={styles.toolRow}>
+                  <div ref={addObjectMenuRef} className={styles.addObjectMenu}>
+                    <button
+                      type="button"
+                      className={`${styles.toolBtn} ${addObjectMenuOpen ? styles.toolBtnActive : ''}`.trim()}
+                      onClick={() => setAddObjectMenuOpen((prev) => !prev)}
+                      aria-expanded={addObjectMenuOpen}
+                      aria-haspopup="menu"
+                    >
+                      ADD OBJECT
+                    </button>
+                    {addObjectMenuOpen ? (
+                      <div className={styles.addObjectDropdown} role="menu" aria-label="Add primitive object">
+                        {PRIMITIVE_MENU_OPTIONS.map((option) => (
+                          <button
+                            key={option.type}
+                            type="button"
+                            className={styles.addObjectOption}
+                            onClick={() => {
+                              addPrimitive(option.type);
+                              setAddObjectMenuOpen(false);
+                            }}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
                   <button type="button" className={styles.toolBtn} onClick={duplicateSelected} disabled={!selectionId}>DUP</button>
                   <button type="button" className={styles.toolBtn} onClick={deleteSelected} disabled={!selectionId}>DEL</button>
                 </div>

@@ -213,6 +213,43 @@
   gap: 4px;
 }
 
+.addObjectMenu {
+  position: relative;
+}
+
+.addObjectDropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  min-width: 132px;
+  border: $border-thin solid var(--ui-accent);
+  background: rgb(0 0 0 / 0.92);
+  box-shadow: var(--ui-shadow-focus);
+  display: grid;
+  z-index: 2;
+}
+
+.addObjectOption {
+  border: 0;
+  border-bottom: $border-thin solid rgb(15 143 99 / 25%);
+  background: transparent;
+  color: var(--ui-accent);
+  text-align: left;
+  padding: 4px 8px;
+  font-size: $font-xs;
+  letter-spacing: 0.04em;
+}
+
+.addObjectOption:last-child {
+  border-bottom: 0;
+}
+
+.addObjectOption:hover,
+.addObjectOption:focus-visible {
+  background: rgb(15 143 99 / 20%);
+  outline: none;
+}
+
 .inlineStatus {
   border: $border-thin solid rgb(15 143 99 / 35%);
   color: var(--ui-accent);
@@ -511,6 +548,7 @@
   .inspectorInput,
   .viewportMenuGroupBtn,
   .viewportMenuItem,
+  .addObjectOption,
   .inlineStatus,
   .objectPhysicsBtn,
   .inspectorRevealBtn {
