@@ -877,6 +877,52 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     toggleSnap,
   ]);
 
+  const syncEntryBodyFromMeshWorld = useCallback((entry: RuntimeObjectEntry) => {
+    const worldPosition = new THREE.Vector3();
+    const worldQuaternion = new THREE.Quaternion();
+    entry.mesh.updateMatrixWorld(true);
+    entry.mesh.getWorldPosition(worldPosition);
+    entry.mesh.getWorldQuaternion(worldQuaternion);
+    entry.body.position.set(worldPosition.x, worldPosition.y, worldPosition.z);
+    entry.body.quaternion.set(worldQuaternion.x, worldQuaternion.y, worldQuaternion.z, worldQuaternion.w);
+    entry.body.velocity.set(0, 0, 0);
+    entry.body.angularVelocity.set(0, 0, 0);
+  }, []);
+
+  const syncEntryBaseFromBodyWorld = useCallback((entry: RuntimeObjectEntry) => {
+    const worldPosition = new THREE.Vector3(
+      entry.body.position.x,
+      entry.body.position.y,
+      entry.body.position.z
+    );
+    const worldQuaternion = new THREE.Quaternion(
+      entry.body.quaternion.x,
+      entry.body.quaternion.y,
+      entry.body.quaternion.z,
+      entry.body.quaternion.w
+    );
+    const parentQuaternion = new THREE.Quaternion();
+    const localQuaternion = new THREE.Quaternion();
+
+    const meshParent = entry.mesh.parent;
+    if (meshParent) {
+      meshParent.updateMatrixWorld(true);
+      entry.mesh.position.copy(worldPosition);
+      meshParent.worldToLocal(entry.mesh.position);
+      meshParent.getWorldQuaternion(parentQuaternion);
+      localQuaternion.copy(parentQuaternion).invert();
+      localQuaternion.multiply(worldQuaternion);
+      entry.mesh.quaternion.copy(localQuaternion);
+    } else {
+      entry.mesh.position.copy(worldPosition);
+      entry.mesh.quaternion.copy(worldQuaternion);
+    }
+
+    entry.base.position.copy(entry.mesh.position);
+    entry.base.rotation.set(entry.mesh.rotation.x, entry.mesh.rotation.y, entry.mesh.rotation.z);
+    entry.mesh.scale.copy(entry.base.scale);
+  }, []);
+
   useEffect(() => {
     modeRef.current = editorMode;
   }, [editorMode]);
@@ -1077,6 +1123,11 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const raycaster = new THREE.Raycaster();
     const pointerNdc = new THREE.Vector2();
     const clock = new THREE.Clock();
+    const meshWorldPosition = new THREE.Vector3();
+    const meshWorldQuaternion = new THREE.Quaternion();
+    const bodyWorldQuaternion = new THREE.Quaternion();
+    const parentWorldQuaternion = new THREE.Quaternion();
+    const localQuaternion = new THREE.Quaternion();
     let physicsAccumulator = 0;
     let elapsedSeconds = 0;
 
@@ -1086,10 +1137,17 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       entry.mesh.scale.copy(entry.base.scale);
     };
 
-    const syncBodyFromBase = (entry: RuntimeObjectEntry) => {
-      const { position, rotation } = entry.base;
-      entry.body.position.set(position.x, position.y, position.z);
-      entry.body.quaternion.setFromEuler(rotation.x, rotation.y, rotation.z, 'XYZ');
+    const syncBodyFromMeshWorld = (entry: RuntimeObjectEntry) => {
+      entry.mesh.updateMatrixWorld(true);
+      entry.mesh.getWorldPosition(meshWorldPosition);
+      entry.mesh.getWorldQuaternion(meshWorldQuaternion);
+      entry.body.position.set(meshWorldPosition.x, meshWorldPosition.y, meshWorldPosition.z);
+      entry.body.quaternion.set(
+        meshWorldQuaternion.x,
+        meshWorldQuaternion.y,
+        meshWorldQuaternion.z,
+        meshWorldQuaternion.w
+      );
       entry.body.velocity.set(0, 0, 0);
       entry.body.angularVelocity.set(0, 0, 0);
     };
@@ -1098,18 +1156,34 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       entry.base.position.copy(entry.mesh.position);
       entry.base.rotation.set(entry.mesh.rotation.x, entry.mesh.rotation.y, entry.mesh.rotation.z);
       entry.base.scale.copy(entry.mesh.scale);
-      syncBodyFromBase(entry);
+      syncBodyFromMeshWorld(entry);
     };
 
     const syncBaseFromBody = (entry: RuntimeObjectEntry) => {
-      entry.base.position.set(entry.body.position.x, entry.body.position.y, entry.body.position.z);
-      entry.base.rotation.setFromQuaternion(new THREE.Quaternion(
+      meshWorldPosition.set(entry.body.position.x, entry.body.position.y, entry.body.position.z);
+      bodyWorldQuaternion.set(
         entry.body.quaternion.x,
         entry.body.quaternion.y,
         entry.body.quaternion.z,
         entry.body.quaternion.w
-      ), 'XYZ');
-      entry.mesh.position.copy(entry.base.position);
+      );
+
+      const meshParent = entry.mesh.parent;
+      if (meshParent && meshParent !== scene) {
+        meshParent.updateMatrixWorld(true);
+        entry.mesh.position.copy(meshWorldPosition);
+        meshParent.worldToLocal(entry.mesh.position);
+        meshParent.getWorldQuaternion(parentWorldQuaternion);
+        localQuaternion.copy(parentWorldQuaternion).invert();
+        localQuaternion.multiply(bodyWorldQuaternion);
+        entry.mesh.quaternion.copy(localQuaternion);
+      } else {
+        entry.mesh.position.copy(meshWorldPosition);
+        entry.mesh.quaternion.copy(bodyWorldQuaternion);
+      }
+
+      entry.base.position.copy(entry.mesh.position);
+      entry.base.rotation.set(entry.mesh.rotation.x, entry.mesh.rotation.y, entry.mesh.rotation.z);
       entry.mesh.rotation.set(entry.base.rotation.x, entry.base.rotation.y, entry.base.rotation.z);
       entry.mesh.scale.copy(entry.base.scale);
     };
@@ -1122,17 +1196,23 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
     const applyBodySimulationMode = (entry: RuntimeObjectEntry) => {
       if (shouldObjectSimulate(entry.id)) {
-        entry.body.type = CANNON.Body.DYNAMIC;
-        entry.body.mass = 1;
-        entry.body.updateMassProperties();
-        entry.body.wakeUp();
+        if (entry.body.type !== CANNON.Body.DYNAMIC) {
+          syncMeshFromBase(entry);
+          syncBodyFromMeshWorld(entry);
+          entry.body.type = CANNON.Body.DYNAMIC;
+          entry.body.mass = 1;
+          entry.body.updateMassProperties();
+          entry.body.wakeUp();
+        }
         return;
       }
-      entry.body.type = CANNON.Body.STATIC;
-      entry.body.mass = 0;
-      entry.body.updateMassProperties();
-      syncBodyFromBase(entry);
       syncMeshFromBase(entry);
+      if (entry.body.type !== CANNON.Body.STATIC) {
+        entry.body.type = CANNON.Body.STATIC;
+        entry.body.mass = 0;
+        entry.body.updateMassProperties();
+      }
+      syncBodyFromMeshWorld(entry);
     };
 
     const commitRuntimeTransforms = (ids?: Set<string>) => {
@@ -1467,8 +1547,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
           const updatedIds = new Set<string>();
           engine.entries.forEach((entry) => {
             if (!shouldObjectSimulate(entry.id)) {
-              syncBodyFromBase(entry);
               syncMeshFromBase(entry);
+              syncBodyFromMeshWorld(entry);
               return;
             }
             syncBaseFromBody(entry);
@@ -1484,8 +1564,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
           physicsAccumulator = 0;
           physicsCommitAccumulatorRef.current = 0;
           engine.entries.forEach((entry) => {
-            syncBodyFromBase(entry);
             syncMeshFromBase(entry);
+            syncBodyFromMeshWorld(entry);
           });
         }
       } else {
@@ -1529,7 +1609,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         engine.world.removeBody(entry.body);
         entry.geometry.dispose();
         entry.material.dispose();
-        scene.remove(entry.mesh);
+        entry.mesh.removeFromParent();
       });
       engine.entries.clear();
 
@@ -1567,6 +1647,29 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     if (!engine) return;
     const palette = getThirdPalette(resolvedTheme);
     const nextIds = new Set(objects.map((object) => object.id));
+    const meshWorldPosition = new THREE.Vector3();
+    const meshWorldQuaternion = new THREE.Quaternion();
+
+    const syncMeshFromBase = (entry: RuntimeObjectEntry) => {
+      entry.mesh.position.copy(entry.base.position);
+      entry.mesh.rotation.set(entry.base.rotation.x, entry.base.rotation.y, entry.base.rotation.z);
+      entry.mesh.scale.copy(entry.base.scale);
+    };
+
+    const syncBodyFromMeshWorld = (entry: RuntimeObjectEntry) => {
+      entry.mesh.updateMatrixWorld(true);
+      entry.mesh.getWorldPosition(meshWorldPosition);
+      entry.mesh.getWorldQuaternion(meshWorldQuaternion);
+      entry.body.position.set(meshWorldPosition.x, meshWorldPosition.y, meshWorldPosition.z);
+      entry.body.quaternion.set(
+        meshWorldQuaternion.x,
+        meshWorldQuaternion.y,
+        meshWorldQuaternion.z,
+        meshWorldQuaternion.w
+      );
+      entry.body.velocity.set(0, 0, 0);
+      entry.body.angularVelocity.set(0, 0, 0);
+    };
 
     engine.entries.forEach((entry, id) => {
       if (nextIds.has(id)) return;
@@ -1574,7 +1677,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         engine.transform.detach();
       }
       engine.world.removeBody(entry.body);
-      engine.scene.remove(entry.mesh);
+      entry.mesh.removeFromParent();
       entry.geometry.dispose();
       entry.material.dispose();
       engine.entries.delete(id);
@@ -1681,38 +1784,53 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         object.transform.scale.y,
         object.transform.scale.z
       );
+    });
+
+    objects.forEach((object) => {
+      const entry = engine.entries.get(object.id);
+      if (!entry) return;
+      const parentEntry = object.parentId ? engine.entries.get(object.parentId) : null;
+      const desiredParent = parentEntry && parentEntry.id !== object.id
+        ? parentEntry.mesh
+        : engine.scene;
+      if (entry.mesh.parent !== desiredParent) {
+        desiredParent.add(entry.mesh);
+      }
+    });
+
+    objects.forEach((object) => {
+      const entry = engine.entries.get(object.id);
+      if (!entry) return;
+      const shouldSimulate = modeRef.current === 'play' && physicsEnabled && object.physicsEnabled;
+      if (!shouldSimulate) {
+        syncMeshFromBase(entry);
+      }
+    });
+    engine.scene.updateMatrixWorld(true);
+
+    objects.forEach((object) => {
+      const entry = engine.entries.get(object.id);
+      if (!entry) return;
 
       const shouldSimulate = modeRef.current === 'play' && physicsEnabled && object.physicsEnabled;
       if (shouldSimulate) {
-        existing.body.type = CANNON.Body.DYNAMIC;
-        existing.body.mass = 1;
-        existing.body.updateMassProperties();
-        existing.body.wakeUp();
-      } else {
-        existing.body.type = CANNON.Body.STATIC;
-        existing.body.mass = 0;
-        existing.body.updateMassProperties();
-        existing.mesh.position.copy(existing.base.position);
-        existing.mesh.rotation.set(
-          existing.base.rotation.x,
-          existing.base.rotation.y,
-          existing.base.rotation.z
-        );
-        existing.mesh.scale.copy(existing.base.scale);
-        existing.body.position.set(
-          existing.base.position.x,
-          existing.base.position.y,
-          existing.base.position.z
-        );
-        existing.body.quaternion.setFromEuler(
-          existing.base.rotation.x,
-          existing.base.rotation.y,
-          existing.base.rotation.z,
-          'XYZ'
-        );
-        existing.body.velocity.set(0, 0, 0);
-        existing.body.angularVelocity.set(0, 0, 0);
+        if (entry.body.type !== CANNON.Body.DYNAMIC) {
+          syncMeshFromBase(entry);
+          syncBodyFromMeshWorld(entry);
+          entry.body.type = CANNON.Body.DYNAMIC;
+          entry.body.mass = 1;
+          entry.body.updateMassProperties();
+          entry.body.wakeUp();
+        }
+        return;
       }
+
+      if (entry.body.type !== CANNON.Body.STATIC) {
+        entry.body.type = CANNON.Body.STATIC;
+        entry.body.mass = 0;
+        entry.body.updateMassProperties();
+      }
+      syncBodyFromMeshWorld(entry);
     });
   }, [objects, physicsEnabled, resolvedTheme]);
 
@@ -1766,28 +1884,16 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     releaseGrabRef.current();
     const updatedIds = new Set<string>();
     engine.entries.forEach((entry) => {
-      entry.base.position.set(entry.body.position.x, entry.body.position.y, entry.body.position.z);
-      entry.base.rotation.setFromQuaternion(new THREE.Quaternion(
-        entry.body.quaternion.x,
-        entry.body.quaternion.y,
-        entry.body.quaternion.z,
-        entry.body.quaternion.w
-      ), 'XYZ');
-      entry.mesh.position.copy(entry.base.position);
-      entry.mesh.rotation.set(entry.base.rotation.x, entry.base.rotation.y, entry.base.rotation.z);
-      entry.mesh.scale.copy(entry.base.scale);
+      syncEntryBaseFromBodyWorld(entry);
       entry.body.type = CANNON.Body.STATIC;
       entry.body.mass = 0;
       entry.body.updateMassProperties();
-      entry.body.position.set(entry.base.position.x, entry.base.position.y, entry.base.position.z);
-      entry.body.quaternion.setFromEuler(entry.base.rotation.x, entry.base.rotation.y, entry.base.rotation.z, 'XYZ');
-      entry.body.velocity.set(0, 0, 0);
-      entry.body.angularVelocity.set(0, 0, 0);
+      syncEntryBodyFromMeshWorld(entry);
       updatedIds.add(entry.id);
     });
     commitRuntimeRef.current(updatedIds);
     forceSave();
-  }, [editorMode, forceSave, physicsEnabled]);
+  }, [editorMode, forceSave, physicsEnabled, syncEntryBaseFromBodyWorld, syncEntryBodyFromMeshWorld]);
 
   useEffect(() => {
     const engine = engineRef.current;
@@ -1802,27 +1908,15 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     releaseGrabRef.current(activeGrab.pointerId);
     const entry = engine.entries.get(activeGrab.objectId);
     if (entry) {
-      entry.base.position.set(entry.body.position.x, entry.body.position.y, entry.body.position.z);
-      entry.base.rotation.setFromQuaternion(new THREE.Quaternion(
-        entry.body.quaternion.x,
-        entry.body.quaternion.y,
-        entry.body.quaternion.z,
-        entry.body.quaternion.w
-      ), 'XYZ');
-      entry.mesh.position.copy(entry.base.position);
-      entry.mesh.rotation.set(entry.base.rotation.x, entry.base.rotation.y, entry.base.rotation.z);
-      entry.mesh.scale.copy(entry.base.scale);
+      syncEntryBaseFromBodyWorld(entry);
       entry.body.type = CANNON.Body.STATIC;
       entry.body.mass = 0;
       entry.body.updateMassProperties();
-      entry.body.position.set(entry.base.position.x, entry.base.position.y, entry.base.position.z);
-      entry.body.quaternion.setFromEuler(entry.base.rotation.x, entry.base.rotation.y, entry.base.rotation.z, 'XYZ');
-      entry.body.velocity.set(0, 0, 0);
-      entry.body.angularVelocity.set(0, 0, 0);
+      syncEntryBodyFromMeshWorld(entry);
       commitRuntimeRef.current(new Set([activeGrab.objectId]));
       forceSave();
     }
-  }, [editorMode, forceSave, objects, physicsEnabled]);
+  }, [editorMode, forceSave, objects, physicsEnabled, syncEntryBaseFromBodyWorld, syncEntryBodyFromMeshWorld]);
 
   useEffect(() => {
     const engine = engineRef.current;
