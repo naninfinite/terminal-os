@@ -21,6 +21,10 @@ import { MeOsFullscreenLayer } from './meos/shell/MeOsFullscreenLayer';
 import { MeOsVfsProvider } from './meos/vfs/MeOsVfsProvider';
 import { YouProvider } from './you/YouProvider';
 import { YouFullscreenLayer } from './components/YOU/YouFullscreenLayer';
+import { ThirdProvider } from './third/ThirdProvider';
+import { ConnectProvider } from './connect/ConnectProvider';
+import { ThirdFullscreenLayer } from './components/THIRD/ThirdFullscreenLayer';
+import { ConnectFullscreenLayer } from './components/CONNECT/ConnectFullscreenLayer';
 
 const App: React.FC = () => {
   const [entered, setEntered] = useState(false);
@@ -105,13 +109,19 @@ const App: React.FC = () => {
         <MeOsProvider>
           <MeOsVfsProvider>
             <YouProvider>
-              <div className={shell.shell}>
-                <Scanlines />
-                <Desktop />
-                <StatusBar />
-                <YouFullscreenLayer />
-                <MeOsFullscreenLayer />
-              </div>
+              <ThirdProvider>
+                <ConnectProvider>
+                  <div className={shell.shell}>
+                    <Scanlines />
+                    <Desktop />
+                    <StatusBar />
+                    <YouFullscreenLayer />
+                    <ThirdFullscreenLayer />
+                    <ConnectFullscreenLayer />
+                    <MeOsFullscreenLayer />
+                  </div>
+                </ConnectProvider>
+              </ThirdProvider>
             </YouProvider>
           </MeOsVfsProvider>
         </MeOsProvider>

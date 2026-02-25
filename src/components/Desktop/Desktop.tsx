@@ -11,9 +11,13 @@ import THIRD from '../THIRD/THIRD';
 import CONNECT from '../CONNECT/CONNECT';
 import styles from './Desktop.module.scss';
 import { useMeOs } from '../../meos/shell/MeOsProvider';
+import { useThirdRuntime } from '../../third/ThirdProvider';
+import { useConnectRuntime } from '../../connect/ConnectProvider';
 
 const Desktop: React.FC = () => {
   const { setActiveScope } = useMeOs();
+  const { displayMode: thirdDisplayMode } = useThirdRuntime();
+  const { displayMode: connectDisplayMode } = useConnectRuntime();
 
   return (
     <div className={styles.desktop} role="main">
@@ -30,9 +34,13 @@ const Desktop: React.FC = () => {
       {/* Shared message-board panel (YOU runtime, preview mode). */}
       <Panel title="YOU.EXE" scopeId="you" bodyClassName={styles.panelBodyFlush} onActivate={() => setActiveScope('you')}><YOU /></Panel>
       {/* Canvas app needs a stretching body so WebGL can fill available height. */}
-      <Panel title="THIRD.EXE" scopeId="third" stretchBody bodyClassName={styles.panelBodyFlush} onActivate={() => setActiveScope('third')}><THIRD /></Panel>
+      <Panel title="THIRD.EXE" scopeId="third" stretchBody bodyClassName={styles.panelBodyFlush} onActivate={() => setActiveScope('third')}>
+        {thirdDisplayMode === 'fullscreen' ? null : <THIRD mode="panel" />}
+      </Panel>
       {/* ASCII banner / contact panel. */}
-      <Panel title="CONNECT.EXE" scopeId="connect" bodyClassName={styles.panelBodyFlush} onActivate={() => setActiveScope('connect')}><CONNECT /></Panel>
+      <Panel title="CONNECT.EXE" scopeId="connect" bodyClassName={styles.panelBodyFlush} onActivate={() => setActiveScope('connect')}>
+        {connectDisplayMode === 'fullscreen' ? null : <CONNECT mode="panel" />}
+      </Panel>
     </div>
   );
 };

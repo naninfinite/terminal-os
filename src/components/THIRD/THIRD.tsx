@@ -9,6 +9,7 @@ import styles from './THIRD.module.scss';
 import { useTheme } from '../../theme/ThemeProvider';
 import { RUNTIME_THEME_PALETTE } from '../../theme/runtimePalette';
 import type { ResolvedTheme } from '../../theme/types';
+import { useThirdRuntime } from '../../third/ThirdProvider';
 
 const toThreeHex = (value: string, fallback: number): number => {
   const parsed = Number.parseInt(value.replace('#', ''), 16);
@@ -23,8 +24,13 @@ const getThirdPalette = (theme: ResolvedTheme): { background: number; wireframe:
   };
 };
 
-const THIRD: React.FC = () => {
+type ThirdProps = {
+  mode?: 'panel' | 'fullscreen';
+};
+
+const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const { resolvedTheme } = useTheme();
+  const { getSnapshot, saveSnapshot } = useThirdRuntime();
   const mountRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -65,6 +71,8 @@ const THIRD: React.FC = () => {
     sphere.position.x = -1.2;
     torus.position.x = 1.2;
     group.add(cube, sphere, torus);
+    const snapshot = getSnapshot();
+    group.rotation.set(snapshot.rotationX, snapshot.rotationY, snapshot.rotationZ);
     scene.add(group);
 
     // Keep camera projection and renderer size synchronized to panel dimensions.
@@ -100,6 +108,11 @@ const THIRD: React.FC = () => {
     const onResetScene = () => {
       if (!groupRef.current) return;
       groupRef.current.rotation.set(0, 0, 0);
+      saveSnapshot({
+        rotationX: 0,
+        rotationY: 0,
+        rotationZ: 0,
+      });
       if (reduce && sceneRef.current && cameraRef.current && rendererRef.current) {
         rendererRef.current.render(sceneRef.current, cameraRef.current);
       }
@@ -111,6 +124,13 @@ const THIRD: React.FC = () => {
       cancelAnimationFrame(raf);
       obs.disconnect();
       window.removeEventListener('terminalos:third:reset-scene', onResetScene as EventListener);
+      if (groupRef.current) {
+        saveSnapshot({
+          rotationX: groupRef.current.rotation.x,
+          rotationY: groupRef.current.rotation.y,
+          rotationZ: groupRef.current.rotation.z,
+        });
+      }
       material.dispose();
       renderer.dispose();
       mount.removeChild(renderer.domElement);
@@ -119,7 +139,7 @@ const THIRD: React.FC = () => {
       groupRef.current = null;
       materialRef.current = null;
     };
-  }, []);
+  }, [getSnapshot, saveSnapshot]);
 
   useEffect(() => {
     const scene = sceneRef.current;
@@ -137,7 +157,12 @@ const THIRD: React.FC = () => {
     }
   }, [resolvedTheme]);
 
-  return <div ref={mountRef} className={styles.root} />;
+  return (
+    <div
+      ref={mountRef}
+      className={`${styles.root} ${mode === 'fullscreen' ? styles.rootFullscreen : ''}`.trim()}
+    />
+  );
 };
 
 export default THIRD;

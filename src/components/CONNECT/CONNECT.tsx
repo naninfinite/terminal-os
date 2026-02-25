@@ -27,7 +27,11 @@ export const ASCII = String.raw`
  * Renders the banner in a `<pre>` so whitespace and line breaks remain
  * deterministic, matching the intended terminal aesthetic.
  */
-const CONNECT: React.FC = () => {
+type ConnectProps = {
+  mode?: 'panel' | 'fullscreen';
+};
+
+const CONNECT: React.FC<ConnectProps> = ({ mode = 'panel' }) => {
   useEffect(() => {
     const onCopyBanner = async () => {
       try {
@@ -43,11 +47,10 @@ const CONNECT: React.FC = () => {
   }, []);
 
   return (
-    <div className={styles.root}>
+    <div className={`${styles.root} ${mode === 'fullscreen' ? styles.rootFullscreen : ''}`.trim()}>
       <pre className={styles.banner}>{ASCII}</pre>
     </div>
   );
 };
 
 export default CONNECT;
-
