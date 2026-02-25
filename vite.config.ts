@@ -5,6 +5,10 @@ export default defineConfig({
   plugins: [react()],
   server: { 
     host: true, 
+    allowedHosts: [
+      "potter-continues-rouge-prescence.trycloudflare.com",
+      "somewhere-grove-interval-boxed.trycloudflare.com",
+    ],
     port: 5173,
     strictPort: true
   },
