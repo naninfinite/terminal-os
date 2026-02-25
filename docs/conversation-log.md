@@ -1031,3 +1031,24 @@ Why it matters:
 
 Risks / Notes:
 - Mobile dock responsiveness TODO remains open and unchanged in this pass.
+
+---
+
+## Entry 57 - Unified Right-Click / Long-Press Menus (Dock + Panel Roots, V1)
+
+Summary:
+- Added a shared context-trigger interaction layer for desktop right-click plus mobile/touch long-press.
+- Applied this to subsystem dock buttons and desktop panel roots (`ME`, `YOU`, `THIRD`, `CONNECT`) without changing left-click behavior.
+- Kept `ME.EXE` dock context path ladder-first and appended safe action rows (`OPEN ME.EXE`, `OPEN FILE`, `OPEN PROJECTS`, `OPEN MEDIA`).
+- Added deterministic subsystem context-menu model helpers and unit tests.
+- Added `YOU` context status rows (draft/unread) while keeping existing session-only dock badge semantics intact.
+- Added disabled TODO placeholder rows for future `THIRD` and `CONNECT` advanced context actions.
+
+Why it matters:
+- Establishes one reusable interaction contract for context menus across desktop and touch devices.
+- Improves subsystem discoverability and quick actions without backend/API changes.
+- Keeps scope intentionally narrow for low-regression rollout (dock + panel roots only).
+
+Risks / Notes:
+- V1 intentionally excludes new global FileMan create commands (`new file` / `new folder`) from dock menus.
+- Existing dock mobile compaction responsiveness issue remains tracked as a follow-up and was not addressed in this pass.

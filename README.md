@@ -13,6 +13,7 @@ Implemented now:
 - `YOU.EXE` persistent message board backed by Supabase Edge Function.
 - Permanent subsystem dock navbar (`ME`, `YOU`, `THIRD`, `CONNECT`) with fullscreen/focus routing.
 - `YOU.EXE` dock indicator with session-only draft/unread signals.
+- Unified right-click / long-press context menus for subsystem dock + desktop panel roots (V1 scope).
 - Mobile/tablet responsiveness baseline (shared breakpoints + safe-area handling).
 - Automated baseline: Vitest suite + production build checks.
 
