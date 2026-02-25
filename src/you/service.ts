@@ -1,6 +1,6 @@
 import type { CreateYouMessageInput, ListYouMessagesInput, YouMessage } from './types';
 
-const MESSAGES_PATH = '/api/you/messages';
+const FALLBACK_BASE_URL = '/api/you';
 const DEFAULT_LIMIT = 30;
 const MAX_LIMIT = 100;
 const MAX_BODY_LENGTH = 500;
@@ -26,9 +26,14 @@ const isObject = (value: unknown): value is RawRecord => (
 
 const normalizeBaseUrl = (baseUrl?: string): string => {
   const trimmed = baseUrl?.trim() ?? '';
-  if (!trimmed) return '';
-  return trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
+  if (!trimmed) return FALLBACK_BASE_URL;
+  const withoutTrailingSlash = trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
+  return withoutTrailingSlash || FALLBACK_BASE_URL;
 };
+
+const isAbsoluteHttpUrl = (value: string): boolean => (
+  /^https?:\/\//i.test(value)
+);
 
 const sanitizeLimit = (value: unknown): number => {
   if (typeof value !== 'number' || !Number.isFinite(value)) return DEFAULT_LIMIT;
@@ -99,6 +104,11 @@ const asMessageArray = (payload: unknown): unknown[] => {
   return [];
 };
 
+const asYouApiError = (error: unknown, fallbackMessage: string, status?: number): YouApiError => {
+  if (error instanceof YouApiError) return error;
+  return new YouApiError(fallbackMessage, status);
+};
+
 export const mergeYouMessages = (existing: YouMessage[], incoming: YouMessage[]): YouMessage[] => {
   const byId = new Map<string, YouMessage>();
   for (const message of existing) {
@@ -112,11 +122,11 @@ export const mergeYouMessages = (existing: YouMessage[], incoming: YouMessage[])
 
 export const sanitizeCreateInput = (input: CreateYouMessageInput): CreateYouMessageInput => {
   const body = typeof input.body === 'string' ? input.body.trim() : '';
-  if (!body) throw new YouApiError('Message cannot be empty.');
-  if (body.length > MAX_BODY_LENGTH) throw new YouApiError(`Message must be ${MAX_BODY_LENGTH} characters or fewer.`);
+  if (!body) throw new YouApiError('Message cannot be empty.', 400);
+  if (body.length > MAX_BODY_LENGTH) throw new YouApiError(`Message must be ${MAX_BODY_LENGTH} characters or fewer.`, 400);
 
   const name = typeof input.displayName === 'string' ? input.displayName.trim() : '';
-  if (name.length > MAX_NAME_LENGTH) throw new YouApiError(`Name must be ${MAX_NAME_LENGTH} characters or fewer.`);
+  if (name.length > MAX_NAME_LENGTH) throw new YouApiError(`Name must be ${MAX_NAME_LENGTH} characters or fewer.`, 400);
 
   return {
     body,
@@ -131,44 +141,72 @@ type CreateMessageOptions = {
 export class YouApiClient {
   private baseUrl: string;
 
-  private fetcher: Fetcher;
+  private fetcher?: Fetcher;
 
   constructor(args?: { baseUrl?: string; fetcher?: Fetcher }) {
     this.baseUrl = normalizeBaseUrl(
       args?.baseUrl ?? import.meta.env.VITE_YOU_API_BASE_URL
     );
-    this.fetcher = args?.fetcher ?? fetch;
+    this.fetcher = args?.fetcher;
   }
 
-  private buildPath(path: string): string {
-    if (!this.baseUrl) return path;
+  private buildPath(path = ''): string {
+    if (!this.baseUrl) return FALLBACK_BASE_URL + path;
     return `${this.baseUrl}${path}`;
   }
 
   async listMessages(input?: ListYouMessagesInput): Promise<YouMessage[]> {
-    const params = new URLSearchParams();
-    params.set('limit', String(sanitizeLimit(input?.limit)));
+    const limit = String(sanitizeLimit(input?.limit));
     const before = normalizeIso(input?.before);
-    if (before) params.set('before', before);
+    const fetcher = this.fetcher ?? ((input: RequestInfo | URL, init?: RequestInit) => globalThis.fetch(input, init));
 
-    const url = `${this.buildPath(MESSAGES_PATH)}?${params.toString()}`;
-    const response = await this.fetcher(url, {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-      },
-    });
+    let url: string;
+    if (isAbsoluteHttpUrl(this.baseUrl)) {
+      let requestUrl: URL;
+      try {
+        requestUrl = new URL(this.baseUrl);
+      } catch (error) {
+        throw asYouApiError(error, 'Message board service URL is invalid.');
+      }
+      requestUrl.searchParams.set('limit', limit);
+      if (before) requestUrl.searchParams.set('before', before);
+      url = requestUrl.toString();
+    } else {
+      // Relative fallback path is only used when env base URL is unset/blank.
+      const params = new URLSearchParams();
+      params.set('limit', limit);
+      if (before) params.set('before', before);
+      url = `${this.buildPath()}?${params.toString()}`;
+    }
+
+    let response: Response;
+    try {
+      response = await fetcher(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+    } catch (error) {
+      throw asYouApiError(error, 'Unable to reach message board service.');
+    }
     if (!response.ok) {
       throw new YouApiError(await readErrorMessage(response), response.status);
     }
 
-    const payload = await response.json();
+    let payload: unknown;
+    try {
+      payload = await response.json();
+    } catch (error) {
+      throw asYouApiError(error, 'Message payload was invalid.', response.status);
+    }
     const parsed = asMessageArray(payload).map(parseMessage).filter((item): item is YouMessage => item != null);
     return sortNewestFirst(parsed);
   }
 
   async createMessage(input: CreateYouMessageInput, options?: CreateMessageOptions): Promise<YouMessage> {
     const payload = sanitizeCreateInput(input);
+    const fetcher = this.fetcher ?? ((input: RequestInfo | URL, init?: RequestInit) => globalThis.fetch(input, init));
     const headers: Record<string, string> = {
       Accept: 'application/json',
       'Content-Type': 'application/json',
@@ -177,16 +215,26 @@ export class YouApiClient {
       headers['x-you-client-key'] = options.clientKey;
     }
 
-    const response = await this.fetcher(this.buildPath(MESSAGES_PATH), {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
-    });
+    let response: Response;
+    try {
+      response = await fetcher(this.buildPath(), {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+    } catch (error) {
+      throw asYouApiError(error, 'Unable to reach message board service.');
+    }
     if (!response.ok) {
       throw new YouApiError(await readErrorMessage(response), response.status);
     }
 
-    const raw = await response.json();
+    let raw: unknown;
+    try {
+      raw = await response.json();
+    } catch (error) {
+      throw asYouApiError(error, 'Message payload was invalid.', response.status);
+    }
     const message = parseMessage(isObject(raw) && raw.message ? raw.message : raw);
     if (!message) {
       throw new YouApiError('Message payload was invalid.', response.status);
@@ -194,4 +242,3 @@ export class YouApiClient {
     return message;
   }
 }
-
