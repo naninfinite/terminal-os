@@ -11,7 +11,8 @@ Implemented now:
 - ME runtime foundation: windowing, focus/z-order, minimize/maximize, fullscreen layer.
 - FileMan + viewer apps inside ME (`text`, `image`, `video`, `project`).
 - `YOU.EXE` persistent message board backed by Supabase Edge Function.
-- Status bar `YOU.EXE` dock indicator (session-only draft/unread signals).
+- Permanent subsystem dock navbar (`ME`, `YOU`, `THIRD`, `CONNECT`) with fullscreen/focus routing.
+- `YOU.EXE` dock indicator with session-only draft/unread signals.
 - Mobile/tablet responsiveness baseline (shared breakpoints + safe-area handling).
 - Automated baseline: Vitest suite + production build checks.
 

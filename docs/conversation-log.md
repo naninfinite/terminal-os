@@ -974,3 +974,26 @@ Why it matters:
 Risks / Notes:
 - Badge state intentionally resets on refresh (session-only by decision).
 - Unread resets when `YOU` is focused/open, including fullscreen.
+
+---
+
+## Entry 54 - Subsystem Dock Navbar + Fullscreen Routing Matrix
+
+Summary:
+- Expanded the status-bar strip into a permanent subsystem navbar ordered as `ME.EXE`, `YOU.EXE`, `THIRD.EXE`, `CONNECT.EXE`.
+- Added deterministic dock click routing:
+  - desktop state: `ME`/`THIRD`/`CONNECT` open fullscreen, `YOU` focuses panel;
+  - fullscreen state: dock clicks switch fullscreen target, including `YOU`;
+  - same-target fullscreen clicks are no-op.
+- Preserved existing ME window task buttons after the permanent subsystem buttons.
+- Added `THIRD` and `CONNECT` runtime providers and fullscreen layers so those subsystems now support fullscreen shell routing.
+- Kept `YOU` draft/unread dock behavior unchanged.
+
+Why it matters:
+- Gives the status bar a stable pseudo-navbar role across subsystem navigation.
+- Aligns dock interactions with current desktop/fullscreen context without replacing existing ME task affordances.
+- Establishes subsystem parity infrastructure for M6 while keeping behavior deterministic and testable.
+
+Risks / Notes:
+- ME right-click window-ladder popup is intentionally deferred to a follow-up milestone.
+- `THIRD` and `CONNECT` notification counts remain future-ready but inactive (`N=0`) in this pass.
