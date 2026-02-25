@@ -77,19 +77,28 @@ export const buildSubsystemContextMenu = (args: BuildSubsystemContextMenuArgs): 
   const title = titleForScope(args.scope);
 
   switch (args.scope) {
-    case 'me':
-      // Keep ME context actions compact for now; creation/recent actions are deferred.
+    case 'me': {
+      const panelRows: SubsystemContextMenuRow[] = args.origin === 'panel'
+        ? [
+          { key: 'act_open_me_recent', kind: 'action', id: 'open_me_recent', label: 'OPEN RECENT' },
+          { key: 'div_create', kind: 'divider' },
+          { key: 'act_me_new_file', kind: 'action', id: 'me_new_file', label: 'NEW FILE' },
+          { key: 'act_me_new_folder', kind: 'action', id: 'me_new_folder', label: 'NEW FOLDER' },
+        ]
+        : [];
       return {
         title,
         rows: [
           { key: 'status_windows', kind: 'status', label: `OPEN WINDOWS: ${args.meWindowCount}` },
           { key: 'act_open_me', kind: 'action', id: 'open_me', label: openLabelForScope('me', args.origin) },
+          ...panelRows,
           { key: 'div_apps', kind: 'divider' },
           { key: 'act_open_file', kind: 'action', id: 'open_file', label: 'OPEN FILE' },
           { key: 'act_open_projects', kind: 'action', id: 'open_projects', label: 'OPEN PROJECTS' },
           { key: 'act_open_media', kind: 'action', id: 'open_media', label: 'OPEN MEDIA' },
         ],
       };
+    }
     case 'you':
       return {
         title,

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildSubsystemContextMenu } from './subsystemContextMenu';
 
 describe('subsystemContextMenu model', () => {
-  it('builds ME menu rows with safe action set', () => {
+  it('builds compact ME dock menu rows', () => {
     const model = buildSubsystemContextMenu({
       scope: 'me',
       origin: 'dock',
@@ -28,6 +28,44 @@ describe('subsystemContextMenu model', () => {
       .map((row) => row.id);
     expect(actionIds).toEqual([
       'open_me',
+      'open_file',
+      'open_projects',
+      'open_media',
+    ]);
+  });
+
+  it('builds expanded ME panel menu rows with create/recent actions', () => {
+    const model = buildSubsystemContextMenu({
+      scope: 'me',
+      origin: 'panel',
+      meWindowCount: 2,
+      youHasDraft: false,
+      youUnreadCount: 0,
+      thirdNotificationCount: 0,
+      connectNotificationCount: 0,
+    });
+
+    expect(model.rows.map((row) => row.kind)).toEqual([
+      'status',
+      'action',
+      'action',
+      'divider',
+      'action',
+      'action',
+      'divider',
+      'action',
+      'action',
+      'action',
+    ]);
+
+    const actionIds = model.rows
+      .filter((row): row is Extract<typeof row, { kind: 'action' }> => row.kind === 'action')
+      .map((row) => row.id);
+    expect(actionIds).toEqual([
+      'open_me',
+      'open_me_recent',
+      'me_new_file',
+      'me_new_folder',
       'open_file',
       'open_projects',
       'open_media',
