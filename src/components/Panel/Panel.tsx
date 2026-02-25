@@ -8,13 +8,16 @@
  */
 import React from 'react';
 import styles from './Panel.module.scss';
+import { useContextTrigger, type ContextTriggerSource } from '../shared/useContextTrigger';
+
+type PanelScopeId = 'me' | 'you' | 'third' | 'connect';
 
 export type PanelProps = {
   title: string;
   children?: React.ReactNode;
   className?: string;
   /** Scope identifier used by menu routing/focus helpers. */
-  scopeId?: 'me' | 'you' | 'third' | 'connect';
+  scopeId?: PanelScopeId;
   /** Stretch the body to fill the panel instead of centering children. */
   stretchBody?: boolean;
   /** Disable hover/focus lift animation for this panel. */
@@ -25,6 +28,14 @@ export type PanelProps = {
   bodyClassName?: string;
   /** Optional hook for notifying parent when this panel becomes active/focused. */
   onActivate?: () => void;
+  /** Optional hook for opening scope-level context menu from panel roots. */
+  onRequestContextMenu?: (args: {
+    scopeId: PanelScopeId;
+    origin: 'panel';
+    source: ContextTriggerSource;
+    x: number;
+    y: number;
+  }) => void;
 };
 
 /**
@@ -43,26 +54,50 @@ const Panel: React.FC<PanelProps> = ({
   hideHeader,
   bodyClassName,
   onActivate,
-}) => (
-  <section
-    // Class composition keeps API surface small while still allowing overrides.
-    className={`${styles.panel} ${className ?? ''} ${disableHover ? styles.noHover : ''}`.trim()}
-    aria-label={title}
-    data-panel-scope={scopeId}
-    tabIndex={0}
-    onMouseEnter={onActivate}
-    onFocusCapture={onActivate}
-    onMouseDown={onActivate}
-  >
-    <header className={`${styles.header} ${hideHeader ? styles.hiddenHeader : ''}`.trim()}>
-      [{title}]
-    </header>
-    <div
-      className={`${styles.body} ${stretchBody ? styles.bodyStretch : ''} ${bodyClassName ?? ''}`.trim()}
+  onRequestContextMenu,
+}) => {
+  const contextTrigger = useContextTrigger<HTMLElement>({
+    disabled: !scopeId || !onRequestContextMenu,
+    onOpen: ({ x, y, source }) => {
+      if (!scopeId || !onRequestContextMenu) return;
+      onRequestContextMenu({
+        scopeId,
+        origin: 'panel',
+        source,
+        x,
+        y,
+      });
+    },
+  });
+
+  return (
+    <section
+      // Class composition keeps API surface small while still allowing overrides.
+      className={`${styles.panel} ${className ?? ''} ${disableHover ? styles.noHover : ''}`.trim()}
+      aria-label={title}
+      data-panel-scope={scopeId}
+      tabIndex={0}
+      onMouseEnter={onActivate}
+      onFocusCapture={onActivate}
+      onMouseDown={onActivate}
+      onContextMenu={contextTrigger.onContextMenu}
+      onPointerDown={contextTrigger.onPointerDown}
+      onPointerMove={contextTrigger.onPointerMove}
+      onPointerUp={contextTrigger.onPointerUp}
+      onPointerCancel={contextTrigger.onPointerCancel}
+      onClickCapture={contextTrigger.onClickCapture}
+      onKeyDown={contextTrigger.onKeyDown}
     >
-      {children}
-    </div>
-  </section>
-);
+      <header className={`${styles.header} ${hideHeader ? styles.hiddenHeader : ''}`.trim()}>
+        [{title}]
+      </header>
+      <div
+        className={`${styles.body} ${stretchBody ? styles.bodyStretch : ''} ${bodyClassName ?? ''}`.trim()}
+      >
+        {children}
+      </div>
+    </section>
+  );
+};
 
 export default Panel;

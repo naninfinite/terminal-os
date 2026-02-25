@@ -3,7 +3,7 @@
  * Responsive behavior is handled in `Desktop.module.scss`; this component only
  * composes app panels and passes panel-specific layout flags.
  */
-import React from 'react';
+import React, { useCallback } from 'react';
 import Panel from '../Panel/Panel';
 import ME from '../ME/ME';
 import YOU from '../YOU/YOU';
@@ -13,11 +13,20 @@ import styles from './Desktop.module.scss';
 import { useMeOs } from '../../meos/shell/MeOsProvider';
 import { useThirdRuntime } from '../../third/ThirdProvider';
 import { useConnectRuntime } from '../../connect/ConnectProvider';
+import {
+  SUBSYSTEM_CONTEXT_MENU_EVENT,
+  type SubsystemContextMenuEventDetail,
+} from '../StatusBar/subsystemContextMenu';
 
 const Desktop: React.FC = () => {
   const { setActiveScope } = useMeOs();
   const { displayMode: thirdDisplayMode } = useThirdRuntime();
   const { displayMode: connectDisplayMode } = useConnectRuntime();
+  const requestPanelContextMenu = useCallback((detail: SubsystemContextMenuEventDetail) => {
+    window.dispatchEvent(
+      new CustomEvent<SubsystemContextMenuEventDetail>(SUBSYSTEM_CONTEXT_MENU_EVENT, { detail })
+    );
+  }, []);
 
   return (
     <div className={styles.desktop} role="main">
@@ -28,17 +37,71 @@ const Desktop: React.FC = () => {
         stretchBody
         bodyClassName={styles.panelBodyFlush}
         onActivate={() => setActiveScope(null)}
+        onRequestContextMenu={({ x, y, source }) => {
+          requestPanelContextMenu({
+            scope: 'me',
+            origin: 'panel',
+            source,
+            x,
+            y,
+          });
+        }}
       >
         <ME />
       </Panel>
       {/* Shared message-board panel (YOU runtime, preview mode). */}
-      <Panel title="YOU.EXE" scopeId="you" bodyClassName={styles.panelBodyFlush} onActivate={() => setActiveScope('you')}><YOU /></Panel>
+      <Panel
+        title="YOU.EXE"
+        scopeId="you"
+        bodyClassName={styles.panelBodyFlush}
+        onActivate={() => setActiveScope('you')}
+        onRequestContextMenu={({ x, y, source }) => {
+          requestPanelContextMenu({
+            scope: 'you',
+            origin: 'panel',
+            source,
+            x,
+            y,
+          });
+        }}
+      >
+        <YOU />
+      </Panel>
       {/* Canvas app needs a stretching body so WebGL can fill available height. */}
-      <Panel title="THIRD.EXE" scopeId="third" stretchBody bodyClassName={styles.panelBodyFlush} onActivate={() => setActiveScope('third')}>
+      <Panel
+        title="THIRD.EXE"
+        scopeId="third"
+        stretchBody
+        bodyClassName={styles.panelBodyFlush}
+        onActivate={() => setActiveScope('third')}
+        onRequestContextMenu={({ x, y, source }) => {
+          requestPanelContextMenu({
+            scope: 'third',
+            origin: 'panel',
+            source,
+            x,
+            y,
+          });
+        }}
+      >
         {thirdDisplayMode === 'fullscreen' ? null : <THIRD mode="panel" />}
       </Panel>
       {/* ASCII banner / contact panel. */}
-      <Panel title="CONNECT.EXE" scopeId="connect" bodyClassName={styles.panelBodyFlush} onActivate={() => setActiveScope('connect')}>
+      <Panel
+        title="CONNECT.EXE"
+        scopeId="connect"
+        bodyClassName={styles.panelBodyFlush}
+        onActivate={() => setActiveScope('connect')}
+        onRequestContextMenu={({ x, y, source }) => {
+          requestPanelContextMenu({
+            scope: 'connect',
+            origin: 'panel',
+            source,
+            x,
+            y,
+          });
+        }}
+      >
         {connectDisplayMode === 'fullscreen' ? null : <CONNECT mode="panel" />}
       </Panel>
     </div>

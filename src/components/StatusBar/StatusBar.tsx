@@ -2,7 +2,7 @@
  * `StatusBar` is the bottom dock/taskbar shown on the desktop view.
  * It renders system status text and a live-updating local clock.
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styles from './StatusBar.module.scss';
 import { useMeOs } from '../../meos/shell/MeOsProvider';
 import { MENU_SCOPE_CONFIG, resolveMenuScope, type MenuCommandId } from '../../meos/menu/scopes';
@@ -10,6 +10,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { useYouBoard } from '../../you/YouProvider';
 import { useThirdRuntime } from '../../third/ThirdProvider';
 import { useConnectRuntime } from '../../connect/ConnectProvider';
+import { useContextTrigger } from '../shared/useContextTrigger';
 import { nextLocationCaseMode } from './locationCase';
 import { getNextThemeMode, getThemeToggleLabel } from './themeMenu';
 import { deriveYouDockState } from './youDock';
@@ -19,8 +20,30 @@ import {
   getDockClickIntent,
   type SubsystemScope,
 } from './subsystemDock';
+import {
+  SUBSYSTEM_CONTEXT_MENU_EVENT,
+  buildSubsystemContextMenu,
+  type SubsystemContextMenuActionId,
+  type SubsystemContextMenuEventDetail,
+  type SubsystemContextMenuRow,
+} from './subsystemContextMenu';
 
 type DesktopPanelScope = 'you' | 'third' | 'connect' | 'me';
+type SubsystemMenuState = SubsystemContextMenuEventDetail & { left: number; top: number };
+
+const CONTEXT_MENU_WIDTH_PX = 288;
+const CONTEXT_MENU_HEIGHT_PX = 320;
+const CONTEXT_MENU_MARGIN_PX = 8;
+const DOCK_CONTEXT_MENU_GAP_PX = 8;
+const SUBSYSTEM_CONTEXT_MENU_OFFSET_X_PX = 8;
+const SUBSYSTEM_CONTEXT_MENU_OFFSET_Y_PX = 32;
+
+const FULLSCREEN_LAYER_LABEL_BY_SCOPE: Record<SubsystemScope, string> = {
+  me: 'ME.EXE fullscreen',
+  you: 'YOU.EXE fullscreen',
+  third: 'THIRD.EXE fullscreen',
+  connect: 'CONNECT.EXE fullscreen',
+};
 
 const getLocationLabel = (): string => {
   const timezone = new Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -63,7 +86,7 @@ const StatusBar: React.FC = () => {
   const { resolvedTheme, setThemeMode, setTextCaseMode, textCaseMode } = useTheme();
   const [now, setNow] = useState<Date>(() => new Date());
   const [menuOpen, setMenuOpen] = useState(false);
-  const [meDockMenuAnchor, setMeDockMenuAnchor] = useState<{ left: number; top: number } | null>(null);
+  const [subsystemMenu, setSubsystemMenu] = useState<SubsystemMenuState | null>(null);
   const [youLastSeenAt, setYouLastSeenAt] = useState<string | null>(null);
 
   // Keep the clock fresh while desktop shell is mounted.
@@ -84,15 +107,18 @@ const StatusBar: React.FC = () => {
   }, [menuOpen]);
 
   useEffect(() => {
-    if (!meDockMenuAnchor) return;
-    const onDocClick = () => setMeDockMenuAnchor(null);
+    if (!subsystemMenu) return;
+    const onDocPointerDown = () => setSubsystemMenu(null);
     const onEsc = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setMeDockMenuAnchor(null);
+      if (event.key === 'Escape') setSubsystemMenu(null);
     };
-    window.addEventListener('click', onDocClick, { once: true });
+    window.addEventListener('pointerdown', onDocPointerDown, { once: true });
     window.addEventListener('keydown', onEsc);
-    return () => window.removeEventListener('keydown', onEsc);
-  }, [meDockMenuAnchor]);
+    return () => {
+      window.removeEventListener('pointerdown', onDocPointerDown);
+      window.removeEventListener('keydown', onEsc);
+    };
+  }, [subsystemMenu]);
 
   // Explicit formatter keeps output stable (HH:mm:ss, 24h).
   const timeString = new Intl.DateTimeFormat(undefined, {
@@ -128,6 +154,78 @@ const StatusBar: React.FC = () => {
   );
   const anyFullscreenOpen = activeFullscreenScope != null;
   const inYouContext = activeScope === 'you' || youDisplayMode === 'fullscreen';
+  const resolveSubsystemAnchorPoint = useCallback((detail: SubsystemContextMenuEventDetail): { x: number; y: number } => {
+    if (detail.origin === 'dock') {
+      const dockTarget = document.querySelector(`[data-subsystem-dock="${detail.scope}"]`);
+      if (dockTarget instanceof HTMLElement) {
+        const dockRect = dockTarget.getBoundingClientRect();
+        return {
+          x: dockRect.left,
+          y: dockRect.top - DOCK_CONTEXT_MENU_GAP_PX,
+        };
+      }
+    }
+
+    const fullscreenTarget = document.querySelector(
+      `[aria-label="${FULLSCREEN_LAYER_LABEL_BY_SCOPE[detail.scope]}"]`
+    );
+    const panelTarget = document.querySelector(`[data-panel-scope="${detail.scope}"]`);
+    const target = fullscreenTarget instanceof HTMLElement
+      ? fullscreenTarget
+      : panelTarget;
+
+    if (!(target instanceof HTMLElement)) {
+      return { x: detail.x, y: detail.y };
+    }
+
+    const rect = target.getBoundingClientRect();
+
+    return {
+      x: rect.left + SUBSYSTEM_CONTEXT_MENU_OFFSET_X_PX,
+      y: rect.top + SUBSYSTEM_CONTEXT_MENU_OFFSET_Y_PX,
+    };
+  }, []);
+  const clampContextMenuAnchor = useCallback((args: {
+    x: number;
+    y: number;
+    origin: SubsystemContextMenuEventDetail['origin'];
+  }): { left: number; top: number } => {
+    const x = args.x;
+    const y = args.y;
+    const maxLeft = Math.max(
+      CONTEXT_MENU_MARGIN_PX,
+      window.innerWidth - CONTEXT_MENU_WIDTH_PX - CONTEXT_MENU_MARGIN_PX
+    );
+    const minTop = args.origin === 'dock'
+      ? CONTEXT_MENU_MARGIN_PX + CONTEXT_MENU_HEIGHT_PX
+      : CONTEXT_MENU_MARGIN_PX;
+    const maxTop = args.origin === 'dock'
+      ? window.innerHeight - CONTEXT_MENU_MARGIN_PX
+      : Math.max(
+        CONTEXT_MENU_MARGIN_PX,
+        window.innerHeight - CONTEXT_MENU_HEIGHT_PX - CONTEXT_MENU_MARGIN_PX
+      );
+
+    return {
+      left: Math.max(CONTEXT_MENU_MARGIN_PX, Math.min(x, maxLeft)),
+      top: Math.max(minTop, Math.min(y, maxTop)),
+    };
+  }, []);
+
+  const openSubsystemContextMenu = useCallback((detail: SubsystemContextMenuEventDetail) => {
+    setMenuOpen(false);
+    const anchorPoint = resolveSubsystemAnchorPoint(detail);
+    const anchor = clampContextMenuAnchor({
+      x: anchorPoint.x,
+      y: anchorPoint.y,
+      origin: detail.origin,
+    });
+    setSubsystemMenu({
+      ...detail,
+      left: anchor.left,
+      top: anchor.top,
+    });
+  }, [clampContextMenuAnchor, resolveSubsystemAnchorPoint]);
 
   const openAppForScope = (appId: Parameters<typeof openApp>[0]) => {
     if (scope === 'desktop') openMeFullscreen();
@@ -172,7 +270,7 @@ const StatusBar: React.FC = () => {
   };
 
   const onSubsystemDockClick = (targetScope: SubsystemScope) => {
-    setMeDockMenuAnchor(null);
+    setSubsystemMenu(null);
     const intent = getDockClickIntent({
       targetScope,
       anyFullscreenOpen,
@@ -191,19 +289,8 @@ const StatusBar: React.FC = () => {
     openSubsystemFullscreen(targetScope);
   };
 
-  const openMeDockWindowLadder = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setMenuOpen(false);
-    const rect = event.currentTarget.getBoundingClientRect();
-    setMeDockMenuAnchor({
-      left: Math.max(8, Math.min(rect.left, window.innerWidth - 288)),
-      top: rect.top - 8,
-    });
-  };
-
   const focusMeWindowFromDock = (windowId: string) => {
-    setMeDockMenuAnchor(null);
+    setSubsystemMenu(null);
     if (activeFullscreenScope !== 'me') {
       closeAllFullscreen();
       openMeFullscreen();
@@ -225,6 +312,19 @@ const StatusBar: React.FC = () => {
       prev === youDockState.latestMessageAt ? prev : youDockState.latestMessageAt
     ));
   }, [inYouContext, youDockState.latestMessageAt]);
+
+  useEffect(() => {
+    const onSubsystemContextMenu = (event: Event) => {
+      const detail = (event as CustomEvent<SubsystemContextMenuEventDetail>).detail;
+      if (!detail) return;
+      openSubsystemContextMenu(detail);
+    };
+
+    window.addEventListener(SUBSYSTEM_CONTEXT_MENU_EVENT, onSubsystemContextMenu as EventListener);
+    return () => {
+      window.removeEventListener(SUBSYSTEM_CONTEXT_MENU_EVENT, onSubsystemContextMenu as EventListener);
+    };
+  }, [openSubsystemContextMenu]);
 
   const runMenuAction = (commandId: MenuCommandId) => {
     switch (commandId) {
@@ -274,6 +374,124 @@ const StatusBar: React.FC = () => {
     setMenuOpen(false);
   };
 
+  const runSubsystemContextAction = (actionId: SubsystemContextMenuActionId) => {
+    switch (actionId) {
+      case 'open_me':
+        onSubsystemDockClick('me');
+        return;
+      case 'open_you':
+        onSubsystemDockClick('you');
+        return;
+      case 'open_third':
+        onSubsystemDockClick('third');
+        return;
+      case 'open_connect':
+        onSubsystemDockClick('connect');
+        return;
+      case 'open_file':
+        openAppForScope('file');
+        break;
+      case 'open_projects':
+        openAppForScope('projects');
+        break;
+      case 'open_media':
+        openAppForScope('media');
+        break;
+      case 'you_save_input':
+        dispatchShellEvent('terminalos:you:save-input');
+        break;
+      case 'you_clear_input':
+        dispatchShellEvent('terminalos:you:clear-input');
+        break;
+      case 'third_reset_scene':
+        dispatchShellEvent('terminalos:third:reset-scene');
+        break;
+      case 'connect_copy_banner':
+        dispatchShellEvent('terminalos:connect:copy-banner');
+        break;
+      case 'todo_third_new_shape':
+      case 'todo_connect_notifications':
+      default:
+        break;
+    }
+    setSubsystemMenu(null);
+  };
+
+  const subsystemMenuModel = useMemo(() => {
+    if (!subsystemMenu) return null;
+    return buildSubsystemContextMenu({
+      scope: subsystemMenu.scope,
+      origin: subsystemMenu.origin,
+      meWindowCount: meWindowCount,
+      youHasDraft: youDockState.hasDraft,
+      youUnreadCount: youDockState.unreadCount,
+      thirdNotificationCount,
+      connectNotificationCount,
+    });
+  }, [
+    connectNotificationCount,
+    meWindowCount,
+    subsystemMenu,
+    thirdNotificationCount,
+    youDockState.hasDraft,
+    youDockState.unreadCount,
+  ]);
+
+  const meMenuActionRows = useMemo(() => (
+    subsystemMenuModel?.rows.filter(
+      (row): row is Extract<SubsystemContextMenuRow, { kind: 'action' }> => row.kind === 'action'
+    ) ?? []
+  ), [subsystemMenuModel]);
+
+  const meDockContextTrigger = useContextTrigger<HTMLButtonElement>({
+    suppressInteractiveTargets: false,
+    onOpen: ({ x, y, source }) => {
+      openSubsystemContextMenu({
+        scope: 'me',
+        origin: 'dock',
+        source,
+        x,
+        y,
+      });
+    },
+  });
+  const youDockContextTrigger = useContextTrigger<HTMLButtonElement>({
+    suppressInteractiveTargets: false,
+    onOpen: ({ x, y, source }) => {
+      openSubsystemContextMenu({
+        scope: 'you',
+        origin: 'dock',
+        source,
+        x,
+        y,
+      });
+    },
+  });
+  const thirdDockContextTrigger = useContextTrigger<HTMLButtonElement>({
+    suppressInteractiveTargets: false,
+    onOpen: ({ x, y, source }) => {
+      openSubsystemContextMenu({
+        scope: 'third',
+        origin: 'dock',
+        source,
+        x,
+        y,
+      });
+    },
+  });
+  const connectDockContextTrigger = useContextTrigger<HTMLButtonElement>({
+    suppressInteractiveTargets: false,
+    onOpen: ({ x, y, source }) => {
+      openSubsystemContextMenu({
+        scope: 'connect',
+        origin: 'dock',
+        source,
+        x,
+        y,
+      });
+    },
+  });
+
   return (
     <div className={styles.statusBar} role="contentinfo" aria-label="System status bar">
       <div className={styles.left}>
@@ -315,44 +533,77 @@ const StatusBar: React.FC = () => {
         <button
           type="button"
           className={`${styles.taskBtn} ${styles.taskBtnSubsystem}`.trim()}
+          data-subsystem-dock="me"
           onClick={() => onSubsystemDockClick('me')}
-          onContextMenu={openMeDockWindowLadder}
           title="Open ME.EXE"
+          onContextMenu={meDockContextTrigger.onContextMenu}
+          onPointerDown={meDockContextTrigger.onPointerDown}
+          onPointerMove={meDockContextTrigger.onPointerMove}
+          onPointerUp={meDockContextTrigger.onPointerUp}
+          onPointerCancel={meDockContextTrigger.onPointerCancel}
+          onClickCapture={meDockContextTrigger.onClickCapture}
+          onKeyDown={meDockContextTrigger.onKeyDown}
         >
           {formatMeDockLabel(meWindowCount)}
         </button>
         <button
           type="button"
           className={`${styles.taskBtn} ${styles.taskBtnSubsystem} ${styles.taskBtnYou} ${youDockState.showCombinedDot ? styles.taskBtnYouCombined : ''}`.trim()}
+          data-subsystem-dock="you"
           onClick={() => onSubsystemDockClick('you')}
           title="Focus or open YOU.EXE"
+          onContextMenu={youDockContextTrigger.onContextMenu}
+          onPointerDown={youDockContextTrigger.onPointerDown}
+          onPointerMove={youDockContextTrigger.onPointerMove}
+          onPointerUp={youDockContextTrigger.onPointerUp}
+          onPointerCancel={youDockContextTrigger.onPointerCancel}
+          onClickCapture={youDockContextTrigger.onClickCapture}
+          onKeyDown={youDockContextTrigger.onKeyDown}
         >
           {youDockState.label}
         </button>
         <button
           type="button"
           className={`${styles.taskBtn} ${styles.taskBtnSubsystem}`.trim()}
+          data-subsystem-dock="third"
           onClick={() => onSubsystemDockClick('third')}
           title="Open THIRD.EXE"
+          onContextMenu={thirdDockContextTrigger.onContextMenu}
+          onPointerDown={thirdDockContextTrigger.onPointerDown}
+          onPointerMove={thirdDockContextTrigger.onPointerMove}
+          onPointerUp={thirdDockContextTrigger.onPointerUp}
+          onPointerCancel={thirdDockContextTrigger.onPointerCancel}
+          onClickCapture={thirdDockContextTrigger.onClickCapture}
+          onKeyDown={thirdDockContextTrigger.onKeyDown}
         >
           {formatGenericDockLabel('THIRD.EXE', thirdNotificationCount)}
         </button>
         <button
           type="button"
           className={`${styles.taskBtn} ${styles.taskBtnSubsystem}`.trim()}
+          data-subsystem-dock="connect"
           onClick={() => onSubsystemDockClick('connect')}
           title="Open CONNECT.EXE"
+          onContextMenu={connectDockContextTrigger.onContextMenu}
+          onPointerDown={connectDockContextTrigger.onPointerDown}
+          onPointerMove={connectDockContextTrigger.onPointerMove}
+          onPointerUp={connectDockContextTrigger.onPointerUp}
+          onPointerCancel={connectDockContextTrigger.onPointerCancel}
+          onClickCapture={connectDockContextTrigger.onClickCapture}
+          onKeyDown={connectDockContextTrigger.onKeyDown}
         >
           {formatGenericDockLabel('CONNECT.EXE', connectNotificationCount)}
         </button>
       </div>
-      {meDockMenuAnchor ? (
+      {subsystemMenu?.scope === 'me' ? (
         <div
-          className={styles.meDockMenu}
+          className={`${styles.meDockMenu} ${subsystemMenu.origin === 'dock' ? styles.subsystemMenuDockAnchored : ''}`.trim()}
           role="menu"
           aria-label="ME.EXE windows"
-          style={{ left: meDockMenuAnchor.left, top: meDockMenuAnchor.top }}
+          style={{ left: subsystemMenu.left, top: subsystemMenu.top }}
           onClick={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onContextMenu={(event) => event.preventDefault()}
         >
           <p className={styles.meDockMenuTitle}>ME WINDOWS</p>
           {meWindowsLadder.length === 0 ? (
@@ -370,6 +621,56 @@ const StatusBar: React.FC = () => {
               </button>
             ))
           )}
+          {meMenuActionRows.length > 0 ? (
+            <div className={styles.subsystemMenuDivider} />
+          ) : null}
+          {meMenuActionRows.map((row) => (
+            <button
+              key={row.key}
+              type="button"
+              className={styles.meDockMenuAction}
+              onClick={() => runSubsystemContextAction(row.id)}
+              disabled={row.disabled}
+            >
+              {row.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {subsystemMenu && subsystemMenu.scope !== 'me' && subsystemMenuModel ? (
+        <div
+          className={`${styles.subsystemMenu} ${subsystemMenu.origin === 'dock' ? styles.subsystemMenuDockAnchored : ''}`.trim()}
+          role="menu"
+          aria-label={`${subsystemMenuModel.title} context menu`}
+          style={{ left: subsystemMenu.left, top: subsystemMenu.top }}
+          onClick={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onContextMenu={(event) => event.preventDefault()}
+        >
+          <p className={styles.subsystemMenuTitle}>{subsystemMenuModel.title}</p>
+          {subsystemMenuModel.rows.map((row) => {
+            if (row.kind === 'divider') {
+              return <div key={row.key} className={styles.subsystemMenuDivider} aria-hidden="true" />;
+            }
+            if (row.kind === 'status') {
+              return (
+                <p key={row.key} className={styles.subsystemMenuStatus}>
+                  {row.label}
+                </p>
+              );
+            }
+            return (
+              <button
+                key={row.key}
+                type="button"
+                className={`${styles.subsystemMenuItem} ${row.disabled ? styles.subsystemMenuItemDisabled : ''}`.trim()}
+                onClick={() => runSubsystemContextAction(row.id)}
+                disabled={row.disabled}
+              >
+                {row.label}
+              </button>
+            );
+          })}
         </div>
       ) : null}
       <div className={styles.right} aria-live="polite" aria-atomic="true">

@@ -116,7 +116,6 @@
 
 .meDockMenu {
   position: fixed;
-  transform: translateY(-100%);
   width: min(280px, calc(100dvw - 16px));
   max-width: calc(100dvw - 16px);
   border: $border;
@@ -146,10 +145,68 @@
   text-overflow: ellipsis;
 }
 
+.meDockMenuAction {
+  border: 1px solid var(--ui-border-soft);
+  background: var(--ui-fill-soft);
+  color: $phosphor-green;
+  text-align: left;
+  padding: 4px 8px;
+  font-size: $font-xs;
+}
+
 .meDockMenuEmpty {
   margin: 0;
   font-size: $font-xs;
   color: var(--ui-text-muted);
+}
+
+.subsystemMenu {
+  position: fixed;
+  width: min(280px, calc(100dvw - 16px));
+  max-width: calc(100dvw - 16px);
+  border: $border;
+  background: $bg-black;
+  padding: 6px;
+  display: grid;
+  gap: 4px;
+  z-index: 24;
+  box-sizing: border-box;
+}
+
+.subsystemMenuDockAnchored {
+  transform: translateY(-100%);
+}
+
+.subsystemMenuTitle {
+  margin: 0 0 4px;
+  font-size: $font-xs;
+  opacity: 0.85;
+}
+
+.subsystemMenuStatus {
+  margin: 0;
+  font-size: $font-xs;
+  color: var(--ui-text-muted);
+}
+
+.subsystemMenuDivider {
+  height: 1px;
+  background: var(--ui-border-soft);
+  opacity: 0.8;
+  margin: 2px 0;
+}
+
+.subsystemMenuItem {
+  border: 1px solid var(--ui-border-soft);
+  background: var(--ui-fill-soft);
+  color: $phosphor-green;
+  text-align: left;
+  padding: 4px 8px;
+  font-size: $font-xs;
+}
+
+.subsystemMenuItemDisabled {
+  opacity: 0.6;
 }
 
 .tasks {
