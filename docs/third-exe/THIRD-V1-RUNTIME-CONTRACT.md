@@ -12,6 +12,7 @@ V1 includes:
 - primitive spawn/select/delete/duplicate,
 - `PLAY` and `EDIT` modes,
 - edit gizmo with snap,
+- Unity-style transform inspector (transform-only),
 - play-mode physics grab/drag,
 - global + per-object physics opt-in controls,
 - per-object material selector (`matte`, `gloss`, `glass`, `neon`) + color,
@@ -78,6 +79,9 @@ On first load / destructive reset:
 
 - Physics stepping is paused.
 - `TransformControls` enabled for selected object.
+- Right-docked inspector shows selected object transform (`Position` / `Rotation` / `Scale`).
+- Rotation fields display degrees and convert to radians in runtime state.
+- Valid numeric inspector edits apply live while typing.
 - Hotkeys:
   - `W` move,
   - `E` rotate,
@@ -163,6 +167,7 @@ Subsystem right-click menu (`THIRD`):
 Added/updated tests:
 - `src/third/state.test.ts`
 - `src/third/storage.test.ts`
+- `src/components/THIRD/transformInspector.test.ts`
 - `src/components/StatusBar/subsystemContextMenu.test.ts`
 - `src/meos/menu/scopes.test.ts`
 

@@ -1,9 +1,16 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import styles from './THIRD.module.scss';
+import {
+  clampInspectorScale,
+  degToRad,
+  formatInspectorNumber,
+  parseInspectorNumber,
+  radToDeg,
+} from './transformInspector';
 import { useTheme } from '../../theme/ThemeProvider';
 import { RUNTIME_THEME_PALETTE } from '../../theme/runtimePalette';
 import type { ResolvedTheme } from '../../theme/types';
@@ -30,6 +37,13 @@ const MATERIAL_SWATCHES: ReadonlyArray<string> = [
   '#ffd166',
   '#ff7eb6',
 ];
+const INSPECTOR_GROUPS = ['position', 'rotation', 'scale'] as const;
+const INSPECTOR_AXES = ['x', 'y', 'z'] as const;
+
+type InspectorGroup = typeof INSPECTOR_GROUPS[number];
+type InspectorAxis = typeof INSPECTOR_AXES[number];
+type InspectorFieldKey = `${InspectorGroup}.${InspectorAxis}`;
+type InspectorDraft = Record<InspectorFieldKey, string>;
 
 const toThreeHex = (value: string, fallback: number): number => {
   const parsed = Number.parseInt(value.replace('#', ''), 16);
@@ -196,6 +210,69 @@ const applyPresetAnimation = (
   }
 };
 
+const toInspectorFieldKey = (group: InspectorGroup, axis: InspectorAxis): InspectorFieldKey => (
+  `${group}.${axis}` as InspectorFieldKey
+);
+
+const inspectorValueFromObject = (
+  object: ThirdSceneObject,
+  group: InspectorGroup,
+  axis: InspectorAxis
+): number => {
+  switch (group) {
+    case 'rotation':
+      return radToDeg(object.transform.rotation[axis]);
+    case 'scale':
+      return object.transform.scale[axis];
+    case 'position':
+    default:
+      return object.transform.position[axis];
+  }
+};
+
+const createInspectorDraft = (object: ThirdSceneObject | null): InspectorDraft => {
+  const draft = {} as InspectorDraft;
+  INSPECTOR_GROUPS.forEach((group) => {
+    INSPECTOR_AXES.forEach((axis) => {
+      const key = toInspectorFieldKey(group, axis);
+      draft[key] = object
+        ? formatInspectorNumber(inspectorValueFromObject(object, group, axis))
+        : '';
+    });
+  });
+  return draft;
+};
+
+const inspectorStepByGroup = (group: InspectorGroup): string => {
+  switch (group) {
+    case 'rotation':
+      return '1';
+    case 'scale':
+      return '0.1';
+    case 'position':
+    default:
+      return '0.1';
+  }
+};
+
+const inspectorGroupLabel = (group: InspectorGroup): string => {
+  switch (group) {
+    case 'rotation':
+      return 'Rotation';
+    case 'scale':
+      return 'Scale';
+    case 'position':
+    default:
+      return 'Position';
+  }
+};
+
+const withAxisValue = (value: ThirdVec3, axis: InspectorAxis, next: number): ThirdVec3 => ({
+  x: axis === 'x' ? next : value.x,
+  y: axis === 'y' ? next : value.y,
+  z: axis === 'z' ? next : value.z,
+});
+
 type ThirdProps = {
   mode?: 'panel' | 'fullscreen';
 };
@@ -262,6 +339,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     setObjectMaterialPreset,
     setObjectMaterialColor,
     setObjectAnimationPreset,
+    updateObjectTransform,
     applyObjectTransforms,
     setCameraState,
     forceSave,
@@ -282,15 +360,110 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const physicsCommitAccumulatorRef = useRef(0);
   const releaseGrabRef = useRef<(pointerId?: number) => void>(() => {});
   const commitRuntimeRef = useRef<(ids?: Set<string>) => void>(() => {});
+  const selectedObjectRef = useRef<ThirdSceneObject | null>(null);
+  const transformSyncRafRef = useRef<number | null>(null);
+  const pendingTransformPatchRef = useRef<ThirdTransformPatch | null>(null);
+  const focusedInspectorFieldsRef = useRef(new Set<InspectorFieldKey>());
 
   const selectedObject = useMemo(
     () => objects.find((object) => object.id === selectionId) ?? null,
     [objects, selectionId]
   );
+  const [inspectorDraft, setInspectorDraft] = useState<InspectorDraft>(() => createInspectorDraft(selectedObject));
+
+  const setInspectorFieldDraft = useCallback((key: InspectorFieldKey, value: string) => {
+    setInspectorDraft((prev) => (prev[key] === value ? prev : { ...prev, [key]: value }));
+  }, []);
+
+  const applyInspectorNumericValue = useCallback((
+    group: InspectorGroup,
+    axis: InspectorAxis,
+    nextValue: number
+  ) => {
+    const selected = selectedObjectRef.current;
+    if (!selected) return;
+
+    if (group === 'position') {
+      updateObjectTransform({
+        id: selected.id,
+        position: withAxisValue(selected.transform.position, axis, nextValue),
+      });
+      return;
+    }
+
+    if (group === 'rotation') {
+      updateObjectTransform({
+        id: selected.id,
+        rotation: withAxisValue(selected.transform.rotation, axis, nextValue),
+      });
+      return;
+    }
+
+    updateObjectTransform({
+      id: selected.id,
+      scale: withAxisValue(selected.transform.scale, axis, clampInspectorScale(nextValue)),
+    });
+  }, [updateObjectTransform]);
+
+  const onInspectorFieldChange = useCallback((
+    group: InspectorGroup,
+    axis: InspectorAxis,
+    raw: string
+  ) => {
+    const key = toInspectorFieldKey(group, axis);
+    setInspectorFieldDraft(key, raw);
+    const parsed = parseInspectorNumber(raw);
+    if (parsed == null) return;
+    if (group === 'rotation') {
+      applyInspectorNumericValue(group, axis, degToRad(parsed));
+      return;
+    }
+    applyInspectorNumericValue(group, axis, parsed);
+  }, [applyInspectorNumericValue, setInspectorFieldDraft]);
+
+  const onInspectorFieldFocus = useCallback((group: InspectorGroup, axis: InspectorAxis) => {
+    focusedInspectorFieldsRef.current.add(toInspectorFieldKey(group, axis));
+  }, []);
+
+  const onInspectorFieldBlur = useCallback((group: InspectorGroup, axis: InspectorAxis) => {
+    const key = toInspectorFieldKey(group, axis);
+    focusedInspectorFieldsRef.current.delete(key);
+
+    const selected = selectedObjectRef.current;
+    if (!selected) {
+      setInspectorFieldDraft(key, '');
+      return;
+    }
+
+    const raw = inspectorDraft[key] ?? '';
+    const parsed = parseInspectorNumber(raw);
+    if (parsed == null) {
+      setInspectorFieldDraft(key, formatInspectorNumber(inspectorValueFromObject(selected, group, axis)));
+      return;
+    }
+
+    const normalized = group === 'rotation'
+      ? parsed
+      : group === 'scale'
+        ? clampInspectorScale(parsed)
+        : parsed;
+
+    setInspectorFieldDraft(key, formatInspectorNumber(normalized));
+
+    if (group === 'rotation') {
+      applyInspectorNumericValue(group, axis, degToRad(normalized));
+      return;
+    }
+    applyInspectorNumericValue(group, axis, normalized);
+  }, [applyInspectorNumericValue, inspectorDraft, setInspectorFieldDraft]);
 
   useEffect(() => {
     modeRef.current = editorMode;
   }, [editorMode]);
+
+  useEffect(() => {
+    selectedObjectRef.current = selectedObject;
+  }, [selectedObject]);
 
   useEffect(() => {
     physicsEnabledRef.current = physicsEnabled;
@@ -303,6 +476,26 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   useEffect(() => {
     selectionIdRef.current = selectionId;
   }, [selectionId]);
+
+  useEffect(() => {
+    const nextDraft = createInspectorDraft(selectedObject);
+    setInspectorDraft((prev) => {
+      let changed = false;
+      const merged = { ...prev };
+
+      INSPECTOR_GROUPS.forEach((group) => {
+        INSPECTOR_AXES.forEach((axis) => {
+          const key = toInspectorFieldKey(group, axis);
+          if (selectedObject && focusedInspectorFieldsRef.current.has(key)) return;
+          if (merged[key] === nextDraft[key]) return;
+          merged[key] = nextDraft[key];
+          changed = true;
+        });
+      });
+
+      return changed ? merged : prev;
+    });
+  }, [selectedObject]);
 
   useEffect(() => {
     transformModeRef.current = transformMode;
@@ -622,6 +815,20 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       const selected = engine.entries.get(selectedId);
       if (!selected) return;
       syncBaseFromMesh(selected);
+      pendingTransformPatchRef.current = {
+        id: selected.id,
+        position: vec3FromThree(selected.base.position),
+        rotation: vec3FromEuler(selected.base.rotation),
+        scale: vec3FromThree(selected.base.scale),
+      };
+
+      if (transformSyncRafRef.current != null) return;
+      transformSyncRafRef.current = window.requestAnimationFrame(() => {
+        transformSyncRafRef.current = null;
+        const patch = pendingTransformPatchRef.current;
+        pendingTransformPatchRef.current = null;
+        if (patch) updateObjectTransform(patch);
+      });
     };
 
     const onTransformMouseUp = () => {
@@ -788,6 +995,11 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         window.clearTimeout(cameraSaveTimerRef.current);
         cameraSaveTimerRef.current = null;
       }
+      if (transformSyncRafRef.current != null) {
+        window.cancelAnimationFrame(transformSyncRafRef.current);
+        transformSyncRafRef.current = null;
+      }
+      pendingTransformPatchRef.current = null;
 
       transform.removeEventListener('dragging-changed', onTransformDragToggle);
       transform.removeEventListener('objectChange', onTransformObjectChange);
@@ -1311,6 +1523,49 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
           ))}
         </div>
       </div>
+
+      {editorMode === 'edit' ? (
+        <aside className={styles.inspector} aria-label="THIRD inspector">
+          <header className={styles.inspectorHeader}>
+            <p className={styles.inspectorTitle}>INSPECTOR</p>
+            <p className={styles.inspectorObjectName}>{selectedObject?.name ?? 'NO SELECTION'}</p>
+          </header>
+
+          <section className={styles.inspectorSection} aria-labelledby="third-transform-heading">
+            <h3 id="third-transform-heading" className={styles.inspectorSectionTitle}>TRANSFORM</h3>
+            {selectedObject ? (
+              <div className={styles.inspectorGrid}>
+                {INSPECTOR_GROUPS.map((group) => (
+                  <div key={group} className={styles.inspectorVectorRow}>
+                    <span className={styles.inspectorVectorLabel}>{inspectorGroupLabel(group)}</span>
+                    {INSPECTOR_AXES.map((axis) => {
+                      const fieldKey = toInspectorFieldKey(group, axis);
+                      return (
+                        <label key={fieldKey} className={styles.inspectorAxisField}>
+                          <span className={styles.inspectorAxisToken}>{axis.toUpperCase()}</span>
+                          <input
+                            type="number"
+                            className={styles.inspectorInput}
+                            step={inspectorStepByGroup(group)}
+                            value={inspectorDraft[fieldKey] ?? ''}
+                            inputMode="decimal"
+                            onFocus={() => onInspectorFieldFocus(group, axis)}
+                            onChange={(event) => onInspectorFieldChange(group, axis, event.target.value)}
+                            onBlur={() => onInspectorFieldBlur(group, axis)}
+                            aria-label={`${inspectorGroupLabel(group)} ${axis.toUpperCase()}`}
+                          />
+                        </label>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className={styles.inspectorEmpty}>SELECT AN OBJECT TO EDIT TRANSFORM.</p>
+            )}
+          </section>
+        </aside>
+      ) : null}
     </div>
   );
 };

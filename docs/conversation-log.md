@@ -1166,3 +1166,33 @@ Why it matters:
 Risks / Notes:
 - Material presets are intentionally lightweight profiles and may be tuned further during inspector work.
 - Lighting values are calibrated for current THIRD scene defaults and may need adjustment if skybox/lighting systems expand.
+
+---
+
+## Entry 61 - THIRD.EXE Transform Inspector Pass (Unity-Style, Transform-Only)
+
+Summary:
+- Added a right-docked transform inspector in `EDIT` mode for the selected object.
+- Inspector includes grouped vector fields for:
+  - `Position` (X/Y/Z),
+  - `Rotation` (X/Y/Z, degrees in UI),
+  - `Scale` (X/Y/Z, clamped to minimum).
+- Added live typing behavior:
+  - valid numeric values update runtime transform immediately,
+  - invalid/partial input remains local draft until blur/reset.
+- Added gizmo-to-inspector synchronization improvements:
+  - transform gizmo `objectChange` now pushes runtime transform updates continuously with `requestAnimationFrame` throttling,
+  - existing mouse-up save path remains intact.
+- Added transform inspector helper utilities and unit tests for:
+  - degree/radian conversion,
+  - numeric parsing,
+  - scale clamping,
+  - stable formatting.
+
+Why it matters:
+- Introduces a familiar editor workflow comparable to Unity/Blender/Godot transform panels.
+- Keeps gizmo and numeric editing fully synchronized without forcing users into one interaction path.
+
+Risks / Notes:
+- Inspector is intentionally transform-only in this pass (no hierarchy/tag/layer/prefab concepts).
+- Undo/redo is still out of scope and remains a follow-up concern for heavy numeric editing sessions.

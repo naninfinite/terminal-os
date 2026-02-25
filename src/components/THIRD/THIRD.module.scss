@@ -46,6 +46,111 @@
   pointer-events: none;
 }
 
+.hud[data-mode='edit'] {
+  max-width: min(340px, max(160px, calc(100% - 356px)));
+}
+
+.inspector {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: min(340px, calc(100% - 16px));
+  max-height: calc(100% - 16px);
+  overflow: auto;
+  display: grid;
+  gap: 6px;
+  z-index: 2;
+  pointer-events: auto;
+  border: $border-thin solid var(--ui-accent);
+  background: rgb(0 0 0 / 0.8);
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+.inspectorHeader {
+  display: grid;
+  gap: 3px;
+}
+
+.inspectorTitle {
+  margin: 0;
+  font-size: $font-xs;
+  letter-spacing: 0.08em;
+  color: var(--ui-accent);
+}
+
+.inspectorObjectName {
+  margin: 0;
+  font-size: $font-xs;
+  letter-spacing: 0.04em;
+  color: var(--ui-accent);
+}
+
+.inspectorSection {
+  border: $border-thin solid var(--ui-accent);
+  padding: 6px;
+  display: grid;
+  gap: 6px;
+}
+
+.inspectorSectionTitle {
+  margin: 0;
+  font-size: $font-xs;
+  letter-spacing: 0.06em;
+  color: var(--ui-accent);
+}
+
+.inspectorGrid {
+  display: grid;
+  gap: 4px;
+}
+
+.inspectorVectorRow {
+  display: grid;
+  grid-template-columns: 64px repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 4px;
+}
+
+.inspectorVectorLabel {
+  font-size: $font-xs;
+  color: var(--ui-accent);
+  letter-spacing: 0.03em;
+}
+
+.inspectorAxisField {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr);
+  align-items: center;
+  gap: 3px;
+}
+
+.inspectorAxisToken {
+  font-size: $font-xs;
+  color: var(--ui-accent);
+  letter-spacing: 0.02em;
+}
+
+.inspectorInput {
+  border: $border-thin solid var(--ui-accent);
+  background: rgb(0 0 0 / 0.72);
+  color: var(--ui-accent);
+  font-size: $font-xs;
+  padding: 2px 4px;
+  min-width: 0;
+}
+
+.inspectorInput:focus-visible {
+  outline: 1px solid var(--ui-accent);
+  outline-offset: 0;
+}
+
+.inspectorEmpty {
+  margin: 0;
+  font-size: $font-xs;
+  color: var(--ui-text-muted);
+}
+
 .toolbar,
 .editTools,
 .animationTools,
@@ -240,11 +345,43 @@
     gap: 4px;
   }
 
+  .hud[data-mode='edit'] {
+    max-width: calc(100% - 12px);
+  }
+
+  .inspector {
+    top: auto;
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+    width: auto;
+    max-height: min(48%, 250px);
+  }
+
   .toolBtn,
   .objectItem,
-  .materialColorLabel {
+  .materialColorLabel,
+  .inspectorInput {
     font-size: 9px;
     padding: 2px 5px;
+  }
+
+  .inspectorTitle,
+  .inspectorObjectName,
+  .inspectorSectionTitle,
+  .inspectorVectorLabel,
+  .inspectorAxisToken,
+  .inspectorEmpty {
+    font-size: 9px;
+  }
+
+  .inspectorVectorRow {
+    grid-template-columns: 52px repeat(3, minmax(0, 1fr));
+  }
+
+  .inspectorAxisField {
+    grid-template-columns: 9px minmax(0, 1fr);
+    gap: 2px;
   }
 
   .objectList {
