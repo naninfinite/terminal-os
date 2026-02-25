@@ -7,8 +7,10 @@ import styles from './StatusBar.module.scss';
 import { useMeOs } from '../../meos/shell/MeOsProvider';
 import { MENU_SCOPE_CONFIG, resolveMenuScope, type MenuCommandId } from '../../meos/menu/scopes';
 import { useTheme } from '../../theme/ThemeProvider';
+import { useYouBoard } from '../../you/YouProvider';
 import { nextLocationCaseMode } from './locationCase';
 import { getNextThemeMode, getThemeToggleLabel } from './themeMenu';
+import { deriveYouDockState } from './youDock';
 
 type DesktopPanelScope = 'you' | 'third' | 'connect' | 'me';
 
@@ -30,9 +32,17 @@ const StatusBar: React.FC = () => {
     openApp,
     restoreWindow,
   } = useMeOs();
+  const {
+    messages,
+    draftBody,
+    displayMode: youDisplayMode,
+    loadingInitial: youLoadingInitial,
+    error: youError,
+  } = useYouBoard();
   const { resolvedTheme, setThemeMode, setTextCaseMode, textCaseMode } = useTheme();
   const [now, setNow] = useState<Date>(() => new Date());
   const [menuOpen, setMenuOpen] = useState(false);
+  const [youLastSeenAt, setYouLastSeenAt] = useState<string | null>(null);
 
   // Keep the clock fresh while desktop shell is mounted.
   useEffect(() => {
@@ -72,6 +82,11 @@ const StatusBar: React.FC = () => {
   );
   const meWindowCount = orderedWindows.length;
   const showCollapsedMeTask = scope !== 'meos' && meWindowCount > 0;
+  const youDockState = useMemo(
+    () => deriveYouDockState({ draftBody, messages, lastSeenAt: youLastSeenAt }),
+    [draftBody, messages, youLastSeenAt]
+  );
+  const inYouContext = activeScope === 'you' || youDisplayMode === 'fullscreen';
 
   const openAppForScope = (appId: Parameters<typeof openApp>[0]) => {
     if (scope === 'desktop') openFullscreen();
@@ -87,6 +102,27 @@ const StatusBar: React.FC = () => {
 
   const dispatchShellEvent = (eventName: string) => {
     window.dispatchEvent(new CustomEvent(eventName));
+  };
+
+  useEffect(() => {
+    if (youLoadingInitial || youError) return;
+    setYouLastSeenAt((prev) => {
+      if (prev != null) return prev;
+      return youDockState.latestMessageAt ?? new Date().toISOString();
+    });
+  }, [youDockState.latestMessageAt, youError, youLoadingInitial]);
+
+  useEffect(() => {
+    if (!inYouContext || !youDockState.latestMessageAt) return;
+    setYouLastSeenAt((prev) => (
+      prev === youDockState.latestMessageAt ? prev : youDockState.latestMessageAt
+    ));
+  }, [inYouContext, youDockState.latestMessageAt]);
+
+  const onYouDockClick = () => {
+    focusPanel('you');
+    if (!youDockState.latestMessageAt) return;
+    setYouLastSeenAt(youDockState.latestMessageAt);
   };
 
   const runMenuAction = (commandId: MenuCommandId) => {
@@ -174,7 +210,15 @@ const StatusBar: React.FC = () => {
         ) : null}
         <span>SYS: READY</span>
       </div>
-      <div className={styles.tasks} aria-label="ME.EXE windows">
+      <div className={styles.tasks} aria-label="Desktop tasks">
+        <button
+          type="button"
+          className={`${styles.taskBtn} ${styles.taskBtnYou} ${youDockState.showCombinedDot ? styles.taskBtnYouCombined : ''}`.trim()}
+          onClick={onYouDockClick}
+          title="Focus YOU.EXE panel"
+        >
+          {youDockState.label}
+        </button>
         {showCollapsedMeTask ? (
           <button
             type="button"
