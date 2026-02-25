@@ -11,6 +11,14 @@
   min-width: 0;
   border: 1px solid transparent;
   box-sizing: border-box;
+  --third-panel-bg: var(--ui-bg-elevated);
+  --third-surface-bg: var(--ui-fill-soft);
+  --third-surface-hover: var(--ui-fill-hover);
+  --third-surface-strong: var(--ui-fill-strong);
+  --third-border: var(--ui-border-soft);
+  --third-text: var(--ui-text);
+  --third-text-muted: var(--ui-text-muted);
+  --third-accent: var(--ui-accent);
 }
 
 .root:hover,
@@ -40,8 +48,8 @@
   position: absolute;
   z-index: 4;
   min-width: 138px;
-  border: $border-thin solid var(--ui-accent);
-  background: rgb(0 0 0 / 0.92);
+  border: $border-thin solid var(--third-border);
+  background: var(--third-panel-bg);
   box-shadow: var(--ui-shadow-focus);
 }
 
@@ -53,9 +61,9 @@
 .viewportMenuItem {
   width: 100%;
   border: 0;
-  border-bottom: $border-thin solid rgb(15 143 99 / 25%);
+  border-bottom: $border-thin solid var(--third-border);
   background: transparent;
-  color: var(--ui-accent);
+  color: var(--third-text);
   text-align: left;
   padding: 4px 8px;
   font-size: $font-xs;
@@ -75,7 +83,7 @@
 .viewportMenuGroupBtn:focus-visible,
 .viewportMenuItem:hover,
 .viewportMenuItem:focus-visible {
-  background: rgb(15 143 99 / 20%);
+  background: var(--third-surface-hover);
   outline: none;
 }
 
@@ -84,8 +92,8 @@
   top: 0;
   left: calc(100% + 1px);
   min-width: 196px;
-  border: $border-thin solid var(--ui-accent);
-  background: rgb(0 0 0 / 0.92);
+  border: $border-thin solid var(--third-border);
+  background: var(--third-panel-bg);
   box-shadow: var(--ui-shadow-focus);
 }
 
@@ -102,9 +110,9 @@
   top: 8px;
   right: 8px;
   z-index: 3;
-  border: $border-thin solid var(--ui-accent);
-  background: rgb(0 0 0 / 0.75);
-  color: var(--ui-accent);
+  border: $border-thin solid var(--third-border);
+  background: var(--third-panel-bg);
+  color: var(--third-text);
   font-size: $font-xs;
   letter-spacing: 0.04em;
   padding: 3px 8px;
@@ -121,8 +129,8 @@
   gap: 6px;
   z-index: 3;
   pointer-events: auto;
-  border: $border-thin solid var(--ui-accent);
-  background: rgb(0 0 0 / 0.86);
+  border: $border-thin solid var(--third-border);
+  background: var(--third-panel-bg);
   padding: 6px;
   box-sizing: border-box;
 }
@@ -145,23 +153,23 @@
   margin: 0;
   font-size: $font-xs;
   letter-spacing: 0.08em;
-  color: var(--ui-accent);
+  color: var(--third-text);
 }
 
 .inspectorObjectName {
   margin: 0;
   font-size: $font-xs;
   letter-spacing: 0.04em;
-  color: var(--ui-accent);
+  color: var(--third-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .editTag {
-  border: $border-thin solid var(--ui-accent);
-  background: rgb(0 0 0 / 0.82);
-  color: var(--ui-accent);
+  border: $border-thin solid var(--third-border);
+  background: var(--third-surface-strong);
+  color: var(--third-text);
   padding: 2px 6px;
   font-size: $font-xs;
   letter-spacing: 0.08em;
@@ -172,15 +180,15 @@
 }
 
 .inspectorSection {
-  border: $border-thin solid var(--ui-accent);
+  border: $border-thin solid var(--third-border);
   display: grid;
 }
 
 .inspectorSectionToggle {
   border: 0;
-  border-bottom: $border-thin solid rgb(15 143 99 / 25%);
+  border-bottom: $border-thin solid var(--third-border);
   background: transparent;
-  color: var(--ui-accent);
+  color: var(--third-text);
   padding: 4px 6px;
   text-align: left;
   font-size: $font-xs;
@@ -197,7 +205,7 @@
 }
 
 .inspectorSectionToggle:focus-visible {
-  outline: 1px solid var(--ui-accent);
+  outline: 1px solid var(--third-border);
   outline-offset: -1px;
 }
 
@@ -222,8 +230,8 @@
   top: calc(100% + 2px);
   left: 0;
   min-width: 132px;
-  border: $border-thin solid var(--ui-accent);
-  background: rgb(0 0 0 / 0.92);
+  border: $border-thin solid var(--third-border);
+  background: var(--third-panel-bg);
   box-shadow: var(--ui-shadow-focus);
   display: grid;
   z-index: 2;
@@ -231,9 +239,9 @@
 
 .addObjectOption {
   border: 0;
-  border-bottom: $border-thin solid rgb(15 143 99 / 25%);
+  border-bottom: $border-thin solid var(--third-border);
   background: transparent;
-  color: var(--ui-accent);
+  color: var(--third-text);
   text-align: left;
   padding: 4px 8px;
   font-size: $font-xs;
@@ -246,23 +254,23 @@
 
 .addObjectOption:hover,
 .addObjectOption:focus-visible {
-  background: rgb(15 143 99 / 20%);
+  background: var(--third-surface-hover);
   outline: none;
 }
 
 .inlineStatus {
-  border: $border-thin solid rgb(15 143 99 / 35%);
-  color: var(--ui-accent);
+  border: $border-thin solid var(--third-border);
+  color: var(--third-text-muted);
   padding: 3px 6px;
   font-size: $font-xs;
   letter-spacing: 0.04em;
-  background: rgb(0 0 0 / 0.62);
+  background: var(--third-surface-bg);
 }
 
 .toolBtn {
-  border: $border-thin solid var(--ui-accent);
-  background: rgb(0 0 0 / 0.72);
-  color: var(--ui-accent);
+  border: $border-thin solid var(--third-border);
+  background: var(--third-surface-bg);
+  color: var(--third-text);
   padding: 3px 6px;
   font-size: $font-xs;
   letter-spacing: 0.04em;
@@ -274,7 +282,9 @@
 }
 
 .toolBtnActive {
-  border-color: var(--ui-accent);
+  border-color: var(--third-accent);
+  background: var(--third-surface-strong);
+  color: var(--third-accent);
   box-shadow: var(--ui-shadow-focus);
 }
 
@@ -287,9 +297,9 @@
 }
 
 .hierarchyRoot {
-  border: $border-thin solid var(--ui-accent);
-  background: rgb(0 0 0 / 0.62);
-  color: var(--ui-accent);
+  border: $border-thin solid var(--third-border);
+  background: var(--third-surface-bg);
+  color: var(--third-text);
   text-align: left;
   padding: 3px 6px;
   font-size: $font-xs;
@@ -309,7 +319,7 @@
   display: grid;
   gap: 4px;
   padding-left: 10px;
-  border-left: $border-thin solid rgb(15 143 99 / 35%);
+  border-left: $border-thin solid var(--third-border);
 }
 
 .objectRow {
@@ -319,9 +329,9 @@
 }
 
 .objectItem {
-  border: $border-thin solid var(--ui-accent);
-  background: rgb(0 0 0 / 0.72);
-  color: var(--ui-accent);
+  border: $border-thin solid var(--third-border);
+  background: var(--third-surface-bg);
+  color: var(--third-text);
   text-align: left;
   padding: 3px 6px;
   font-size: $font-xs;
@@ -334,7 +344,9 @@
 }
 
 .objectItemActive {
-  border-color: var(--ui-accent);
+  border-color: var(--third-accent);
+  background: var(--third-surface-strong);
+  color: var(--third-accent);
   box-shadow: var(--ui-shadow-focus);
 }
 
@@ -347,9 +359,9 @@
 }
 
 .objectPhysicsBtn {
-  border: $border-thin solid var(--ui-accent);
-  background: rgb(0 0 0 / 0.72);
-  color: var(--ui-accent);
+  border: $border-thin solid var(--third-border);
+  background: var(--third-surface-bg);
+  color: var(--third-text);
   padding: 3px 6px;
   font-size: $font-xs;
   letter-spacing: 0.03em;
@@ -361,7 +373,9 @@
 }
 
 .objectPhysicsBtnActive {
-  border-color: var(--ui-accent);
+  border-color: var(--third-accent);
+  background: var(--third-surface-strong);
+  color: var(--third-accent);
   box-shadow: var(--ui-shadow-focus);
 }
 
@@ -380,7 +394,7 @@
 
 .inspectorVectorLabel {
   font-size: $font-xs;
-  color: var(--ui-accent);
+  color: var(--third-text-muted);
   letter-spacing: 0.03em;
 }
 
@@ -393,21 +407,21 @@
 
 .inspectorAxisToken {
   font-size: $font-xs;
-  color: var(--ui-accent);
+  color: var(--third-text-muted);
   letter-spacing: 0.02em;
 }
 
 .inspectorInput {
-  border: $border-thin solid var(--ui-accent);
-  background: rgb(0 0 0 / 0.72);
-  color: var(--ui-accent);
+  border: $border-thin solid var(--third-border);
+  background: var(--third-surface-bg);
+  color: var(--third-text);
   font-size: $font-xs;
   padding: 2px 4px;
   min-width: 0;
 }
 
 .inspectorInput:focus-visible {
-  outline: 1px solid var(--ui-accent);
+  outline: 1px solid var(--third-border);
   outline-offset: 0;
 }
 
@@ -429,8 +443,8 @@
 .materialSwatch {
   width: 16px;
   height: 16px;
-  border: $border-thin solid var(--ui-accent);
-  background: $bg-black;
+  border: $border-thin solid var(--third-border);
+  background: var(--ui-bg-elevated);
   padding: 0;
 }
 
@@ -443,9 +457,9 @@
 }
 
 .materialColorLabel {
-  border: $border-thin solid var(--ui-accent);
-  background: rgb(0 0 0 / 0.72);
-  color: var(--ui-accent);
+  border: $border-thin solid var(--third-border);
+  background: var(--third-surface-bg);
+  color: var(--third-text);
   padding: 2px 6px;
   font-size: $font-xs;
   letter-spacing: 0.03em;
