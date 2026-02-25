@@ -6,13 +6,11 @@ export default defineConfig({
   server: { 
     host: true, 
     allowedHosts: [
-      "potter-continues-rouge-prescence.trycloudflare.com",
-      "somewhere-grove-interval-boxed.trycloudflare.com",
+      "hansen-reaction-mug-brings.trycloudflare.com",
     ],
     port: 5173,
     strictPort: true
   },
 });
-
 
 
