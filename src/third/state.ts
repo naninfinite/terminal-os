@@ -57,8 +57,53 @@ const normalizeProjectionMode = (value: unknown): ThirdProjectionMode => (
   value === 'orthographic' ? 'orthographic' : 'perspective'
 );
 
+const normalizeParentId = (value: unknown): string | null => (
+  typeof value === 'string' && value.trim() ? value.trim() : null
+);
+
+const wouldCreateParentCycle = (
+  objects: ThirdSceneObject[],
+  id: string,
+  parentId: string
+): boolean => {
+  const objectById = new Map(objects.map((object) => [object.id, object]));
+  let currentId: string | null = parentId;
+  const visited = new Set<string>();
+
+  while (currentId) {
+    if (currentId === id) return true;
+    if (visited.has(currentId)) return true;
+    visited.add(currentId);
+    currentId = objectById.get(currentId)?.parentId ?? null;
+  }
+
+  return false;
+};
+
+const normalizeObjectHierarchy = (objects: ThirdSceneObject[]): ThirdSceneObject[] => {
+  const validIds = new Set(objects.map((object) => object.id));
+  const normalized = objects.map((object) => ({
+    ...object,
+    parentId: (
+      object.parentId
+      && validIds.has(object.parentId)
+      && object.parentId !== object.id
+    ) ? object.parentId : null,
+  }));
+
+  normalized.forEach((object) => {
+    if (!object.parentId) return;
+    if (wouldCreateParentCycle(normalized, object.id, object.parentId)) {
+      object.parentId = null;
+    }
+  });
+
+  return normalized;
+};
+
 const cloneObject = (value: ThirdSceneObject): ThirdSceneObject => ({
   ...value,
+  parentId: normalizeParentId(value.parentId),
   transform: {
     position: cloneVec3(value.transform.position),
     rotation: cloneVec3(value.transform.rotation),
@@ -136,6 +181,7 @@ export const createSceneObject = (args: {
     id: uid(),
     name: nextPrimitiveName(args.objects, args.type),
     type: args.type,
+    parentId: null,
     transform: {
       position: cloneVec3(transform.position),
       rotation: cloneVec3(transform.rotation),
@@ -220,6 +266,34 @@ export const setObjectPhysicsEnabled = (
     object.id === id ? { ...object, physicsEnabled: enabled } : object
   )),
 });
+
+export const setObjectParent = (
+  state: ThirdRuntimeState,
+  id: string,
+  parentId: string | null
+): ThirdRuntimeState => {
+  const objectById = new Map(state.objects.map((object) => [object.id, object]));
+  const current = objectById.get(id);
+  if (!current) return state;
+
+  const nextParentId = normalizeParentId(parentId);
+  if (nextParentId === id) return state;
+  if (nextParentId && !objectById.has(nextParentId)) return state;
+  if (nextParentId && wouldCreateParentCycle(state.objects, id, nextParentId)) return state;
+  if (current.parentId === nextParentId) return state;
+
+  return {
+    ...state,
+    objects: state.objects.map((object) => (
+      object.id === id
+        ? {
+          ...object,
+          parentId: nextParentId,
+        }
+        : object
+    )),
+  };
+};
 
 export const setObjectMaterialPreset = (
   state: ThirdRuntimeState,
@@ -307,7 +381,18 @@ export const addPrimitive = (
 
 export const deleteSelected = (state: ThirdRuntimeState): ThirdRuntimeState => {
   if (!state.selectionId) return state;
-  const nextObjects = state.objects.filter((object) => object.id !== state.selectionId);
+  const selected = state.objects.find((object) => object.id === state.selectionId);
+  const selectedParentId = selected?.parentId ?? null;
+  const nextObjects = state.objects
+    .filter((object) => object.id !== state.selectionId)
+    .map((object) => (
+      object.parentId === state.selectionId
+        ? {
+          ...object,
+          parentId: selectedParentId,
+        }
+        : object
+    ));
   if (nextObjects.length === state.objects.length) return state;
   return {
     ...state,
@@ -336,6 +421,7 @@ export const duplicateSelected = (state: ThirdRuntimeState): ThirdRuntimeState =
     animationPreset: selected.animationPreset,
   });
   duplicate.material = { ...selected.material };
+  duplicate.parentId = selected.parentId;
 
   return {
     ...state,
@@ -411,10 +497,13 @@ export const hydrateStateFromPersistence = (
   persisted: ThirdPersistedSceneV1 | null
 ): ThirdRuntimeState => {
   if (!persisted || persisted.objects.length === 0) return createDefaultThirdRuntimeState();
+  const hydratedObjects = normalizeObjectHierarchy(
+    persisted.objects.map(cloneObject).slice(0, THIRD_MAX_OBJECTS)
+  );
 
   return {
-    objects: persisted.objects.map(cloneObject).slice(0, THIRD_MAX_OBJECTS),
-    selectionId: persisted.objects[0]?.id ?? null,
+    objects: hydratedObjects,
+    selectionId: hydratedObjects[0]?.id ?? null,
     mode: 'play',
     physicsEnabled: persisted.physicsEnabled === true,
     snapEnabled: false,

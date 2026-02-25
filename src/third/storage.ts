@@ -44,6 +44,10 @@ const sanitizeMaterialColor = (value: unknown): string => (
     : THIRD_DEFAULT_COLOR
 );
 
+const sanitizeParentId = (value: unknown): string | null => (
+  typeof value === 'string' && value.trim() ? value.trim() : null
+);
+
 const sanitizeSceneObject = (raw: unknown): ThirdSceneObject | null => {
   if (!raw || typeof raw !== 'object') return null;
   const data = raw as Record<string, unknown>;
@@ -73,6 +77,7 @@ const sanitizeSceneObject = (raw: unknown): ThirdSceneObject | null => {
     id,
     name,
     type,
+    parentId: sanitizeParentId(data.parentId),
     transform: {
       position: sanitizeVec3(transformData.position, { x: 0, y: 0.5, z: 0 }),
       rotation: sanitizeVec3(transformData.rotation, { x: 0, y: 0, z: 0 }),

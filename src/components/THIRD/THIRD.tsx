@@ -41,6 +41,7 @@ const CAMERA_SAVE_DEBOUNCE_MS = 250;
 const RIGHT_CLICK_OPEN_TOLERANCE_PX = 6;
 const MIN_CAMERA_DISTANCE = 1.2;
 const ORTHOGRAPHIC_FRUSTUM_HEIGHT = 11;
+const HIERARCHY_ROOT_DROP_TARGET = '__root__' as const;
 const MATERIAL_PRESETS: ReadonlyArray<ThirdMaterialPreset> = ['matte', 'gloss', 'glass', 'neon'];
 const PRIMITIVE_MENU_OPTIONS: ReadonlyArray<{ type: ThirdPrimitiveType; label: string }> = [
   { type: 'cube', label: 'CUBE' },
@@ -79,6 +80,13 @@ type RightClickCandidate = {
   startY: number;
   moved: boolean;
 };
+
+type HierarchyTreeNode = {
+  object: ThirdSceneObject;
+  children: HierarchyTreeNode[];
+};
+
+type HierarchyDropTarget = string | typeof HIERARCHY_ROOT_DROP_TARGET | null;
 
 const toThreeHex = (value: string, fallback: number): number => {
   const parsed = Number.parseInt(value.replace('#', ''), 16);
@@ -355,6 +363,52 @@ const withClampedDistance = (distance: number): number => (
   Number.isFinite(distance) ? Math.max(MIN_CAMERA_DISTANCE, distance) : MIN_CAMERA_DISTANCE
 );
 
+const buildHierarchyTree = (objects: ThirdSceneObject[]): HierarchyTreeNode[] => {
+  const validIds = new Set(objects.map((object) => object.id));
+  const childrenByParent = new Map<string | null, ThirdSceneObject[]>();
+
+  objects.forEach((object) => {
+    const parentId = object.parentId && validIds.has(object.parentId) ? object.parentId : null;
+    const bucket = childrenByParent.get(parentId);
+    if (bucket) {
+      bucket.push(object);
+      return;
+    }
+    childrenByParent.set(parentId, [object]);
+  });
+
+  const buildNodes = (parentId: string | null, ancestry: Set<string>): HierarchyTreeNode[] => {
+    const children = childrenByParent.get(parentId) ?? [];
+    return children.map((object) => {
+      if (ancestry.has(object.id)) {
+        return { object, children: [] };
+      }
+      const nextAncestry = new Set(ancestry);
+      nextAncestry.add(object.id);
+      return {
+        object,
+        children: buildNodes(object.id, nextAncestry),
+      };
+    });
+  };
+
+  const roots = buildNodes(null, new Set());
+  const visited = new Set<string>();
+  const markVisited = (nodes: HierarchyTreeNode[]) => {
+    nodes.forEach((node) => {
+      visited.add(node.object.id);
+      markVisited(node.children);
+    });
+  };
+  markVisited(roots);
+
+  const remaining = objects
+    .filter((object) => !visited.has(object.id))
+    .map((object) => ({ object, children: [] as HierarchyTreeNode[] }));
+
+  return [...roots, ...remaining];
+};
+
 type ThirdProps = {
   mode?: 'panel' | 'fullscreen';
 };
@@ -422,6 +476,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     toggleSnap,
     togglePhysics,
     setObjectPhysicsEnabled,
+    setObjectParent,
     setObjectMaterialPreset,
     setObjectMaterialColor,
     setObjectMaterialWireframe,
@@ -467,7 +522,11 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   );
   const [viewportMenu, setViewportMenu] = useState<ViewportMenuState | null>(null);
   const [hierarchyExpanded, setHierarchyExpanded] = useState(true);
+  const [hierarchyCollapsedIds, setHierarchyCollapsedIds] = useState<Set<string>>(() => new Set());
+  const [hierarchyDragObjectId, setHierarchyDragObjectId] = useState<string | null>(null);
+  const [hierarchyDropTargetId, setHierarchyDropTargetId] = useState<HierarchyDropTarget>(null);
   const [addObjectMenuOpen, setAddObjectMenuOpen] = useState(false);
+  const hierarchyTree = useMemo(() => buildHierarchyTree(objects), [objects]);
   const isEditMode = editorMode === 'edit';
   const viewportMenuGroups = useMemo(() => buildThirdViewportMenu({
     mode: editorMode,
@@ -579,6 +638,49 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const setAllInspectorSections = useCallback((expanded: boolean) => {
     setInspectorSections(createInspectorSectionState(expanded));
   }, []);
+
+  const toggleHierarchyNode = useCallback((id: string) => {
+    setHierarchyCollapsedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const canSetHierarchyParent = useCallback((childId: string, parentId: string | null): boolean => {
+    const objectById = new Map(objects.map((object) => [object.id, object]));
+    const child = objectById.get(childId);
+    if (!child) return false;
+    if (parentId === childId) return false;
+    if (child.parentId === parentId) return false;
+
+    let currentId = parentId;
+    const visited = new Set<string>();
+    while (currentId) {
+      if (currentId === childId) return false;
+      if (visited.has(currentId)) return false;
+      visited.add(currentId);
+      currentId = objectById.get(currentId)?.parentId ?? null;
+    }
+
+    return true;
+  }, [objects]);
+
+  const clearHierarchyDragState = useCallback(() => {
+    setHierarchyDragObjectId(null);
+    setHierarchyDropTargetId(null);
+  }, []);
+
+  const dropHierarchyParent = useCallback((parentId: string | null) => {
+    if (!hierarchyDragObjectId) return;
+    if (!canSetHierarchyParent(hierarchyDragObjectId, parentId)) return;
+    setObjectParent(hierarchyDragObjectId, parentId);
+    selectObject(hierarchyDragObjectId);
+  }, [canSetHierarchyParent, hierarchyDragObjectId, selectObject, setObjectParent]);
 
   const closeViewportMenu = useCallback(() => {
     setViewportMenu(null);
@@ -794,6 +896,34 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   useEffect(() => {
     objectPhysicsRef.current = new Map(objects.map((object) => [object.id, object.physicsEnabled]));
   }, [objects]);
+
+  useEffect(() => {
+    setHierarchyCollapsedIds((prev) => {
+      if (prev.size === 0) return prev;
+      const validIds = new Set(objects.map((object) => object.id));
+      let changed = false;
+      const next = new Set<string>();
+      prev.forEach((id) => {
+        if (validIds.has(id)) {
+          next.add(id);
+        } else {
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [objects]);
+
+  useEffect(() => {
+    if (!hierarchyDragObjectId) return;
+    if (objects.some((object) => object.id === hierarchyDragObjectId)) return;
+    clearHierarchyDragState();
+  }, [clearHierarchyDragState, hierarchyDragObjectId, objects]);
+
+  useEffect(() => {
+    if (hierarchyDragObjectId || hierarchyDropTargetId == null) return;
+    setHierarchyDropTargetId(null);
+  }, [hierarchyDragObjectId, hierarchyDropTargetId]);
 
   useEffect(() => {
     selectionIdRef.current = selectionId;
@@ -1805,6 +1935,76 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     setAddObjectMenuOpen(false);
   }, [inspectorSections.objects, inspectorVisible]);
 
+  const renderHierarchyNodes = (nodes: HierarchyTreeNode[], depth: number): React.ReactNode => (
+    nodes.map((node) => {
+      const hasChildren = node.children.length > 0;
+      const nodeExpanded = !hierarchyCollapsedIds.has(node.object.id);
+      return (
+        <React.Fragment key={node.object.id}>
+          <div
+            className={`${styles.objectRow} ${hierarchyDropTargetId === node.object.id ? styles.objectRowDropTarget : ''}`.trim()}
+            style={{ paddingLeft: `${depth * 12}px` }}
+            onDragOver={(event) => {
+              if (!isEditMode || !hierarchyDragObjectId || !canSetHierarchyParent(hierarchyDragObjectId, node.object.id)) {
+                if (hierarchyDropTargetId === node.object.id) {
+                  setHierarchyDropTargetId(null);
+                }
+                return;
+              }
+              event.preventDefault();
+              event.dataTransfer.dropEffect = 'move';
+              setHierarchyDropTargetId(node.object.id);
+            }}
+            onDragLeave={() => {
+              if (hierarchyDropTargetId === node.object.id) {
+                setHierarchyDropTargetId(null);
+              }
+            }}
+            onDrop={(event) => {
+              if (!isEditMode || !hierarchyDragObjectId || !canSetHierarchyParent(hierarchyDragObjectId, node.object.id)) return;
+              event.preventDefault();
+              dropHierarchyParent(node.object.id);
+              clearHierarchyDragState();
+            }}
+          >
+            {hasChildren ? (
+              <button
+                type="button"
+                className={styles.hierarchyNodeToggle}
+                aria-label={`${nodeExpanded ? 'Collapse' : 'Expand'} ${node.object.name}`}
+                onClick={() => toggleHierarchyNode(node.object.id)}
+              >
+                {nodeExpanded ? '▾' : '▸'}
+              </button>
+            ) : (
+              <span className={styles.hierarchyNodeSpacer} aria-hidden="true" />
+            )}
+            <button
+              type="button"
+              className={`${styles.objectItem} ${styles.hierarchyItem} ${selectionId === node.object.id ? styles.objectItemActive : ''}`.trim()}
+              onClick={() => selectObject(node.object.id)}
+              draggable={isEditMode}
+              onDragStart={(event) => {
+                if (!isEditMode) return;
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', node.object.id);
+                setHierarchyDragObjectId(node.object.id);
+                setHierarchyDropTargetId(null);
+              }}
+              onDragEnd={clearHierarchyDragState}
+            >
+              {node.object.name}
+            </button>
+            <span className={styles.objectMeta}>
+              {`${node.object.type.toUpperCase()} · ${node.object.physicsEnabled ? 'PHYS' : 'STATIC'}`}
+            </span>
+          </div>
+          {hasChildren && nodeExpanded ? renderHierarchyNodes(node.children, depth + 1) : null}
+        </React.Fragment>
+      );
+    })
+  );
+
   return (
     <div
       ref={rootRef}
@@ -2097,28 +2297,37 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                 <div className={styles.objectList} aria-label="THIRD object hierarchy">
                   <button
                     type="button"
-                    className={styles.hierarchyRoot}
+                    className={`${styles.hierarchyRoot} ${hierarchyDropTargetId === HIERARCHY_ROOT_DROP_TARGET ? styles.objectRowDropTarget : ''}`.trim()}
                     aria-expanded={hierarchyExpanded}
                     onClick={() => setHierarchyExpanded((prev) => !prev)}
+                    onDragOver={(event) => {
+                      if (!isEditMode || !hierarchyDragObjectId || !canSetHierarchyParent(hierarchyDragObjectId, null)) {
+                        if (hierarchyDropTargetId === HIERARCHY_ROOT_DROP_TARGET) {
+                          setHierarchyDropTargetId(null);
+                        }
+                        return;
+                      }
+                      event.preventDefault();
+                      event.dataTransfer.dropEffect = 'move';
+                      setHierarchyDropTargetId(HIERARCHY_ROOT_DROP_TARGET);
+                    }}
+                    onDragLeave={() => {
+                      if (hierarchyDropTargetId === HIERARCHY_ROOT_DROP_TARGET) {
+                        setHierarchyDropTargetId(null);
+                      }
+                    }}
+                    onDrop={(event) => {
+                      if (!isEditMode || !hierarchyDragObjectId || !canSetHierarchyParent(hierarchyDragObjectId, null)) return;
+                      event.preventDefault();
+                      dropHierarchyParent(null);
+                      clearHierarchyDragState();
+                    }}
                   >
                     SCENE ({objects.length})
                   </button>
                   {hierarchyExpanded ? (
                     <div className={styles.hierarchyChildren}>
-                      {objects.map((object) => (
-                        <div key={object.id} className={styles.objectRow}>
-                          <button
-                            type="button"
-                            className={`${styles.objectItem} ${styles.hierarchyItem} ${selectionId === object.id ? styles.objectItemActive : ''}`.trim()}
-                            onClick={() => selectObject(object.id)}
-                          >
-                            {object.name}
-                          </button>
-                          <span className={styles.objectMeta}>
-                            {`${object.type.toUpperCase()} · ${object.physicsEnabled ? 'PHYS' : 'STATIC'}`}
-                          </span>
-                        </div>
-                      ))}
+                      {renderHierarchyNodes(hierarchyTree, 0)}
                     </div>
                   ) : null}
                 </div>

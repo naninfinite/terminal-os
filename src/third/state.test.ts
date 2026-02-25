@@ -11,6 +11,7 @@ import {
   setObjectMaterialColor,
   setObjectMaterialPreset,
   setObjectMaterialWireframe,
+  setObjectParent,
   setObjectPhysicsEnabled,
   setPhysicsEnabled,
   setSelection,
@@ -23,6 +24,7 @@ describe('third state helpers', () => {
     expect(state.objects).toHaveLength(1);
     expect(state.objects[0].type).toBe('cube');
     expect(state.objects[0].transform.position).toEqual({ x: 0, y: 0.5, z: 0 });
+    expect(state.objects[0].parentId).toBeNull();
     expect(state.objects[0].physicsEnabled).toBe(false);
     expect(state.objects[0].material.wireframe).toBe(false);
     expect(state.objects[0].material.preset).toBe('matte');
@@ -48,6 +50,7 @@ describe('third state helpers', () => {
     if (!original || !copy) return;
     expect(copy.transform.position.x).toBeCloseTo(original.transform.position.x + 0.6, 5);
     expect(copy.transform.position.z).toBeCloseTo(original.transform.position.z + 0.6, 5);
+    expect(copy.parentId).toBe(original.parentId);
   });
 
   it('deletes selected object and updates selection safely', () => {
@@ -146,5 +149,30 @@ describe('third state helpers', () => {
     const hydrated = hydrateStateFromPersistence(persisted);
     expect(hydrated.cameraState.projectionMode).toBe('orthographic');
     expect(hydrated.objects[0].material.wireframe).toBe(true);
+  });
+
+  it('supports parent reparenting and blocks cyclic hierarchy links', () => {
+    const seeded = createDefaultThirdRuntimeState();
+    const withSphere = addPrimitive(seeded, 'sphere');
+    const withCylinder = addPrimitive(withSphere, 'cylinder');
+    const rootId = seeded.objects[0].id;
+    const sphereId = withSphere.selectionId;
+    const cylinderId = withCylinder.selectionId;
+
+    expect(sphereId).toBeTruthy();
+    expect(cylinderId).toBeTruthy();
+    if (!sphereId || !cylinderId) return;
+
+    const sphereChildOfRoot = setObjectParent(withCylinder, sphereId, rootId);
+    const cylinderChildOfSphere = setObjectParent(sphereChildOfRoot, cylinderId, sphereId);
+    expect(cylinderChildOfSphere.objects.find((item) => item.id === sphereId)?.parentId).toBe(rootId);
+    expect(cylinderChildOfSphere.objects.find((item) => item.id === cylinderId)?.parentId).toBe(sphereId);
+
+    const cycleAttempt = setObjectParent(cylinderChildOfSphere, rootId, cylinderId);
+    expect(cycleAttempt.objects.find((item) => item.id === rootId)?.parentId).toBeNull();
+
+    const withSphereSelected = setSelection(cylinderChildOfSphere, sphereId);
+    const afterDelete = deleteSelected(withSphereSelected);
+    expect(afterDelete.objects.find((item) => item.id === cylinderId)?.parentId).toBe(rootId);
   });
 });

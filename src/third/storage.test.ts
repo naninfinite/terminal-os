@@ -12,6 +12,7 @@ describe('third storage sanitization', () => {
           id: 'cube_1',
           name: 'Cube 1',
           type: 'cube',
+          parentId: null,
           transform: {
             position: { x: 0, y: 0.5, z: 0 },
             rotation: { x: 0, y: 0, z: 0 },
@@ -42,6 +43,7 @@ describe('third storage sanitization', () => {
     expect(scene.objects[0].physicsEnabled).toBe(true);
     expect(scene.objects[0].material.wireframe).toBe(true);
     expect(scene.objects[0].material.preset).toBe('neon');
+    expect(scene.objects[0].parentId).toBeNull();
     expect(scene.cameraState?.projectionMode).toBe('orthographic');
   });
 
@@ -105,6 +107,7 @@ describe('third storage sanitization', () => {
     expect(scene.objects[0].physicsEnabled).toBe(false);
     expect(scene.objects[0].material.preset).toBe('matte');
     expect(scene.objects[0].material.wireframe).toBe(false);
+    expect(scene.objects[0].parentId).toBeNull();
   });
 
   it('round-trips persisted global and object physics flags through JSON payload', () => {
@@ -117,6 +120,7 @@ describe('third storage sanitization', () => {
           id: 'obj_rt',
           name: 'Roundtrip Cube',
           type: 'cube',
+          parentId: 'obj_parent',
           transform: {
             position: { x: 0, y: 0.5, z: 0 },
             rotation: { x: 0, y: 0, z: 0 },
@@ -144,6 +148,7 @@ describe('third storage sanitization', () => {
     expect(restored.objects[0].physicsEnabled).toBe(true);
     expect(restored.objects[0].material.preset).toBe('glass');
     expect(restored.objects[0].material.wireframe).toBe(false);
+    expect(restored.objects[0].parentId).toBe('obj_parent');
     expect(restored.cameraState?.projectionMode).toBe('perspective');
   });
 

@@ -13,6 +13,7 @@ import {
   setObjectMaterialColor,
   setObjectMaterialPreset,
   setObjectMaterialWireframe,
+  setObjectParent,
   setObjectPhysicsEnabled,
   setPhysicsEnabled,
   setSelection,
@@ -59,6 +60,7 @@ type ThirdContextValue = {
   setPhysicsEnabled: (enabled: boolean) => void;
   togglePhysics: () => void;
   setObjectPhysicsEnabled: (id: string, enabled: boolean) => void;
+  setObjectParent: (id: string, parentId: string | null) => void;
   setObjectMaterialPreset: (id: string, preset: ThirdMaterialPreset) => void;
   setObjectMaterialColor: (id: string, color: string) => void;
   setObjectMaterialWireframe: (id: string, enabled: boolean) => void;
@@ -142,6 +144,9 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
   const setObjectPhysicsEnabledAction = useCallback((id: string, enabled: boolean) => {
     setState((prev) => setObjectPhysicsEnabled(prev, id, enabled));
+  }, []);
+  const setObjectParentAction = useCallback((id: string, parentId: string | null) => {
+    setState((prev) => setObjectParent(prev, id, parentId));
   }, []);
   const setObjectMaterialPresetAction = useCallback((id: string, preset: ThirdMaterialPreset) => {
     setState((prev) => setObjectMaterialPreset(prev, id, preset));
@@ -246,6 +251,7 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setPhysicsEnabled: setPhysicsEnabledAction,
     togglePhysics: togglePhysicsAction,
     setObjectPhysicsEnabled: setObjectPhysicsEnabledAction,
+    setObjectParent: setObjectParentAction,
     setObjectMaterialPreset: setObjectMaterialPresetAction,
     setObjectMaterialColor: setObjectMaterialColorAction,
     setObjectMaterialWireframe: setObjectMaterialWireframeAction,
@@ -280,6 +286,7 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setMode,
     setObjectMaterialColorAction,
     setObjectMaterialPresetAction,
+    setObjectParentAction,
     setObjectMaterialWireframeAction,
     setObjectPhysicsEnabledAction,
     setPhysicsEnabledAction,

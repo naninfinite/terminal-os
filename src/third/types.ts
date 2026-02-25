@@ -34,6 +34,7 @@ export type ThirdSceneObject = {
   id: string;
   name: string;
   type: ThirdPrimitiveType;
+  parentId: string | null;
   transform: ThirdObjectTransform;
   material: ThirdMaterialParams;
   physicsEnabled: boolean;
