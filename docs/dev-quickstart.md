@@ -80,7 +80,28 @@ Commit guidance:
 
 - Respect `prefers-reduced-motion` in animations (check `src/styles/crt.module.scss` and JS checks in `Cursor.tsx`).
 - Prefer adding small SCSS module rules scoped to components.
+- Keep mobile/tablet changes breakpoint-scoped; preserve desktop behavior above tablet width.
 - Keep `node_modules` out of the repo; if the repo contains `node_modules`, consider adding it to `.gitignore` (not done here for reproducible edits).
+
+## Responsive Baseline (2026-02-25)
+
+Shared breakpoint tokens live in `src/styles/_variables.scss`:
+- `$bp-tablet: 1024px`
+- `$bp-compact: 760px`
+- `$bp-phone: 560px`
+- `$bp-narrow: 420px`
+
+Primary responsive surfaces hardened in this baseline:
+- `src/components/AppShell/AppShell.module.scss`
+- `src/components/Desktop/Desktop.module.scss`
+- `src/components/StatusBar/StatusBar.module.scss`
+- `src/components/YOU/YOU.module.scss`
+- `src/meos/shell/MeOsShell.module.scss`
+- `src/meos/apps/fileman/FileManWindow.module.scss`
+- `src/meos/apps/viewers/FileViewerWindow.module.scss`
+
+Reference and validation matrix:
+- `docs/responsive-mobile-tablet-baseline.md`
 
 ## Where to document design decisions
 

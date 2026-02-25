@@ -922,3 +922,33 @@ Why it matters:
 
 Risks / Notes:
 - Documentation-only refresh in this pass; no runtime/code behavior changed.
+
+---
+
+## Entry 52 - Cross-Surface Mobile/Tablet Hardening (Desktop-Safe)
+
+Summary:
+- Implemented a CSS-first responsiveness hardening pass across shell/app surfaces:
+  - shell viewport container,
+  - desktop grid/panel sizing rules,
+  - status bar/menu/task strip compaction,
+  - `YOU` layout truncation/wrap behavior,
+  - `CONNECT` ASCII scaling,
+  - ME shell window/title/control compaction and fullscreen safe-area handling,
+  - FileMan and FileViewer overflow/compaction handling.
+- Added shared responsive breakpoint tokens:
+  - `tablet: 1024`,
+  - `compact: 760`,
+  - `phone: 560`,
+  - `narrow: 420`.
+- Added dedicated responsive baseline doc:
+  - `docs/responsive-mobile-tablet-baseline.md`.
+
+Why it matters:
+- Reduces risk of mobile/tablet regressions as subsystem complexity grows.
+- Preserves desktop visual/behavioral baseline while improving small-screen usability.
+- Provides one source of truth for future responsive updates and validation.
+
+Risks / Notes:
+- This pass is layout/chrome hardening only; no public API/type changes were introduced.
+- Manual viewport matrix checks remain required in-browser even though automated tests/build pass.

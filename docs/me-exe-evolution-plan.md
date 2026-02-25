@@ -75,6 +75,7 @@ When proposing future ME.EXE changes:
 13. Maximize control polish complete: maximize glyph now uses square icon treatment.
 14. Edge-to-edge ME framing complete: outer ME panel/fullscreen inset padding removed while internal window body spacing remains unchanged.
 15. FileMan toolbar icon polish complete: icon + text controls are now CSS/ASCII-safe (no external icon assets), including `RESET`.
+16. Cross-surface mobile/tablet hardening complete: shared responsive breakpoints and safe-area-aware layout behavior now cover shell/status bar + `ME`, `YOU`, `CONNECT`, FileMan, and viewer surfaces while preserving desktop behavior above tablet width.
 
 ## 9) Theme Split Lock (Auto / Dark / Light)
 

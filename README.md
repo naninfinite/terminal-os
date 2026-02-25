@@ -48,6 +48,7 @@ If the video fails, the poster + gradient background are used.
 Recent updates:
 - Added custom retro green mouse cursor (monospace glyph) with hover-enlarge behavior and reduced-motion support.
 - Fixed landing responsiveness (video box clamp) and enter transition timer cleanup.
+- Hardened mobile/tablet responsiveness across shell, panels, status bar, ME shell, YOU, FileMan, and viewers using shared breakpoint tokens and safe-area-aware layout guards.
 
 ## Phase 2 — Panel placeholders
 
@@ -55,4 +56,15 @@ Phase 2 completes the panel placeholder work and core behaviors. See `docs/phase
 
 Detailed docs: `docs/phase-2.md`
 
+## Responsive Baseline (2026-02-25)
+
+- Breakpoint tokens are centralized in `src/styles/_variables.scss`:
+  - tablet: `1024px`
+  - compact: `760px`
+  - phone: `560px`
+  - narrow: `420px`
+- Responsive policy:
+  - mobile/tablet behavior is CSS-first and scoped to breakpoint/safe-area rules
+  - desktop behavior above tablet width is preserved
+- Reference doc: `docs/responsive-mobile-tablet-baseline.md`
 

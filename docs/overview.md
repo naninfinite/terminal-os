@@ -14,6 +14,7 @@ Current Status:
 Recent updates:
 - Implemented custom retro green mouse cursor with larger-on-hover behavior; hidden on touch devices; respects `prefers-reduced-motion`.
 - Fixed landing page responsive video box sizing and enter transition cleanup.
+- Added cross-surface mobile/tablet hardening (shell, status bar, ME shell, YOU, FileMan, viewers, CONNECT) with shared breakpoints and safe-area-aware fullscreen/status behavior.
 
 Assets:
 - `landing-bg.mp4` (looping)
@@ -46,4 +47,5 @@ Related docs:
 - `docs/conversation-log.md`
 - `docs/fileman-v2-build-spec.md`
 - `docs/me-exe-evolution-plan.md`
+- `docs/responsive-mobile-tablet-baseline.md`
 - `docs/subsystem-expansion-roadmap.md`

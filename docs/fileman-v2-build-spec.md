@@ -2,6 +2,7 @@
 
 Status: Draft for implementation
 Date: 2026-02-08
+Last updated: 2026-02-25
 Owner: Terminal-OS
 Related: `docs/overview.md`, `docs/phase-3.md`, `docs/ADR Index`, `docs/conversation-log.md`
 Milestone status: M1 complete, M2 complete, M3 complete, M4 complete, M5 closeout complete, M6 planned (subsystem parity)
@@ -230,6 +231,33 @@ v1 rollout scope (implemented first):
 
 Deferred to follow-up pass:
 - Deep app-interior parity (`FileMan` internals, viewers, and subsystem-specific app surfaces) unless targeted fixes are required for readability/regression.
+
+---
+
+## 8.5 Cross-Surface Mobile/Tablet Hardening Baseline (2026-02-25)
+
+Responsiveness hardening is now locked as a shell-level contract, not an app-by-app one-off:
+
+- Shared breakpoint tokens are centralized in `src/styles/_variables.scss`:
+  - `tablet: 1024px`
+  - `compact: 760px`
+  - `phone: 560px`
+  - `narrow: 420px`
+- CSS-first hardening now covers:
+  - shell viewport + desktop panel grid,
+  - panel frame constraints,
+  - status bar/menu/task strip compaction,
+  - `YOU` layout/truncation behavior,
+  - `CONNECT` ASCII scaling,
+  - ME shell chrome/window title truncation + fullscreen safe-area behavior,
+  - FileMan toolbar/path/list truncation behavior,
+  - FileViewer header/video-control overflow behavior.
+- Safe-area handling is now explicit for fullscreen/status surfaces that reserve global footer space.
+- Public API/interface contract remains unchanged (styling/layout-only pass).
+
+Verification lock:
+- `npm test` and `npm run build` pass on the implementation baseline.
+- Manual viewport matrix is tracked in `docs/responsive-mobile-tablet-baseline.md`.
 
 ---
 
