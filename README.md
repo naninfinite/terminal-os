@@ -19,25 +19,24 @@ Planned / active direction:
 
 ## Phases / iteration method
 
-Milestone framing:
-- Phase 2: panel placeholders and shell baseline.
-- Phase 3+: ME shell/VFS/FileMan/viewers hardening and expansion.
-- M6: subsystem parity track (`YOU`/`THIRD`/`CONNECT`).
+Phase framing:
+- **Phase 2 — Panel placeholders + shell baseline:** established landing flow, desktop layout, panel composition, and global status-bar/menu foundations.
+- **Phase 3+ — ME shell expansion:** delivered ME runtime foundations, VFS service boundaries, FileMan, viewers, and ongoing hardening work.
+- **M6 track — Subsystem parity (`YOU` / `THIRD` / `CONNECT`):** align non-ME subsystems to shared panel/fullscreen runtime contracts.
 
 Current milestone status:
-- M1: ME shell foundation complete.
-- M2: VFS foundation complete.
-- M3: FileMan explorer baseline complete.
-- M4: Viewer app baseline complete (`text` / `image` / `video` / `project`).
-- M5: ME shell polish closeout complete.
-- M6: subsystem parity in progress/planned (`YOU` / `THIRD` / `CONNECT`).
+- **M1 — ME shell foundation (Complete):** shared ME state between panel/fullscreen with window lifecycle behavior (focus, move/resize, minimize/maximize, restore).
+- **M2 — VFS foundation (Complete):** versioned filesystem service + provider boundary so persistence/state ownership is service-managed.
+- **M3 — FileMan baseline (Complete):** explorer navigation, list/grid views, create/rename/delete/reset actions, and shell integration.
+- **M4 — Viewer baseline (Complete):** viewer windows for `text`, `image`, `video`, and `project` content.
+- **M5 — ME shell polish closeout (Complete):** launcher/task-strip behavior, chrome polish, edge-to-edge framing, and responsive hardening.
+- **M6 — Subsystem parity (In progress / planned):** expand `YOU`, `THIRD`, and `CONNECT` to match ME-level runtime consistency and readiness.
 
-Delivery rules:
-- Keep diffs small and reviewable.
-- One concern per commit/PR.
-- Update docs alongside behavior changes.
-- Keep tests/build green before merge.
-- Authority order for conflicts: code -> docs -> ADRs.
+Iteration method:
+- **Small, reviewable diffs:** one concern per commit/PR.
+- **Docs updated with code:** behavior/contract shifts must be documented in the same change cycle.
+- **Quality gate stays green:** `pnpm test` + `pnpm build` before merge.
+- **Authority order for conflicts:** code -> docs -> ADRs.
 
 ## Dev workflow
 
