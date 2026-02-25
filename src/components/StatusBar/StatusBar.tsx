@@ -8,9 +8,17 @@ import { useMeOs } from '../../meos/shell/MeOsProvider';
 import { MENU_SCOPE_CONFIG, resolveMenuScope, type MenuCommandId } from '../../meos/menu/scopes';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useYouBoard } from '../../you/YouProvider';
+import { useThirdRuntime } from '../../third/ThirdProvider';
+import { useConnectRuntime } from '../../connect/ConnectProvider';
 import { nextLocationCaseMode } from './locationCase';
 import { getNextThemeMode, getThemeToggleLabel } from './themeMenu';
 import { deriveYouDockState } from './youDock';
+import {
+  formatGenericDockLabel,
+  formatMeDockLabel,
+  getDockClickIntent,
+  type SubsystemScope,
+} from './subsystemDock';
 
 type DesktopPanelScope = 'you' | 'third' | 'connect' | 'me';
 
@@ -24,11 +32,11 @@ const getLocationLabel = (): string => {
 
 const StatusBar: React.FC = () => {
   const {
-    displayMode,
+    displayMode: meDisplayMode,
     activeScope,
     windows,
-    openFullscreen,
-    closeFullscreen,
+    openFullscreen: openMeFullscreen,
+    closeFullscreen: closeMeFullscreen,
     openApp,
     restoreWindow,
   } = useMeOs();
@@ -38,7 +46,20 @@ const StatusBar: React.FC = () => {
     displayMode: youDisplayMode,
     loadingInitial: youLoadingInitial,
     error: youError,
+    openFullscreen: openYouFullscreen,
+    closeFullscreen: closeYouFullscreen,
   } = useYouBoard();
+  const {
+    displayMode: thirdDisplayMode,
+    openFullscreen: openThirdFullscreen,
+    closeFullscreen: closeThirdFullscreen,
+  } = useThirdRuntime();
+  const {
+    displayMode: connectDisplayMode,
+    notificationCount: connectNotificationCount,
+    openFullscreen: openConnectFullscreen,
+    closeFullscreen: closeConnectFullscreen,
+  } = useConnectRuntime();
   const { resolvedTheme, setThemeMode, setTextCaseMode, textCaseMode } = useTheme();
   const [now, setNow] = useState<Date>(() => new Date());
   const [menuOpen, setMenuOpen] = useState(false);
@@ -70,7 +91,7 @@ const StatusBar: React.FC = () => {
   }).format(now);
   const locationLabel = useMemo(() => getLocationLabel(), []);
 
-  const scope = resolveMenuScope({ displayMode, activeScope: activeScope ?? undefined });
+  const scope = resolveMenuScope({ displayMode: meDisplayMode, activeScope: activeScope ?? undefined });
   const scopeConfig = MENU_SCOPE_CONFIG[scope];
   const orderedWindows = useMemo(
     () => [...windows].sort((a, b) => a.zIndex - b.zIndex),
@@ -82,14 +103,23 @@ const StatusBar: React.FC = () => {
   );
   const meWindowCount = orderedWindows.length;
   const showCollapsedMeTask = scope !== 'meos' && meWindowCount > 0;
+  const thirdNotificationCount = 0;
   const youDockState = useMemo(
     () => deriveYouDockState({ draftBody, messages, lastSeenAt: youLastSeenAt }),
     [draftBody, messages, youLastSeenAt]
   );
+  const activeFullscreenScope: SubsystemScope | null = (
+    meDisplayMode === 'fullscreen' ? 'me'
+      : youDisplayMode === 'fullscreen' ? 'you'
+        : thirdDisplayMode === 'fullscreen' ? 'third'
+          : connectDisplayMode === 'fullscreen' ? 'connect'
+            : null
+  );
+  const anyFullscreenOpen = activeFullscreenScope != null;
   const inYouContext = activeScope === 'you' || youDisplayMode === 'fullscreen';
 
   const openAppForScope = (appId: Parameters<typeof openApp>[0]) => {
-    if (scope === 'desktop') openFullscreen();
+    if (scope === 'desktop') openMeFullscreen();
     openApp(appId);
   };
 
@@ -102,6 +132,51 @@ const StatusBar: React.FC = () => {
 
   const dispatchShellEvent = (eventName: string) => {
     window.dispatchEvent(new CustomEvent(eventName));
+  };
+
+  const closeAllFullscreen = () => {
+    closeMeFullscreen();
+    closeYouFullscreen();
+    closeThirdFullscreen();
+    closeConnectFullscreen();
+  };
+
+  const openSubsystemFullscreen = (targetScope: SubsystemScope) => {
+    switch (targetScope) {
+      case 'me':
+        openMeFullscreen();
+        break;
+      case 'you':
+        openYouFullscreen();
+        break;
+      case 'third':
+        openThirdFullscreen();
+        break;
+      case 'connect':
+        openConnectFullscreen();
+        break;
+      default:
+        break;
+    }
+  };
+
+  const onSubsystemDockClick = (targetScope: SubsystemScope) => {
+    const intent = getDockClickIntent({
+      targetScope,
+      anyFullscreenOpen,
+      activeFullscreenScope,
+    });
+
+    if (intent === 'noop') return;
+
+    if (intent === 'focus_panel') {
+      focusPanel('you');
+      if (youDockState.latestMessageAt) setYouLastSeenAt(youDockState.latestMessageAt);
+      return;
+    }
+
+    closeAllFullscreen();
+    openSubsystemFullscreen(targetScope);
   };
 
   useEffect(() => {
@@ -119,19 +194,13 @@ const StatusBar: React.FC = () => {
     ));
   }, [inYouContext, youDockState.latestMessageAt]);
 
-  const onYouDockClick = () => {
-    focusPanel('you');
-    if (!youDockState.latestMessageAt) return;
-    setYouLastSeenAt(youDockState.latestMessageAt);
-  };
-
   const runMenuAction = (commandId: MenuCommandId) => {
     switch (commandId) {
       case 'open_meos':
-        openFullscreen();
+        openMeFullscreen();
         break;
       case 'exit_meos':
-        closeFullscreen();
+        closeMeFullscreen();
         break;
       case 'open_file':
         openAppForScope('file');
@@ -213,17 +282,41 @@ const StatusBar: React.FC = () => {
       <div className={styles.tasks} aria-label="Desktop tasks">
         <button
           type="button"
-          className={`${styles.taskBtn} ${styles.taskBtnYou} ${youDockState.showCombinedDot ? styles.taskBtnYouCombined : ''}`.trim()}
-          onClick={onYouDockClick}
-          title="Focus YOU.EXE panel"
+          className={`${styles.taskBtn} ${styles.taskBtnSubsystem}`.trim()}
+          onClick={() => onSubsystemDockClick('me')}
+          title="Open ME.EXE"
+        >
+          {formatMeDockLabel(meWindowCount)}
+        </button>
+        <button
+          type="button"
+          className={`${styles.taskBtn} ${styles.taskBtnSubsystem} ${styles.taskBtnYou} ${youDockState.showCombinedDot ? styles.taskBtnYouCombined : ''}`.trim()}
+          onClick={() => onSubsystemDockClick('you')}
+          title="Focus or open YOU.EXE"
         >
           {youDockState.label}
+        </button>
+        <button
+          type="button"
+          className={`${styles.taskBtn} ${styles.taskBtnSubsystem}`.trim()}
+          onClick={() => onSubsystemDockClick('third')}
+          title="Open THIRD.EXE"
+        >
+          {formatGenericDockLabel('THIRD.EXE', thirdNotificationCount)}
+        </button>
+        <button
+          type="button"
+          className={`${styles.taskBtn} ${styles.taskBtnSubsystem}`.trim()}
+          onClick={() => onSubsystemDockClick('connect')}
+          title="Open CONNECT.EXE"
+        >
+          {formatGenericDockLabel('CONNECT.EXE', connectNotificationCount)}
         </button>
         {showCollapsedMeTask ? (
           <button
             type="button"
             className={styles.taskBtn}
-            onClick={openFullscreen}
+            onClick={openMeFullscreen}
             title={`Open ME.EXE (${meWindowCount} window${meWindowCount === 1 ? '' : 's'})`}
           >
             {`ME.EXE (${meWindowCount})`}
