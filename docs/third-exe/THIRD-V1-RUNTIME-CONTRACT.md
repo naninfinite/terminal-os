@@ -12,7 +12,7 @@ V1 includes:
 - primitive spawn/select/delete/duplicate,
 - `PLAY` and `EDIT` modes,
 - edit gizmo with snap,
-- Unity-style transform inspector sections (scene/objects/transform/animation/physics/material),
+- Unity-style transform inspector sections (scene/camera/objects/transform/animation/physics/material),
 - right-click viewport menu with grouped quick actions,
 - play-mode physics grab/drag,
 - global + per-object physics opt-in controls,
@@ -84,7 +84,11 @@ On first load / destructive reset:
 - `TransformControls` enabled for selected object.
 - Right-docked inspector is visible by default, hideable, and section-collapsible.
 - Full edit workflow lives inside inspector sections:
-  - `SCENE`, `OBJECTS`, `TRANSFORM`, `ANIMATION`, `PHYSICS`, `MATERIAL`.
+  - `SCENE`, `CAMERA`, `OBJECTS`, `TRANSFORM`, `ANIMATION`, `PHYSICS`, `MATERIAL`.
+- Default inspector expansion opens:
+  - `SCENE`, `CAMERA`, `OBJECTS`, `TRANSFORM`.
+- Default inspector expansion collapses:
+  - `ANIMATION`, `PHYSICS`, `MATERIAL`.
 - Rotation fields display degrees and convert to radians in runtime state.
 - Valid numeric inspector edits apply live while typing.
 - Hotkeys:
@@ -128,6 +132,7 @@ On first load / destructive reset:
   - `OBJECT` (duplicate/delete/object physics),
   - `INSPECTOR` (show/hide/collapse all/expand all).
 - If right-click raycast hits an object, that object is selected before menu actions.
+- Inspector `CAMERA` section mirrors projection + preset actions for keyboard-first access.
 
 ## 6) Preset Animations
 

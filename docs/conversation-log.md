@@ -1234,3 +1234,25 @@ Risks / Notes:
 - Inspector visibility/collapse state is runtime-local and resets on reload by design.
 - Camera preset selection itself is not persisted; projection mode is persisted.
 - Interaction details (right-click tolerance, touch pan/grab interplay) are covered by unit/build checks and still require manual browser verification.
+
+---
+
+## Entry 63 - THIRD Inspector Refinement (Camera Section + Cleaner Defaults)
+
+Summary:
+- Added a dedicated `CAMERA` section inside the right inspector.
+- Inspector camera controls now include:
+  - projection toggle (`PERSPECTIVE`/`ORTHOGRAPHIC`),
+  - quick views (`TOP`, `FRONT`, `RIGHT`),
+  - camera reset.
+- Updated default inspector expansion behavior to reduce initial visual noise:
+  - open by default: `SCENE`, `CAMERA`, `OBJECTS`, `TRANSFORM`;
+  - collapsed by default: `ANIMATION`, `PHYSICS`, `MATERIAL`.
+- Kept right-click viewport menu camera actions in parallel and added inspector hint text to reinforce discoverability.
+
+Why it matters:
+- Makes camera workflow available without right-click dependency.
+- Improves first-run inspector readability while preserving full functionality.
+
+Risks / Notes:
+- Inspector expansion state remains runtime-local and resets on reload by design.

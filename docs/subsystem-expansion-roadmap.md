@@ -99,6 +99,7 @@ Current implementation checkpoint (2026-02-25):
   - floating left HUD replaced by right-docked inspector workflow;
   - viewport right-click menu provides grouped quick actions;
   - camera supports perspective/orthographic switching + top/front/right/reset actions;
+  - inspector includes mirrored camera controls and cleaner default section expansion;
   - camera projection mode persists in autosave payload.
 
 Implementation slices:
