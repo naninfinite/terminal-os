@@ -52,7 +52,7 @@ const MATERIAL_SWATCHES: ReadonlyArray<string> = [
 ];
 const INSPECTOR_GROUPS = ['position', 'rotation', 'scale'] as const;
 const INSPECTOR_AXES = ['x', 'y', 'z'] as const;
-const INSPECTOR_SECTION_IDS = ['scene', 'objects', 'transform', 'animation', 'physics', 'material'] as const;
+const INSPECTOR_SECTION_IDS = ['scene', 'camera', 'objects', 'transform', 'animation', 'physics', 'material'] as const;
 
 type InspectorGroup = typeof INSPECTOR_GROUPS[number];
 type InspectorAxis = typeof INSPECTOR_AXES[number];
@@ -309,6 +309,14 @@ const createInspectorSectionState = (expanded = true): InspectorSectionState => 
   }, {} as InspectorSectionState)
 );
 
+const createInitialInspectorSectionState = (): InspectorSectionState => ({
+  ...createInspectorSectionState(false),
+  scene: true,
+  camera: true,
+  objects: true,
+  transform: true,
+});
+
 const projectionLabel = (mode: ThirdProjectionMode): string => (
   mode === 'orthographic' ? 'ORTHOGRAPHIC' : 'PERSPECTIVE'
 );
@@ -448,9 +456,10 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const [inspectorDraft, setInspectorDraft] = useState<InspectorDraft>(() => createInspectorDraft(selectedObject));
   const [inspectorVisible, setInspectorVisible] = useState(true);
   const [inspectorSections, setInspectorSections] = useState<InspectorSectionState>(
-    () => createInspectorSectionState(true)
+    () => createInitialInspectorSectionState()
   );
   const [viewportMenu, setViewportMenu] = useState<ViewportMenuState | null>(null);
+  const [hierarchyExpanded, setHierarchyExpanded] = useState(true);
   const isEditMode = editorMode === 'edit';
   const viewportMenuGroups = useMemo(() => buildThirdViewportMenu({
     mode: editorMode,
@@ -1858,109 +1867,6 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
             <button
               type="button"
               className={styles.inspectorSectionToggle}
-              onClick={() => toggleInspectorSection('scene')}
-              aria-expanded={inspectorSections.scene}
-            >
-              SCENE
-            </button>
-            {inspectorSections.scene ? (
-              <div className={styles.inspectorSectionBody}>
-                <div className={styles.toolRow}>
-                  <button type="button" className={styles.toolBtn} onClick={toggleMode}>
-                    {isEditMode ? 'SWITCH TO PLAY' : 'SWITCH TO EDIT'}
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.toolBtn} ${snapEnabled ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={toggleSnap}
-                    disabled={!isEditMode}
-                  >
-                    SNAP [G]: {snapEnabled ? 'ON' : 'OFF'}
-                  </button>
-                </div>
-                <div className={styles.toolRow}>
-                  <button
-                    type="button"
-                    className={`${styles.toolBtn} ${physicsEnabled ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={togglePhysics}
-                  >
-                    PHYSICS: {physicsEnabled ? 'ON' : 'OFF'}
-                  </button>
-                  <span className={styles.inlineStatus}>CAMERA: {projectionLabel(cameraState.projectionMode)}</span>
-                </div>
-                <div className={styles.toolRow}>
-                  <button
-                    type="button"
-                    className={`${styles.toolBtn} ${transformMode === 'translate' ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={() => setTransformMode('translate')}
-                    disabled={!isEditMode}
-                  >
-                    MOVE [W]
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.toolBtn} ${transformMode === 'rotate' ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={() => setTransformMode('rotate')}
-                    disabled={!isEditMode}
-                  >
-                    ROTATE [E]
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.toolBtn} ${transformMode === 'scale' ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={() => setTransformMode('scale')}
-                    disabled={!isEditMode}
-                  >
-                    SCALE [R]
-                  </button>
-                </div>
-              </div>
-            ) : null}
-          </section>
-
-          <section className={styles.inspectorSection}>
-            <button
-              type="button"
-              className={styles.inspectorSectionToggle}
-              onClick={() => toggleInspectorSection('objects')}
-              aria-expanded={inspectorSections.objects}
-            >
-              OBJECTS
-            </button>
-            {inspectorSections.objects ? (
-              <div className={styles.inspectorSectionBody}>
-                <div className={styles.toolRow}>
-                  <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('cube')}>+ CUBE</button>
-                  <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('sphere')}>+ SPHERE</button>
-                  <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('cylinder')}>+ CYLINDER</button>
-                  <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('plane')}>+ PLANE</button>
-                </div>
-                <div className={styles.toolRow}>
-                  <button type="button" className={styles.toolBtn} onClick={duplicateSelected} disabled={!selectionId}>DUP</button>
-                  <button type="button" className={styles.toolBtn} onClick={deleteSelected} disabled={!selectionId}>DEL</button>
-                </div>
-                <div className={styles.objectList} aria-label="THIRD objects">
-                  {objects.map((object) => (
-                    <div key={object.id} className={styles.objectRow}>
-                      <button
-                        type="button"
-                        className={`${styles.objectItem} ${selectionId === object.id ? styles.objectItemActive : ''}`.trim()}
-                        onClick={() => selectObject(object.id)}
-                      >
-                        {object.name}
-                      </button>
-                      <span className={styles.objectMeta}>{object.physicsEnabled ? 'PHYS' : 'STATIC'}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-          </section>
-
-          <section className={styles.inspectorSection}>
-            <button
-              type="button"
-              className={styles.inspectorSectionToggle}
               onClick={() => toggleInspectorSection('transform')}
               aria-expanded={inspectorSections.transform}
             >
@@ -2001,6 +1907,167 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
               ) : (
                 <p className={styles.inspectorEmpty}>SELECT AN OBJECT TO EDIT TRANSFORM.</p>
               )
+            ) : null}
+          </section>
+
+          <section className={styles.inspectorSection}>
+            <button
+              type="button"
+              className={styles.inspectorSectionToggle}
+              onClick={() => toggleInspectorSection('scene')}
+              aria-expanded={inspectorSections.scene}
+            >
+              SCENE
+            </button>
+            {inspectorSections.scene ? (
+              <div className={styles.inspectorSectionBody}>
+                <div className={styles.toolRow}>
+                  <button type="button" className={styles.toolBtn} onClick={toggleMode}>
+                    {isEditMode ? 'SWITCH TO PLAY' : 'SWITCH TO EDIT'}
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.toolBtn} ${snapEnabled ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={toggleSnap}
+                    disabled={!isEditMode}
+                  >
+                    SNAP [G]: {snapEnabled ? 'ON' : 'OFF'}
+                  </button>
+                </div>
+                <div className={styles.toolRow}>
+                  <button
+                    type="button"
+                    className={`${styles.toolBtn} ${physicsEnabled ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={togglePhysics}
+                  >
+                    PHYSICS: {physicsEnabled ? 'ON' : 'OFF'}
+                  </button>
+                </div>
+                <div className={styles.toolRow}>
+                  <button
+                    type="button"
+                    className={`${styles.toolBtn} ${transformMode === 'translate' ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={() => setTransformMode('translate')}
+                    disabled={!isEditMode}
+                  >
+                    MOVE [W]
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.toolBtn} ${transformMode === 'rotate' ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={() => setTransformMode('rotate')}
+                    disabled={!isEditMode}
+                  >
+                    ROTATE [E]
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.toolBtn} ${transformMode === 'scale' ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={() => setTransformMode('scale')}
+                    disabled={!isEditMode}
+                  >
+                    SCALE [R]
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </section>
+
+          <section className={styles.inspectorSection}>
+            <button
+              type="button"
+              className={styles.inspectorSectionToggle}
+              onClick={() => toggleInspectorSection('camera')}
+              aria-expanded={inspectorSections.camera}
+            >
+              CAMERA
+            </button>
+            {inspectorSections.camera ? (
+              <div className={styles.inspectorSectionBody}>
+                <div className={styles.toolRow}>
+                  <button
+                    type="button"
+                    className={styles.toolBtn}
+                    onClick={() => {
+                      const nextMode: ThirdProjectionMode = cameraState.projectionMode === 'orthographic'
+                        ? 'perspective'
+                        : 'orthographic';
+                      setProjectionMode(nextMode);
+                      saveCameraFromRuntime();
+                    }}
+                  >
+                    PROJECTION: {projectionLabel(cameraState.projectionMode)}
+                  </button>
+                  <button type="button" className={styles.toolBtn} onClick={resetCameraView}>
+                    RESET
+                  </button>
+                </div>
+                <div className={styles.toolRow}>
+                  <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('top')}>
+                    TOP
+                  </button>
+                  <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('front')}>
+                    FRONT
+                  </button>
+                  <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('right')}>
+                    RIGHT
+                  </button>
+                </div>
+                <span className={styles.inlineStatus}>RMB VIEWPORT MENU HAS THE SAME CAMERA ACTIONS.</span>
+              </div>
+            ) : null}
+          </section>
+
+          <section className={styles.inspectorSection}>
+            <button
+              type="button"
+              className={styles.inspectorSectionToggle}
+              onClick={() => toggleInspectorSection('objects')}
+              aria-expanded={inspectorSections.objects}
+            >
+              OBJECTS
+            </button>
+            {inspectorSections.objects ? (
+              <div className={styles.inspectorSectionBody}>
+                <div className={styles.toolRow}>
+                  <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('cube')}>+ CUBE</button>
+                  <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('sphere')}>+ SPHERE</button>
+                  <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('cylinder')}>+ CYLINDER</button>
+                  <button type="button" className={styles.toolBtn} onClick={() => addPrimitive('plane')}>+ PLANE</button>
+                </div>
+                <div className={styles.toolRow}>
+                  <button type="button" className={styles.toolBtn} onClick={duplicateSelected} disabled={!selectionId}>DUP</button>
+                  <button type="button" className={styles.toolBtn} onClick={deleteSelected} disabled={!selectionId}>DEL</button>
+                </div>
+                <div className={styles.objectList} aria-label="THIRD object hierarchy">
+                  <button
+                    type="button"
+                    className={styles.hierarchyRoot}
+                    aria-expanded={hierarchyExpanded}
+                    onClick={() => setHierarchyExpanded((prev) => !prev)}
+                  >
+                    SCENE ({objects.length})
+                  </button>
+                  {hierarchyExpanded ? (
+                    <div className={styles.hierarchyChildren}>
+                      {objects.map((object) => (
+                        <div key={object.id} className={styles.objectRow}>
+                          <button
+                            type="button"
+                            className={`${styles.objectItem} ${styles.hierarchyItem} ${selectionId === object.id ? styles.objectItemActive : ''}`.trim()}
+                            onClick={() => selectObject(object.id)}
+                          >
+                            {object.name}
+                          </button>
+                          <span className={styles.objectMeta}>
+                            {`${object.type.toUpperCase()} · ${object.physicsEnabled ? 'PHYS' : 'STATIC'}`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
             ) : null}
           </section>
 

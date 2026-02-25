@@ -249,6 +249,32 @@
   padding-right: 2px;
 }
 
+.hierarchyRoot {
+  border: $border-thin solid var(--ui-accent);
+  background: rgb(0 0 0 / 0.62);
+  color: var(--ui-accent);
+  text-align: left;
+  padding: 3px 6px;
+  font-size: $font-xs;
+  letter-spacing: 0.04em;
+}
+
+.hierarchyRoot::before {
+  content: '▾';
+  margin-right: 6px;
+}
+
+.hierarchyRoot[aria-expanded='false']::before {
+  content: '▸';
+}
+
+.hierarchyChildren {
+  display: grid;
+  gap: 4px;
+  padding-left: 10px;
+  border-left: $border-thin solid rgb(15 143 99 / 35%);
+}
+
 .objectRow {
   display: flex;
   gap: 4px;
@@ -266,6 +292,10 @@
   flex: 1 1 auto;
 }
 
+.hierarchyItem {
+  padding-left: 8px;
+}
+
 .objectItemActive {
   border-color: var(--ui-accent);
   box-shadow: var(--ui-shadow-focus);
@@ -275,7 +305,7 @@
   font-size: $font-xs;
   color: var(--ui-text-muted);
   letter-spacing: 0.03em;
-  min-width: 44px;
+  min-width: 102px;
   text-align: right;
 }
 
