@@ -37,6 +37,7 @@ const CONTEXT_MENU_MARGIN_PX = 8;
 const DOCK_CONTEXT_MENU_GAP_PX = 8;
 const SUBSYSTEM_CONTEXT_MENU_OFFSET_X_PX = 8;
 const SUBSYSTEM_CONTEXT_MENU_OFFSET_Y_PX = 32;
+const MOBILE_FULLSCREEN_LOCK_MAX_WIDTH_PX = 1024;
 
 const FULLSCREEN_LAYER_LABEL_BY_SCOPE: Record<SubsystemScope, string> = {
   me: 'ME.EXE fullscreen',
@@ -52,6 +53,10 @@ const getLocationLabel = (): string => {
   const city = parts[parts.length - 1]?.replace(/_/g, ' ');
   return city ? city : 'location --';
 };
+
+const isMobileViewportWidth = (): boolean => (
+  typeof window !== 'undefined' && window.innerWidth <= MOBILE_FULLSCREEN_LOCK_MAX_WIDTH_PX
+);
 
 const StatusBar: React.FC = () => {
   const {
@@ -88,6 +93,7 @@ const StatusBar: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [subsystemMenu, setSubsystemMenu] = useState<SubsystemMenuState | null>(null);
   const [youLastSeenAt, setYouLastSeenAt] = useState<string | null>(null);
+  const [mobileViewport, setMobileViewport] = useState<boolean>(() => isMobileViewportWidth());
 
   // Keep the clock fresh while desktop shell is mounted.
   useEffect(() => {
@@ -105,6 +111,16 @@ const StatusBar: React.FC = () => {
     window.addEventListener('keydown', onEsc);
     return () => window.removeEventListener('keydown', onEsc);
   }, [menuOpen]);
+
+  useEffect(() => {
+    const onResize = () => setMobileViewport(isMobileViewportWidth());
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', onResize);
+    };
+  }, []);
 
   useEffect(() => {
     if (!subsystemMenu) return;
@@ -153,6 +169,7 @@ const StatusBar: React.FC = () => {
             : null
   );
   const anyFullscreenOpen = activeFullscreenScope != null;
+  const shouldLockMobileFullscreenScroll = anyFullscreenOpen && mobileViewport;
   const inYouContext = activeScope === 'you' || youDisplayMode === 'fullscreen';
   const resolveSubsystemAnchorPoint = useCallback((detail: SubsystemContextMenuEventDetail): { x: number; y: number } => {
     if (detail.origin === 'dock') {
@@ -226,6 +243,47 @@ const StatusBar: React.FC = () => {
       top: anchor.top,
     });
   }, [clampContextMenuAnchor, resolveSubsystemAnchorPoint]);
+
+  useEffect(() => {
+    if (!shouldLockMobileFullscreenScroll) return;
+    const body = document.body;
+    const html = document.documentElement;
+    const scrollY = window.scrollY;
+    const prev = {
+      bodyPosition: body.style.position,
+      bodyTop: body.style.top,
+      bodyLeft: body.style.left,
+      bodyRight: body.style.right,
+      bodyWidth: body.style.width,
+      bodyOverflow: body.style.overflow,
+      bodyOverscrollBehavior: body.style.overscrollBehavior,
+      htmlOverflow: html.style.overflow,
+      htmlOverscrollBehavior: html.style.overscrollBehavior,
+    };
+
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+    body.style.overflow = 'hidden';
+    body.style.overscrollBehavior = 'none';
+    html.style.overflow = 'hidden';
+    html.style.overscrollBehavior = 'none';
+
+    return () => {
+      body.style.position = prev.bodyPosition;
+      body.style.top = prev.bodyTop;
+      body.style.left = prev.bodyLeft;
+      body.style.right = prev.bodyRight;
+      body.style.width = prev.bodyWidth;
+      body.style.overflow = prev.bodyOverflow;
+      body.style.overscrollBehavior = prev.bodyOverscrollBehavior;
+      html.style.overflow = prev.htmlOverflow;
+      html.style.overscrollBehavior = prev.htmlOverscrollBehavior;
+      window.scrollTo(0, scrollY);
+    };
+  }, [shouldLockMobileFullscreenScroll]);
 
   const openAppForScope = (appId: Parameters<typeof openApp>[0]) => {
     if (scope === 'desktop') openMeFullscreen();
