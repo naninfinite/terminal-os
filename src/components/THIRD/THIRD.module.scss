@@ -49,13 +49,15 @@
 .toolbar,
 .editTools,
 .animationTools,
+.materialTools,
 .objectList {
   pointer-events: auto;
 }
 
 .toolbar,
 .editTools,
-.animationTools {
+.animationTools,
+.materialTools {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
@@ -122,6 +124,53 @@
 .objectPhysicsBtnActive {
   border-color: var(--ui-accent);
   box-shadow: var(--ui-shadow-focus);
+}
+
+.materialSwatchRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.materialSwatch {
+  width: 16px;
+  height: 16px;
+  border: $border-thin solid var(--ui-accent);
+  background: $bg-black;
+  padding: 0;
+}
+
+.materialSwatch:disabled {
+  opacity: 0.45;
+}
+
+.materialSwatchActive {
+  box-shadow: var(--ui-shadow-focus);
+}
+
+.materialColorLabel {
+  border: $border-thin solid var(--ui-accent);
+  background: rgb(0 0 0 / 0.72);
+  color: var(--ui-accent);
+  padding: 2px 6px;
+  font-size: $font-xs;
+  letter-spacing: 0.03em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.materialColorInput {
+  width: 20px;
+  height: 16px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.materialColorInput:disabled {
+  opacity: 0.45;
 }
 
 .editTag {
@@ -192,7 +241,8 @@
   }
 
   .toolBtn,
-  .objectItem {
+  .objectItem,
+  .materialColorLabel {
     font-size: 9px;
     padding: 2px 5px;
   }

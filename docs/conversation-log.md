@@ -1136,3 +1136,33 @@ Why it matters:
 Risks / Notes:
 - Existing saved scenes migrate with missing physics fields defaulting to `false`.
 - Full interaction correctness still depends on in-browser manual pointer/touch validation in addition to unit/build checks.
+
+---
+
+## Entry 60 - THIRD.EXE Material Selector Pass (Preset + Color)
+
+Summary:
+- Added per-object material metadata in THIRD runtime state and persistence:
+  - `material.preset` (`matte`, `gloss`, `glass`, `neon`),
+  - `material.color` (hex),
+  - legacy/missing material fields sanitize to safe defaults.
+- Added provider actions to mutate selected object materials:
+  - `setObjectMaterialPreset(id, preset)`,
+  - `setObjectMaterialColor(id, color)`.
+- Updated THREE runtime rendering path:
+  - switched object materials to `THREE.MeshPhongMaterial`,
+  - added ambient + directional lighting for visible preset differences,
+  - applied preset-specific shading profiles and preserved custom object colors.
+- Added EDIT-mode material controls in THIRD HUD:
+  - preset buttons,
+  - color swatches,
+  - native color input.
+- Added/updated tests for state + storage material persistence/sanitization behavior.
+
+Why it matters:
+- Gives users a fast, clickable styling workflow without introducing a full inspector yet.
+- Keeps material choices persistent across refresh/reopen and compatible with older saved scenes.
+
+Risks / Notes:
+- Material presets are intentionally lightweight profiles and may be tuned further during inspector work.
+- Lighting values are calibrated for current THIRD scene defaults and may need adjustment if skybox/lighting systems expand.

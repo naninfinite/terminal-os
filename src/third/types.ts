@@ -3,6 +3,7 @@ export type ThirdEditorMode = 'play' | 'edit';
 export type ThirdTransformMode = 'translate' | 'rotate' | 'scale';
 export type ThirdPrimitiveType = 'cube' | 'sphere' | 'cylinder' | 'plane';
 export type ThirdAnimationPreset = 'none' | 'bounce' | 'rotate' | 'pulse';
+export type ThirdMaterialPreset = 'matte' | 'gloss' | 'glass' | 'neon';
 
 export type ThirdVec3 = {
   x: number;
@@ -18,6 +19,7 @@ export type ThirdCameraState = {
 export type ThirdMaterialParams = {
   color: string;
   wireframe: boolean;
+  preset: ThirdMaterialPreset;
 };
 
 export type ThirdObjectTransform = {

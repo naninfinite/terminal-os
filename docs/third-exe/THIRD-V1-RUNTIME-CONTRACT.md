@@ -14,6 +14,7 @@ V1 includes:
 - edit gizmo with snap,
 - play-mode physics grab/drag,
 - global + per-object physics opt-in controls,
+- per-object material selector (`matte`, `gloss`, `glass`, `neon`) + color,
 - local autosave persistence,
 - preset object animations (`bounce`, `rotate`, `pulse`).
 
@@ -55,6 +56,8 @@ Key provider actions:
 - `setMode(mode)` / `toggleMode()`
 - `setPhysicsEnabled(enabled)` / `togglePhysics()`
 - `setObjectPhysicsEnabled(id, enabled)`
+- `setObjectMaterialPreset(id, preset)`
+- `setObjectMaterialColor(id, color)`
 - `setTransformMode(mode)` / `toggleSnap()`
 - `applyObjectTransforms(patches)`
 - `setCameraState(cameraState)`
@@ -66,7 +69,7 @@ On first load / destructive reset:
 - Grid helper on XZ plane (`y-up`).
 - Axes helper at origin.
 - One default cube.
-- Solid green-accent material style (`wireframe=false`).
+- Solid green-accent material style (`wireframe=false`, default `matte` preset).
 - Orbit camera control.
 
 ## 5) Interaction Contract
@@ -86,6 +89,9 @@ On first load / destructive reset:
   - scale: `0.1`.
 - Active `EDIT` badge is always shown while in edit mode.
 - Preset animation buttons are enabled only in `EDIT`.
+- Material controls are enabled only in `EDIT` for the selected object:
+  - preset buttons (`MATTE` / `GLOSS` / `GLASS` / `NEON`),
+  - swatch buttons + color picker.
 
 ### PLAY mode
 
@@ -122,6 +128,7 @@ Storage key:
 Persisted payload:
 - versioned JSON metadata only,
 - `objects`,
+  - each object includes material metadata (`color`, `preset`, `wireframe=false`),
 - global `physicsEnabled`,
 - per-object `physicsEnabled`,
 - `skyboxId`,

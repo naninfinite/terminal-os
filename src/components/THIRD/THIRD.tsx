@@ -10,6 +10,7 @@ import type { ResolvedTheme } from '../../theme/types';
 import { useThirdRuntime } from '../../third/ThirdProvider';
 import type {
   ThirdAnimationPreset,
+  ThirdMaterialPreset,
   ThirdPrimitiveType,
   ThirdSceneObject,
   ThirdTransformPatch,
@@ -20,10 +21,71 @@ const FIXED_TIMESTEP_SECONDS = 1 / 60;
 const MAX_PHYSICS_SUBSTEPS = 3;
 const PHYSICS_COMMIT_INTERVAL_SECONDS = 0.4;
 const CAMERA_SAVE_DEBOUNCE_MS = 250;
+const MATERIAL_PRESETS: ReadonlyArray<ThirdMaterialPreset> = ['matte', 'gloss', 'glass', 'neon'];
+const MATERIAL_SWATCHES: ReadonlyArray<string> = [
+  '#00ff66',
+  '#0f8f63',
+  '#66ffc2',
+  '#4cd6ff',
+  '#ffd166',
+  '#ff7eb6',
+];
 
 const toThreeHex = (value: string, fallback: number): number => {
   const parsed = Number.parseInt(value.replace('#', ''), 16);
   return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const normalizeHexColor = (value: string, fallbackHex: number): string => {
+  const normalized = value.trim().toLowerCase();
+  if (/^#[0-9a-f]{6}$/.test(normalized)) return normalized;
+  return `#${fallbackHex.toString(16).padStart(6, '0')}`;
+};
+
+const applyMaterialParams = (
+  material: THREE.MeshPhongMaterial,
+  params: ThirdSceneObject['material'],
+  fallbackHex: number
+): void => {
+  const colorHex = toThreeHex(normalizeHexColor(params.color, fallbackHex), fallbackHex);
+  const color = new THREE.Color(colorHex);
+
+  material.color.copy(color);
+  material.wireframe = false;
+  material.transparent = false;
+  material.opacity = 1;
+  material.depthWrite = true;
+  material.emissive.setHex(0x000000);
+  material.emissiveIntensity = 1;
+  material.specular.setHex(0x101010);
+  material.shininess = 12;
+
+  switch (params.preset) {
+    case 'gloss':
+      material.specular.setHex(0x4d4d4d);
+      material.shininess = 95;
+      break;
+    case 'glass':
+      material.transparent = true;
+      material.opacity = 0.38;
+      material.depthWrite = false;
+      material.specular.setHex(0xb8f5dd);
+      material.shininess = 130;
+      break;
+    case 'neon':
+      material.specular.setHex(0x333333);
+      material.shininess = 80;
+      material.emissive.copy(color.clone().multiplyScalar(0.45));
+      material.emissiveIntensity = 0.95;
+      break;
+    case 'matte':
+    default:
+      material.specular.setHex(0x080808);
+      material.shininess = 8;
+      break;
+  }
+
+  material.needsUpdate = true;
 };
 
 const getThirdPalette = (theme: ResolvedTheme): { background: number; accent: number } => {
@@ -141,7 +203,7 @@ type ThirdProps = {
 type RuntimeObjectEntry = {
   id: string;
   mesh: THREE.Mesh;
-  material: THREE.MeshBasicMaterial;
+  material: THREE.MeshPhongMaterial;
   geometry: THREE.BufferGeometry;
   body: CANNON.Body;
   shapeKey: string;
@@ -197,6 +259,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     toggleSnap,
     togglePhysics,
     setObjectPhysicsEnabled,
+    setObjectMaterialPreset,
+    setObjectMaterialColor,
     setObjectAnimationPreset,
     applyObjectTransforms,
     setCameraState,
@@ -280,6 +344,12 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
     const axes = new THREE.AxesHelper(3);
     scene.add(axes);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.62);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 0.58);
+    keyLight.position.set(4.5, 6.2, 3.4);
+    scene.add(ambientLight);
+    scene.add(keyLight);
 
     const orbit = new OrbitControls(camera, renderer.domElement);
     orbit.enableDamping = true;
@@ -788,10 +858,10 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       const shapeKey = toShapeKey(object);
       if (!existing) {
         const geometry = createGeometry(object.type);
-        const material = new THREE.MeshBasicMaterial({
-          color: palette.accent,
+        const material = new THREE.MeshPhongMaterial({
           wireframe: false,
         });
+        applyMaterialParams(material, object.material, palette.accent);
         const mesh = new THREE.Mesh(geometry, material);
         mesh.userData.thirdObjectId = object.id;
         mesh.position.set(
@@ -846,8 +916,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
       existing.physicsEnabled = object.physicsEnabled;
       existing.animationPreset = object.animationPreset;
-      existing.material.wireframe = false;
-      existing.material.color.setHex(palette.accent);
+      applyMaterialParams(existing.material, object.material, palette.accent);
 
       if (existing.shapeKey !== shapeKey) {
         engine.world.removeBody(existing.body);
@@ -1177,6 +1246,47 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
             >
               PULSE
             </button>
+          </div>
+        ) : null}
+
+        {editorMode === 'edit' ? (
+          <div className={styles.materialTools}>
+            {MATERIAL_PRESETS.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                className={`${styles.toolBtn} ${selectedObject?.material.preset === preset ? styles.toolBtnActive : ''}`.trim()}
+                onClick={() => selectionId && setObjectMaterialPreset(selectionId, preset)}
+                disabled={!selectionId}
+              >
+                {`MAT: ${preset.toUpperCase()}`}
+              </button>
+            ))}
+            <div className={styles.materialSwatchRow} role="group" aria-label="Material color swatches">
+              {MATERIAL_SWATCHES.map((swatch) => (
+                <button
+                  key={swatch}
+                  type="button"
+                  className={`${styles.materialSwatch} ${selectedObject?.material.color.toLowerCase() === swatch ? styles.materialSwatchActive : ''}`.trim()}
+                  style={{ backgroundColor: swatch }}
+                  onClick={() => selectionId && setObjectMaterialColor(selectionId, swatch)}
+                  disabled={!selectionId}
+                  aria-label={`Set material color ${swatch}`}
+                  title={swatch}
+                />
+              ))}
+            </div>
+            <label className={styles.materialColorLabel}>
+              COLOR
+              <input
+                type="color"
+                className={styles.materialColorInput}
+                value={selectedObject?.material.color ?? '#00ff66'}
+                onChange={(event) => selectionId && setObjectMaterialColor(selectionId, event.target.value)}
+                disabled={!selectionId}
+                aria-label="Material custom color"
+              />
+            </label>
           </div>
         ) : null}
 

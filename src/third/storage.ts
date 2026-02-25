@@ -1,6 +1,7 @@
 import { getItemSafe, setItemSafe } from '../utils/storage';
 import {
   THIRD_DEFAULT_COLOR,
+  THIRD_DEFAULT_MATERIAL_PRESET,
   THIRD_DEFAULT_SKYBOX_ID,
   THIRD_MAX_OBJECTS,
   THIRD_STORAGE_VERSION,
@@ -29,6 +30,18 @@ const sanitizePrimitiveType = (value: unknown): ThirdPrimitiveType | null => {
   }
   return null;
 };
+
+const sanitizeMaterialPreset = (value: unknown): ThirdSceneObject['material']['preset'] => (
+  value === 'matte' || value === 'gloss' || value === 'glass' || value === 'neon'
+    ? value
+    : THIRD_DEFAULT_MATERIAL_PRESET
+);
+
+const sanitizeMaterialColor = (value: unknown): string => (
+  typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value.trim())
+    ? value.trim().toLowerCase()
+    : THIRD_DEFAULT_COLOR
+);
 
 const sanitizeSceneObject = (raw: unknown): ThirdSceneObject | null => {
   if (!raw || typeof raw !== 'object') return null;
@@ -65,10 +78,9 @@ const sanitizeSceneObject = (raw: unknown): ThirdSceneObject | null => {
       scale: sanitizeVec3(transformData.scale, { x: 1, y: 1, z: 1 }),
     },
     material: {
-      color: typeof materialData.color === 'string' && materialData.color.trim()
-        ? materialData.color
-        : THIRD_DEFAULT_COLOR,
+      color: sanitizeMaterialColor(materialData.color),
       wireframe: false,
+      preset: sanitizeMaterialPreset(materialData.preset),
     },
     physicsEnabled: data.physicsEnabled === true,
     animationPreset,

@@ -8,6 +8,8 @@ import {
   hydrateStateFromPersistence,
   serializeStateForPersistence,
   setAnimationPreset,
+  setObjectMaterialColor,
+  setObjectMaterialPreset,
   setObjectPhysicsEnabled,
   setPhysicsEnabled,
   setSelection,
@@ -22,6 +24,7 @@ describe('third state helpers', () => {
     expect(state.objects[0].transform.position).toEqual({ x: 0, y: 0.5, z: 0 });
     expect(state.objects[0].physicsEnabled).toBe(false);
     expect(state.objects[0].material.wireframe).toBe(false);
+    expect(state.objects[0].material.preset).toBe('matte');
     expect(state.mode).toBe('play');
     expect(state.physicsEnabled).toBe(false);
     expect(state.snapEnabled).toBe(false);
@@ -106,5 +109,18 @@ describe('third state helpers', () => {
     expect(hydrated.physicsEnabled).toBe(true);
     expect(hydrated.objects[0].physicsEnabled).toBe(true);
     expect(hydrated.objects[0].transform.position).toEqual({ x: 1, y: 2, z: 3 });
+  });
+
+  it('updates object material preset and color with sanitization', () => {
+    const seeded = createDefaultThirdRuntimeState();
+    const firstId = seeded.objects[0].id;
+    const presetUpdated = setObjectMaterialPreset(seeded, firstId, 'glass');
+    expect(presetUpdated.objects[0].material.preset).toBe('glass');
+
+    const colorUpdated = setObjectMaterialColor(presetUpdated, firstId, '#4cd6ff');
+    expect(colorUpdated.objects[0].material.color).toBe('#4cd6ff');
+
+    const invalidColor = setObjectMaterialColor(colorUpdated, firstId, 'bad-color');
+    expect(invalidColor.objects[0].material.color).toBe('#00ff66');
   });
 });

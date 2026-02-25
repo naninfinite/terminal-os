@@ -10,6 +10,8 @@ import {
   setAnimationPreset,
   setCameraState,
   setEditorMode,
+  setObjectMaterialColor,
+  setObjectMaterialPreset,
   setObjectPhysicsEnabled,
   setPhysicsEnabled,
   setSelection,
@@ -31,6 +33,7 @@ import type {
   ThirdCameraState,
   ThirdDisplayMode,
   ThirdEditorMode,
+  ThirdMaterialPreset,
   ThirdPrimitiveType,
   ThirdTransformMode,
   ThirdTransformPatch,
@@ -55,6 +58,8 @@ type ThirdContextValue = {
   setPhysicsEnabled: (enabled: boolean) => void;
   togglePhysics: () => void;
   setObjectPhysicsEnabled: (id: string, enabled: boolean) => void;
+  setObjectMaterialPreset: (id: string, preset: ThirdMaterialPreset) => void;
+  setObjectMaterialColor: (id: string, color: string) => void;
   setTransformMode: (mode: ThirdTransformMode) => void;
   setSnapEnabled: (enabled: boolean) => void;
   toggleSnap: () => void;
@@ -135,6 +140,12 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
   const setObjectPhysicsEnabledAction = useCallback((id: string, enabled: boolean) => {
     setState((prev) => setObjectPhysicsEnabled(prev, id, enabled));
+  }, []);
+  const setObjectMaterialPresetAction = useCallback((id: string, preset: ThirdMaterialPreset) => {
+    setState((prev) => setObjectMaterialPreset(prev, id, preset));
+  }, []);
+  const setObjectMaterialColorAction = useCallback((id: string, color: string) => {
+    setState((prev) => setObjectMaterialColor(prev, id, color));
   }, []);
   const setTransformModeAction = useCallback((mode: ThirdTransformMode) => {
     setState((prev) => setTransformMode(prev, mode));
@@ -230,6 +241,8 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setPhysicsEnabled: setPhysicsEnabledAction,
     togglePhysics: togglePhysicsAction,
     setObjectPhysicsEnabled: setObjectPhysicsEnabledAction,
+    setObjectMaterialPreset: setObjectMaterialPresetAction,
+    setObjectMaterialColor: setObjectMaterialColorAction,
     setTransformMode: setTransformModeAction,
     setSnapEnabled: setSnapEnabledAction,
     toggleSnap: toggleSnapAction,
@@ -259,6 +272,8 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     selectObject,
     setCameraStateAction,
     setMode,
+    setObjectMaterialColorAction,
+    setObjectMaterialPresetAction,
     setObjectPhysicsEnabledAction,
     setPhysicsEnabledAction,
     setObjectAnimationPreset,

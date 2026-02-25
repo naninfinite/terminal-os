@@ -2,6 +2,7 @@ import type {
   ThirdAnimationPreset,
   ThirdCameraState,
   ThirdEditorMode,
+  ThirdMaterialPreset,
   ThirdPersistedSceneV1,
   ThirdPrimitiveType,
   ThirdRuntimeState,
@@ -14,6 +15,7 @@ import type {
 export const THIRD_STORAGE_VERSION = 1 as const;
 export const THIRD_DEFAULT_SKYBOX_ID = 'default';
 export const THIRD_DEFAULT_COLOR = '#00ff66';
+export const THIRD_DEFAULT_MATERIAL_PRESET: ThirdMaterialPreset = 'matte';
 export const THIRD_MAX_OBJECTS = 120;
 
 export const THIRD_DEFAULT_CAMERA_STATE: ThirdCameraState = {
@@ -32,6 +34,23 @@ const uid = (): string => {
 
 const cloneVec3 = (value: ThirdVec3): ThirdVec3 => ({ x: value.x, y: value.y, z: value.z });
 
+const isValidMaterialPreset = (value: unknown): value is ThirdMaterialPreset => (
+  value === 'matte'
+  || value === 'gloss'
+  || value === 'glass'
+  || value === 'neon'
+);
+
+const normalizeMaterialPreset = (value: unknown): ThirdMaterialPreset => (
+  isValidMaterialPreset(value) ? value : THIRD_DEFAULT_MATERIAL_PRESET
+);
+
+const normalizeMaterialColor = (value: unknown): string => {
+  if (typeof value !== 'string') return THIRD_DEFAULT_COLOR;
+  const normalized = value.trim().toLowerCase();
+  return /^#[0-9a-f]{6}$/.test(normalized) ? normalized : THIRD_DEFAULT_COLOR;
+};
+
 const cloneObject = (value: ThirdSceneObject): ThirdSceneObject => ({
   ...value,
   transform: {
@@ -40,8 +59,9 @@ const cloneObject = (value: ThirdSceneObject): ThirdSceneObject => ({
     scale: cloneVec3(value.transform.scale),
   },
   material: {
-    ...value.material,
+    color: normalizeMaterialColor(value.material.color),
     wireframe: false,
+    preset: normalizeMaterialPreset(value.material.preset),
   },
   physicsEnabled: Boolean(value.physicsEnabled),
 });
@@ -118,6 +138,7 @@ export const createSceneObject = (args: {
     material: {
       color: THIRD_DEFAULT_COLOR,
       wireframe: false,
+      preset: THIRD_DEFAULT_MATERIAL_PRESET,
     },
     physicsEnabled: false,
     animationPreset: args.animationPreset ?? 'none',
@@ -190,6 +211,46 @@ export const setObjectPhysicsEnabled = (
   ...state,
   objects: state.objects.map((object) => (
     object.id === id ? { ...object, physicsEnabled: enabled } : object
+  )),
+});
+
+export const setObjectMaterialPreset = (
+  state: ThirdRuntimeState,
+  id: string,
+  preset: ThirdMaterialPreset
+): ThirdRuntimeState => ({
+  ...state,
+  objects: state.objects.map((object) => (
+    object.id === id
+      ? {
+        ...object,
+        material: {
+          ...object.material,
+          wireframe: false,
+          preset: normalizeMaterialPreset(preset),
+        },
+      }
+      : object
+  )),
+});
+
+export const setObjectMaterialColor = (
+  state: ThirdRuntimeState,
+  id: string,
+  color: string
+): ThirdRuntimeState => ({
+  ...state,
+  objects: state.objects.map((object) => (
+    object.id === id
+      ? {
+        ...object,
+        material: {
+          ...object.material,
+          wireframe: false,
+          color: normalizeMaterialColor(color),
+        },
+      }
+      : object
   )),
 });
 

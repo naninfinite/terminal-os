@@ -20,6 +20,7 @@ describe('third storage sanitization', () => {
           material: {
             color: '#00ff66',
             wireframe: true,
+            preset: 'neon',
           },
           physicsEnabled: true,
           animationPreset: 'bounce',
@@ -39,6 +40,7 @@ describe('third storage sanitization', () => {
     expect(scene.objects[0].animationPreset).toBe('bounce');
     expect(scene.objects[0].physicsEnabled).toBe(true);
     expect(scene.objects[0].material.wireframe).toBe(false);
+    expect(scene.objects[0].material.preset).toBe('neon');
   });
 
   it('drops invalid payloads', () => {
@@ -99,6 +101,7 @@ describe('third storage sanitization', () => {
     if (!scene) return;
     expect(scene.physicsEnabled).toBe(false);
     expect(scene.objects[0].physicsEnabled).toBe(false);
+    expect(scene.objects[0].material.preset).toBe('matte');
   });
 
   it('round-trips persisted global and object physics flags through JSON payload', () => {
@@ -119,6 +122,7 @@ describe('third storage sanitization', () => {
           material: {
             color: '#00ff66',
             wireframe: false,
+            preset: 'glass',
           },
           physicsEnabled: true,
           animationPreset: 'none',
@@ -134,5 +138,6 @@ describe('third storage sanitization', () => {
     if (!restored) return;
     expect(restored.physicsEnabled).toBe(true);
     expect(restored.objects[0].physicsEnabled).toBe(true);
+    expect(restored.objects[0].material.preset).toBe('glass');
   });
 });
