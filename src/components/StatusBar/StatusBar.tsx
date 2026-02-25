@@ -63,6 +63,7 @@ const StatusBar: React.FC = () => {
   const { resolvedTheme, setThemeMode, setTextCaseMode, textCaseMode } = useTheme();
   const [now, setNow] = useState<Date>(() => new Date());
   const [menuOpen, setMenuOpen] = useState(false);
+  const [meDockMenuAnchor, setMeDockMenuAnchor] = useState<{ left: number; top: number } | null>(null);
   const [youLastSeenAt, setYouLastSeenAt] = useState<string | null>(null);
 
   // Keep the clock fresh while desktop shell is mounted.
@@ -82,6 +83,17 @@ const StatusBar: React.FC = () => {
     return () => window.removeEventListener('keydown', onEsc);
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (!meDockMenuAnchor) return;
+    const onDocClick = () => setMeDockMenuAnchor(null);
+    const onEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMeDockMenuAnchor(null);
+    };
+    window.addEventListener('click', onDocClick, { once: true });
+    window.addEventListener('keydown', onEsc);
+    return () => window.removeEventListener('keydown', onEsc);
+  }, [meDockMenuAnchor]);
+
   // Explicit formatter keeps output stable (HH:mm:ss, 24h).
   const timeString = new Intl.DateTimeFormat(undefined, {
     hour: '2-digit',
@@ -100,6 +112,10 @@ const StatusBar: React.FC = () => {
   const scopedWindows = useMemo(
     () => (scope === 'meos' ? orderedWindows : []),
     [orderedWindows, scope]
+  );
+  const meWindowsLadder = useMemo(
+    () => [...orderedWindows].sort((a, b) => b.zIndex - a.zIndex),
+    [orderedWindows]
   );
   const meWindowCount = orderedWindows.length;
   const showCollapsedMeTask = scope !== 'meos' && meWindowCount > 0;
@@ -161,6 +177,7 @@ const StatusBar: React.FC = () => {
   };
 
   const onSubsystemDockClick = (targetScope: SubsystemScope) => {
+    setMeDockMenuAnchor(null);
     const intent = getDockClickIntent({
       targetScope,
       anyFullscreenOpen,
@@ -177,6 +194,26 @@ const StatusBar: React.FC = () => {
 
     closeAllFullscreen();
     openSubsystemFullscreen(targetScope);
+  };
+
+  const openMeDockWindowLadder = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setMenuOpen(false);
+    const rect = event.currentTarget.getBoundingClientRect();
+    setMeDockMenuAnchor({
+      left: Math.max(8, Math.min(rect.left, window.innerWidth - 288)),
+      top: rect.top - 8,
+    });
+  };
+
+  const focusMeWindowFromDock = (windowId: string) => {
+    setMeDockMenuAnchor(null);
+    if (activeFullscreenScope !== 'me') {
+      closeAllFullscreen();
+      openMeFullscreen();
+    }
+    restoreWindow(windowId);
   };
 
   useEffect(() => {
@@ -284,6 +321,7 @@ const StatusBar: React.FC = () => {
           type="button"
           className={`${styles.taskBtn} ${styles.taskBtnSubsystem}`.trim()}
           onClick={() => onSubsystemDockClick('me')}
+          onContextMenu={openMeDockWindowLadder}
           title="Open ME.EXE"
         >
           {formatMeDockLabel(meWindowCount)}
@@ -317,6 +355,7 @@ const StatusBar: React.FC = () => {
             type="button"
             className={styles.taskBtn}
             onClick={openMeFullscreen}
+            onContextMenu={openMeDockWindowLadder}
             title={`Open ME.EXE (${meWindowCount} window${meWindowCount === 1 ? '' : 's'})`}
           >
             {`ME.EXE (${meWindowCount})`}
@@ -334,6 +373,32 @@ const StatusBar: React.FC = () => {
           </button>
         ))}
       </div>
+      {meDockMenuAnchor ? (
+        <div
+          className={styles.meDockMenu}
+          role="menu"
+          aria-label="ME.EXE windows"
+          style={{ left: meDockMenuAnchor.left, top: meDockMenuAnchor.top }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <p className={styles.meDockMenuTitle}>ME WINDOWS</p>
+          {meWindowsLadder.length === 0 ? (
+            <p className={styles.meDockMenuEmpty}>NO OPEN WINDOWS</p>
+          ) : (
+            meWindowsLadder.map((win, index) => (
+              <button
+                key={win.id}
+                type="button"
+                className={styles.meDockMenuItem}
+                onClick={() => focusMeWindowFromDock(win.id)}
+                title={win.title}
+              >
+                {`${index + 1}. ${win.title}${win.minimized ? ' [MIN]' : ''}`}
+              </button>
+            ))
+          )}
+        </div>
+      ) : null}
       <div className={styles.right} aria-live="polite" aria-atomic="true">
         <button
           type="button"

@@ -997,3 +997,21 @@ Why it matters:
 Risks / Notes:
 - ME right-click window-ladder popup is intentionally deferred to a follow-up milestone.
 - `THIRD` and `CONNECT` notification counts remain future-ready but inactive (`N=0`) in this pass.
+
+---
+
+## Entry 55 - ME Dock Window Ladder (Deferred Follow-Up)
+
+Summary:
+- Implemented the deferred ME dock follow-up: right-clicking `ME.EXE` in the status-bar dock now opens a window ladder popup.
+- Popup lists current ME windows in top-first order and supports direct jump/focus actions per window.
+- Selecting a window routes to `ME.EXE` fullscreen (if needed) and restores/focuses that specific window.
+- Kept left-click ME dock behavior unchanged.
+
+Why it matters:
+- Adds fast cross-scope window targeting for ME without replacing existing task-strip behavior.
+- Makes multi-window ME sessions easier to navigate from desktop and other subsystem contexts.
+
+Risks / Notes:
+- Mobile dock responsiveness regression discovered after subsystem dock expansion remains unresolved in this pass by user request.
+- TODO: schedule a focused mobile/tablet dock compaction hardening pass for subsystem buttons + overflow behavior.
