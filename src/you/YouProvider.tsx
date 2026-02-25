@@ -52,10 +52,20 @@ const getClientKey = (): string => {
 };
 
 const messageFromError = (error: unknown): string => {
-  if (error instanceof YouApiError && error.message) return error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return 'Unable to reach message board service.';
+  if (error instanceof YouApiError) {
+    if (error.status === 400) return error.message || 'Message input is invalid.';
+    if (error.status === 429) return error.message || 'You are posting too quickly. Please wait.';
+    if (typeof error.status === 'number' && error.status >= 500) return 'Service unavailable.';
+    if (error.message) return error.message;
+  }
+  return 'Service unavailable.';
 };
+
+const isBackendAvailableFromError = (error: unknown): boolean => (
+  error instanceof YouApiError
+  && typeof error.status === 'number'
+  && error.status < 500
+);
 
 export const YouProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const api = useMemo(() => new YouApiClient(), []);
@@ -90,11 +100,7 @@ export const YouProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setBackendAvailable(true);
       setError(null);
     } catch (err) {
-      if (err instanceof YouApiError && typeof err.status === 'number') {
-        setBackendAvailable(true);
-      } else {
-        setBackendAvailable(false);
-      }
+      setBackendAvailable(isBackendAvailableFromError(err));
       setError(messageFromError(err));
     } finally {
       setRefreshing(false);
@@ -118,11 +124,7 @@ export const YouProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setBackendAvailable(true);
       setError(null);
     } catch (err) {
-      if (err instanceof YouApiError && typeof err.status === 'number') {
-        setBackendAvailable(true);
-      } else {
-        setBackendAvailable(false);
-      }
+      setBackendAvailable(isBackendAvailableFromError(err));
       setError(messageFromError(err));
     } finally {
       setLoadingOlder(false);
@@ -154,11 +156,7 @@ export const YouProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (err instanceof YouApiError && err.status === 429) {
         setRateLimitedUntil(Date.now() + CLIENT_RATE_LIMIT_MS);
       }
-      if (err instanceof YouApiError && typeof err.status === 'number') {
-        setBackendAvailable(true);
-      } else {
-        setBackendAvailable(false);
-      }
+      setBackendAvailable(isBackendAvailableFromError(err));
       setError(messageFromError(err));
       return false;
     } finally {
@@ -244,4 +242,3 @@ export const useYouBoard = (): YouContextValue => {
   if (!ctx) throw new Error('useYouBoard must be used within <YouProvider>.');
   return ctx;
 };
-
