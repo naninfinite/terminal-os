@@ -243,8 +243,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
-  padding: 6px;
+  gap: 8px;
+  padding: 7px 8px;
   border-bottom: $border-thin solid var(--third-border);
 }
 
@@ -278,8 +278,8 @@
   min-height: 0;
   overflow: auto;
   display: grid;
-  gap: 6px;
-  padding: 6px;
+  gap: 8px;
+  padding: 8px;
 }
 
 .mobileUtilityDrawer {
@@ -342,6 +342,7 @@
 .inspectorSection {
   border: $border-thin solid var(--third-border);
   display: grid;
+  background: var(--third-surface-bg);
 }
 
 .inspectorSectionToggle {
@@ -349,10 +350,11 @@
   border-bottom: $border-thin solid var(--third-border);
   background: transparent;
   color: var(--third-text);
-  padding: 4px 6px;
+  padding: 5px 7px;
   text-align: left;
   font-size: $font-xs;
   letter-spacing: 0.06em;
+  line-height: 1.2;
 }
 
 .inspectorSectionToggle::after {
@@ -370,15 +372,15 @@
 }
 
 .inspectorSectionBody {
-  padding: 6px;
+  padding: 7px;
   display: grid;
-  gap: 6px;
+  gap: 7px;
 }
 
 .toolRow {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
+  gap: 5px;
 }
 
 .toolRowThirds {
@@ -396,14 +398,16 @@
   align-items: center;
   justify-content: center;
   text-align: center;
+  min-height: 24px;
 }
 
 .inlineStatus {
   border: $border-thin solid var(--third-border);
   color: var(--third-text-muted);
-  padding: 3px 6px;
+  padding: 4px 6px;
   font-size: $font-xs;
   letter-spacing: 0.04em;
+  line-height: 1.25;
   background: var(--third-surface-bg);
 }
 
@@ -415,6 +419,7 @@
   font-size: $font-xs;
   letter-spacing: 0.04em;
   line-height: 1.2;
+  min-height: 24px;
 }
 
 .toolBtn:disabled {
@@ -582,6 +587,10 @@
   font-size: $font-xs;
   letter-spacing: 0.03em;
   white-space: nowrap;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .objectPhysicsBtn:disabled {
@@ -676,17 +685,21 @@
   border: $border-thin solid var(--third-border);
   background: var(--third-surface-bg);
   color: var(--third-text);
-  padding: 2px 6px;
+  padding: 3px 6px;
   font-size: $font-xs;
   letter-spacing: 0.03em;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 24px;
+  box-sizing: border-box;
 }
 
 .materialColorInput {
-  width: 20px;
-  height: 16px;
+  width: 22px;
+  height: 18px;
   border: 0;
   padding: 0;
   background: transparent;
@@ -811,6 +824,12 @@
   .mobileUtilityTab {
     font-size: 9px;
     padding: 2px 5px;
+  }
+
+  .toolBtn,
+  .objectPhysicsBtn,
+  .materialColorLabel {
+    min-height: 20px;
   }
 
   .utilityTitle,

@@ -22,6 +22,10 @@ import {
   type ThirdSceneToolbarActionId,
 } from './thirdSceneToolbar';
 import {
+  THIRD_INSPECTOR_CAMERA_ROWS,
+  type ThirdInspectorCameraActionId,
+} from './thirdInspectorCameraLayout';
+import {
   createInitialThirdInspectorSectionState,
   createThirdInspectorSectionState,
   type ThirdInspectorSectionId,
@@ -583,6 +587,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     axis: InspectorAxis,
     nextValue: number
   ) => {
+    // TODO(THIRD transform): Add per-group XYZ lock toggle so position/rotation/scale axes can update together.
     const selected = selectedObjectRef.current;
     if (!selected) return;
 
@@ -2685,6 +2690,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
             selectedObject ? (
               isEditMode ? (
                 <div className={styles.inspectorGrid}>
+                  {/* TODO(THIRD transform): Support Unity-style click-drag horizontal scrubbing for transform numeric fields. */}
                   {INSPECTOR_GROUPS.map((group) => (
                     <div key={group} className={styles.inspectorVectorRow}>
                       <span className={styles.inspectorVectorLabel}>{inspectorGroupLabel(group)}</span>
@@ -2868,35 +2874,69 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
           </button>
           {inspectorSections.camera ? (
             <div className={styles.inspectorSectionBody}>
-              <div className={`${styles.toolRow} ${styles.toolRowThirds}`.trim()}>
-                <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('top')}>
-                  TOP
-                </button>
-                <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('front')}>
-                  FRONT
-                </button>
-                <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('right')}>
-                  RIGHT
-                </button>
-              </div>
-              <div className={styles.toolRow}>
-                <button
-                  type="button"
-                  className={styles.toolBtn}
-                  onClick={() => {
-                    const nextMode: ThirdProjectionMode = cameraState.projectionMode === 'orthographic'
-                      ? 'perspective'
-                      : 'orthographic';
-                    setProjectionMode(nextMode);
-                    saveCameraFromRuntime();
-                  }}
+              {THIRD_INSPECTOR_CAMERA_ROWS.map((row, rowIndex) => (
+                <div
+                  key={`camera-row-${rowIndex}`}
+                  className={`${styles.toolRow} ${row.length === 3 ? styles.toolRowThirds : ''}`.trim()}
                 >
-                  {projectionLabel(cameraState.projectionMode)}
-                </button>
-                <button type="button" className={styles.toolBtn} onClick={resetCameraView}>
-                  RESET
-                </button>
-              </div>
+                  {row.map((actionId) => {
+                    const runCameraAction = (id: ThirdInspectorCameraActionId) => {
+                      switch (id) {
+                        case 'camera_view_top':
+                          applyCameraPreset('top');
+                          return;
+                        case 'camera_view_front':
+                          applyCameraPreset('front');
+                          return;
+                        case 'camera_view_right':
+                          applyCameraPreset('right');
+                          return;
+                        case 'camera_toggle_projection': {
+                          const nextMode: ThirdProjectionMode = cameraState.projectionMode === 'orthographic'
+                            ? 'perspective'
+                            : 'orthographic';
+                          setProjectionMode(nextMode);
+                          saveCameraFromRuntime();
+                          return;
+                        }
+                        case 'camera_reset':
+                          resetCameraView();
+                          return;
+                        default:
+                          return;
+                      }
+                    };
+
+                    const label = (() => {
+                      switch (actionId) {
+                        case 'camera_view_top':
+                          return 'TOP';
+                        case 'camera_view_front':
+                          return 'FRONT';
+                        case 'camera_view_right':
+                          return 'RIGHT';
+                        case 'camera_toggle_projection':
+                          return projectionLabel(cameraState.projectionMode);
+                        case 'camera_reset':
+                          return 'RESET';
+                        default:
+                          return '';
+                      }
+                    })();
+
+                    return (
+                      <button
+                        key={actionId}
+                        type="button"
+                        className={styles.toolBtn}
+                        onClick={() => runCameraAction(actionId)}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
               <span className={styles.inlineStatus}>RMB VIEWPORT MENU HAS THE SAME CAMERA ACTIONS.</span>
             </div>
           ) : null}
