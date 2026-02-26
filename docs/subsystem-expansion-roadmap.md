@@ -73,7 +73,7 @@ Why first:
 
 Goal: make THIRD the first non-ME subsystem with full parity behavior.
 
-Current implementation checkpoint (2026-02-25):
+Current implementation checkpoint (2026-02-26):
 
 - Runtime/provider boundary is now active:
   - shared scene state for panel + fullscreen;
@@ -90,9 +90,9 @@ Current implementation checkpoint (2026-02-25):
 - V1 animation preset baseline is now active:
   - object-level `bounce`, `rotate`, `pulse` presets in edit mode.
 - V1 tweak pass baseline is now active:
-  - global physics master toggle defaults `OFF`;
   - per-object physics toggle defaults `OFF`;
-  - play-mode simulation/grab requires global + object physics `ON`;
+  - play-mode simulation/grab requires object physics `ON` and object unlocked;
+  - per-object lock/freeze flag is available in inspector + hierarchy context and persists in local autosave;
   - primitives default to solid accent materials with per-object wireframe option;
   - axes helper keeps default RGB colors for visibility.
 - V1.4 viewport workflow baseline is now active:
@@ -103,10 +103,13 @@ Current implementation checkpoint (2026-02-25):
   - viewport right-click menu provides grouped quick actions;
   - camera supports perspective/orthographic switching + top/front/right/reset actions;
   - inspector includes mirrored camera controls;
-  - camera projection mode persists in autosave payload.
+  - camera projection mode persists in autosave payload;
+  - toolbar now has grouped transform/scene/camera clusters with divider styling.
 - Hierarchy/context baseline is now active:
-  - row context actions include `FOCUS`, `RENAME`, `DUPLICATE`, `DELETE`, `UNPARENT`;
+  - row context actions include `FOCUS`, `LOCK/UNLOCK`, `ADD CHILD CUBE/SPHERE/CYLINDER/PLANE`, `RENAME`, `DUPLICATE`, `DELETE`, `UNPARENT`;
   - root/blank-area hierarchy context supports primitive add actions.
+  - hierarchy rows now show a lock affordance (`L`) for locked objects.
+  - scene list includes `LOCKED` filter and `LOCK FIRST` sort controls.
 - Camera navigation polish baseline is now active:
   - `FOCUS` now frames objects using bounds-aware distance + orthographic zoom adjustment;
   - camera hotkeys supported: `1`/`3`/`7`/`5` and `F` for focus.

@@ -12,11 +12,13 @@ V1 includes:
 - primitive spawn/select/delete/duplicate,
 - `PLAY` and `EDIT` modes,
 - edit gizmo with snap,
+- per-object lock/freeze controls with edit/simulation safety gates,
 - split utility windows:
   - left `SCENE` object-list window,
   - right `INSPECTOR` editing window,
 - top-left scene toolbar for mode/gizmo/snap/grid/axes plus camera quick actions,
 - object hierarchy tree with drag/drop parenting, inline rename, explicit unparent, and context menus,
+- hierarchy object-menu child spawn actions (`ADD CHILD CUBE/SPHERE/CYLINDER/PLANE`),
 - right-click viewport menu with grouped quick actions,
 - play-mode physics grab/drag,
 - per-object physics opt-in controls,
@@ -66,6 +68,7 @@ Key provider actions:
 - `setShowGrid(enabled)` / `toggleShowGrid()`
 - `setShowAxes(enabled)` / `toggleShowAxes()`
 - `setObjectPhysicsEnabled(id, enabled)`
+- `setObjectLocked(id, enabled)`
 - `setObjectMaterialPreset(id, preset)`
 - `setObjectMaterialColor(id, color)`
 - `setObjectMaterialWireframe(id, enabled)`
@@ -97,10 +100,12 @@ On first load / destructive reset:
   - drag/drop reparenting,
   - root drop target for unparent-to-scene,
   - inline rename (`double-click` or `F2`),
-  - hierarchy row context menu (`right-click` / `ContextMenu` key / `Shift+F10`) for `FOCUS`, `RENAME`, `DUPLICATE`, `DELETE`, `UNPARENT`,
+  - hierarchy row context menu (`right-click` / `ContextMenu` key / `Shift+F10`) for `FOCUS`, `LOCK/UNLOCK`, `ADD CHILD CUBE/SPHERE/CYLINDER/PLANE`, `RENAME`, `DUPLICATE`, `DELETE`, `UNPARENT`,
   - scene/root context menu (`right-click` / `ContextMenu` key / `Shift+F10`) for primitive add (`CUBE`, `SPHERE`, `CYLINDER`, `PLANE`).
 - `SCENE` window is list-first and menu-driven:
   - no persistent `ADD`/`DUP`/`DEL` buttons in the list window.
+  - hierarchy rows show lock affordance (`L`) for locked objects.
+  - optional list filters/sort controls: `LOCKED` and `LOCK FIRST`.
 - Top-left scene toolbar owns quick scene controls:
   - mode toggle,
   - gizmo mode (`MOVE`/`ROTATE`/`SCALE`),
@@ -110,9 +115,11 @@ On first load / destructive reset:
   - camera projection toggle,
   - camera preset views (`TOP`/`FRONT`/`RIGHT`),
   - camera reset.
+  - items are grouped (`transform` / `scene` / `camera`) with visual separators and consistent tooltip format.
 - `INSPECTOR` window includes sections:
   - `TRANSFORM`, `CAMERA`, `ANIMATION`, `PHYSICS`, `MATERIAL`.
 - Default inspector expansion starts with `TRANSFORM` open and remaining sections collapsed.
+- `TRANSFORM` includes a compact `LOCK` checkbox for the selected object.
 - Rotation fields display degrees and convert to radians in runtime state.
 - Valid numeric inspector edits apply live while typing.
 - Hotkeys:
@@ -144,12 +151,15 @@ On first load / destructive reset:
   - preset buttons (`MATTE` / `GLOSS` / `GLASS` / `NEON`),
   - swatch buttons + color picker,
   - wireframe toggle.
+- Locked objects are view/focus-only:
+  - transform/material/animation/physics edit controls are disabled until unlocked,
+  - locked objects are excluded from drag/drop reparent and transform-gizmo attachment.
 
 ### PLAY mode
 
 - Physics stepping/simulation is `PLAY`-only.
-- Object simulation/grab eligibility uses per-object toggle only:
-  - object `physicsEnabled === true`.
+- Object simulation/grab eligibility uses per-object physics + lock state:
+  - object `physicsEnabled === true` and `locked !== true`.
 - Grab/drag uses raycast hit, fixed initial camera depth, and point-to-point constraint.
 - Entering `EDIT` from `PLAY` releases active grab and freezes all bodies at current transforms.
 - Orbit controls disabled while mouse grab is active.
@@ -169,6 +179,7 @@ On first load / destructive reset:
   - `OBJECT` (duplicate/delete/object physics),
   - `INSPECTOR` (show/hide/collapse all/expand all).
 - If right-click raycast hits an object, that object is selected before menu actions.
+- Object-group actions are disabled when the selected object is locked.
 - Inspector `CAMERA` section mirrors projection + preset actions for keyboard-first access.
 - Inspector `CAMERA` section layout order:
   - first row: `TOP` / `FRONT` / `RIGHT`,
@@ -203,9 +214,9 @@ Persisted payload:
 - versioned JSON metadata only,
 - `objects`,
   - each object includes material metadata (`color`, `preset`, `wireframe`),
+  - each object includes `physicsEnabled` and `locked`,
 - `showGrid`,
 - `showAxes`,
-- per-object `physicsEnabled`,
 - `skyboxId`,
 - optional `cameraState` (`position`, `target`, `projectionMode`).
 
@@ -260,7 +271,7 @@ Validation baseline:
   - custom non-default material colors remain user-defined and unchanged across themes,
   - future palette tuning (swatches/preset defaults) can still be layered if needed.
 - Inspector polish follow-up:
-  - normalize mixed-label button sizing (notably camera projection + reset row) to consistent dimensions,
+  - continue iconography upgrade from placeholder two-letter glyphs to SVG toolbar icons,
   - keep multi-object drag-box selection out of current scope,
   - schedule a dedicated broader inspector UI/UX cleanup pass later.
 - Primitive catalog expansion follow-up:

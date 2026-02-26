@@ -1,7 +1,7 @@
 # Terminal-OS Conversation Log
 
 Purpose: running summary of user/assistant decisions and direction.
-Updated: 2026-02-25
+Updated: 2026-02-26
 
 ---
 
@@ -1695,3 +1695,66 @@ Why it matters:
 
 Risks / Notes:
 - Runtime-only toggles and camera/orbit changes are intentionally excluded from history tracking in this pass.
+
+---
+
+## Entry 80 - THIRD Object Lock/Freeze Baseline
+
+Summary:
+- Added per-object `locked` state through THIRD runtime types/state/provider/storage.
+- Locked objects are now protected from edit/sim actions:
+  - transform/material/animation/physics edits are blocked,
+  - hierarchy rename/reparent/duplicate/delete is blocked,
+  - play-mode simulation and grab eligibility excludes locked objects.
+- Added lock controls to editing flow:
+  - hierarchy context menu now includes `LOCK` / `UNLOCK`,
+  - transform inspector now includes a compact `LOCK` checkbox.
+
+Why it matters:
+- Gives users a safe freeze mechanism to prevent accidental edits while iterating scene layout.
+- Aligns play/edit interaction rules with object protection semantics.
+
+Risks / Notes:
+- Lock is object-level only in this pass (no batch lock/unlock or hierarchy lock propagation).
+
+---
+
+## Entry 81 - THIRD Hierarchy UX Follow-Up (Lock Affordance + Scene List Controls + Add Child)
+
+Summary:
+- Added hierarchy lock affordance and scene list controls:
+  - lock badge (`L`) on locked rows,
+  - `LOCKED` filter toggle,
+  - `LOCK FIRST` sort toggle.
+- Expanded hierarchy object context menu with child-spawn actions:
+  - `ADD CHILD CUBE`,
+  - `ADD CHILD SPHERE`,
+  - `ADD CHILD CYLINDER`,
+  - `ADD CHILD PLANE`.
+- Wired runtime child spawn flow so add-child actions immediately parent the new object under the selected hierarchy node in edit mode.
+
+Why it matters:
+- Improves hierarchy scanability in larger scenes.
+- Keeps object management menu-driven while reducing friction for parent/child composition.
+
+Risks / Notes:
+- Scene filter/sort toggles are runtime-local UI state (not persisted).
+
+---
+
+## Entry 82 - THIRD Top Toolbar Grouping/Tooltip Polish
+
+Summary:
+- Refined top-left scene toolbar model with explicit item groups:
+  - `transform`,
+  - `scene`,
+  - `camera`.
+- Added visual group dividers and tighter button spacing/hover states.
+- Normalized toolbar tooltip/title format to a consistent pattern and aligned this behavior in toolbar tests.
+
+Why it matters:
+- Makes camera and scene controls easier to scan at a glance.
+- Improves consistency with inspector/menu micro-interaction polish already delivered in earlier THIRD passes.
+
+Risks / Notes:
+- Toolbar still uses temporary two-letter glyph labels; SVG icon upgrade remains deferred.
