@@ -22,6 +22,12 @@ import {
   type ThirdSceneToolbarActionId,
 } from './thirdSceneToolbar';
 import {
+  createInitialThirdInspectorSectionState,
+  createThirdInspectorSectionState,
+  type ThirdInspectorSectionId,
+  type ThirdInspectorSectionState,
+} from './thirdInspectorSections';
+import {
   resolveFocusCameraDistance,
   resolveThirdCameraHotkey,
   THIRD_FOCUS_CAMERA_Y_OFFSET,
@@ -72,14 +78,13 @@ const MATERIAL_SWATCHES: ReadonlyArray<string> = [
 ];
 const INSPECTOR_GROUPS = ['position', 'rotation', 'scale'] as const;
 const INSPECTOR_AXES = ['x', 'y', 'z'] as const;
-const INSPECTOR_SECTION_IDS = ['transform', 'material', 'animation', 'physics', 'camera'] as const;
 
 type InspectorGroup = typeof INSPECTOR_GROUPS[number];
 type InspectorAxis = typeof INSPECTOR_AXES[number];
 type InspectorFieldKey = `${InspectorGroup}.${InspectorAxis}`;
 type InspectorDraft = Record<InspectorFieldKey, string>;
-type InspectorSectionId = typeof INSPECTOR_SECTION_IDS[number];
-type InspectorSectionState = Record<InspectorSectionId, boolean>;
+type InspectorSectionId = ThirdInspectorSectionId;
+type InspectorSectionState = ThirdInspectorSectionState;
 
 type ViewportMenuState = {
   x: number;
@@ -319,17 +324,6 @@ const withAxisValue = (value: ThirdVec3, axis: InspectorAxis, next: number): Thi
   z: axis === 'z' ? next : value.z,
 });
 
-const createInspectorSectionState = (expanded = true): InspectorSectionState => (
-  INSPECTOR_SECTION_IDS.reduce((acc, section) => {
-    acc[section] = expanded;
-    return acc;
-  }, {} as InspectorSectionState)
-);
-
-const createInitialInspectorSectionState = (): InspectorSectionState => ({
-  ...createInspectorSectionState(false),
-});
-
 const projectionLabel = (mode: ThirdProjectionMode): string => (
   mode === 'orthographic' ? 'ORTHOGRAPHIC' : 'PERSPECTIVE'
 );
@@ -518,7 +512,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   );
   const [inspectorDraft, setInspectorDraft] = useState<InspectorDraft>(() => createInspectorDraft(selectedObject));
   const [inspectorSections, setInspectorSections] = useState<InspectorSectionState>(
-    () => createInitialInspectorSectionState()
+    () => createInitialThirdInspectorSectionState()
   );
   const [sceneWindowVisible, setSceneWindowVisible] = useState(true);
   const [inspectorWindowVisible, setInspectorWindowVisible] = useState(true);
@@ -671,7 +665,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   }, []);
 
   const setAllInspectorSections = useCallback((expanded: boolean) => {
-    setInspectorSections(createInspectorSectionState(expanded));
+    setInspectorSections(createThirdInspectorSectionState(expanded));
   }, []);
 
   const toggleHierarchyNode = useCallback((id: string) => {
