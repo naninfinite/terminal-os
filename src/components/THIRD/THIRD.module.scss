@@ -141,10 +141,48 @@
   opacity: 0.45;
 }
 
-.inspectorRevealBtn {
+.sceneToolbar {
   position: absolute;
   top: 8px;
-  right: 8px;
+  left: 8px;
+  z-index: 3;
+  display: inline-flex;
+  gap: 4px;
+  border: $border-thin solid var(--third-border);
+  background: var(--third-panel-bg);
+  padding: 4px;
+}
+
+.sceneToolbarBtn {
+  border: $border-thin solid var(--third-border);
+  background: var(--third-surface-bg);
+  color: var(--third-text);
+  width: 30px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.sceneToolbarBtn:disabled {
+  opacity: 0.45;
+}
+
+.sceneToolbarBtnActive {
+  border-color: var(--third-accent);
+  color: var(--third-accent);
+  background: var(--third-surface-strong);
+  box-shadow: var(--ui-shadow-focus);
+}
+
+.sceneToolbarIcon {
+  font-size: 9px;
+  letter-spacing: 0.03em;
+}
+
+.utilityRevealBtn {
+  position: absolute;
   z-index: 3;
   border: $border-thin solid var(--third-border);
   background: var(--third-panel-bg);
@@ -154,42 +192,128 @@
   padding: 3px 8px;
 }
 
-.inspector {
-  position: absolute;
-  top: 8px;
+.sceneRevealBtn {
+  top: 46px;
+  left: 8px;
+}
+
+.inspectorRevealBtn {
+  top: 46px;
   right: 8px;
-  width: min(336px, calc(100% - 16px));
-  max-height: calc(100% - 16px);
-  overflow: auto;
-  display: grid;
-  gap: 6px;
+}
+
+.mobileRevealBtn {
+  display: none;
+}
+
+.desktopUtilityWindow {
+  position: absolute;
+  top: 44px;
   z-index: 3;
   pointer-events: auto;
   border: $border-thin solid var(--third-border);
   background: var(--third-panel-bg);
-  padding: 6px;
   box-sizing: border-box;
+  max-height: calc(100% - 52px);
 }
 
-.inspectorHeader {
+.sceneWindow {
+  left: 8px;
+  width: min(320px, calc(42% - 20px));
+}
+
+.inspectorWindow {
+  right: 8px;
+  width: min(336px, calc(42% - 20px));
+}
+
+.utilityPanel {
+  height: 100%;
+  min-height: 0;
   display: grid;
-  gap: 4px;
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
-.inspectorHeaderTop,
-.inspectorHeaderMeta,
-.inspectorHeaderActions {
+.mobilePanel {
+  border: 0;
+  background: transparent;
+}
+
+.utilityHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 6px;
+  padding: 6px;
+  border-bottom: $border-thin solid var(--third-border);
+}
+
+.utilityHeaderMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.utilityHeaderActions {
+  display: inline-flex;
+  align-items: center;
   gap: 4px;
 }
 
-.inspectorTitle {
+.utilityTitle {
   margin: 0;
   font-size: $font-xs;
   letter-spacing: 0.08em;
   color: var(--third-text);
+}
+
+.utilitySubtle {
+  font-size: $font-xs;
+  color: var(--third-text-muted);
+  letter-spacing: 0.04em;
+}
+
+.utilityBody {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+}
+
+.mobileUtilityDrawer {
+  display: none;
+}
+
+.mobileUtilityTabs {
+  display: inline-flex;
+  width: 100%;
+  gap: 4px;
+  border-bottom: $border-thin solid var(--third-border);
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+.mobileUtilityTab {
+  border: $border-thin solid var(--third-border);
+  background: var(--third-surface-bg);
+  color: var(--third-text);
+  padding: 3px 8px;
+  font-size: $font-xs;
+  letter-spacing: 0.04em;
+}
+
+.mobileUtilityTabActive {
+  border-color: var(--third-accent);
+  background: var(--third-surface-strong);
+  color: var(--third-accent);
+  box-shadow: var(--ui-shadow-focus);
+}
+
+.mobileUtilityBody {
+  min-height: 0;
+  overflow: auto;
 }
 
 .inspectorObjectName {
@@ -270,52 +394,6 @@
   text-align: center;
 }
 
-.toolRow .addObjectMenu {
-  width: 100%;
-}
-
-.toolRow .addObjectMenu .toolBtn {
-  width: 100%;
-}
-
-.addObjectMenu {
-  position: relative;
-}
-
-.addObjectDropdown {
-  position: absolute;
-  top: calc(100% + 2px);
-  left: 0;
-  width: 100%;
-  min-width: 132px;
-  border: $border-thin solid var(--third-border);
-  background: var(--third-panel-bg);
-  box-shadow: var(--ui-shadow-focus);
-  display: grid;
-  z-index: 2;
-}
-
-.addObjectOption {
-  border: 0;
-  border-bottom: $border-thin solid var(--third-border);
-  background: transparent;
-  color: var(--third-text);
-  text-align: left;
-  padding: 4px 8px;
-  font-size: $font-xs;
-  letter-spacing: 0.04em;
-}
-
-.addObjectOption:last-child {
-  border-bottom: 0;
-}
-
-.addObjectOption:hover,
-.addObjectOption:focus-visible {
-  background: var(--third-surface-hover);
-  outline: none;
-}
-
 .inlineStatus {
   border: $border-thin solid var(--third-border);
   color: var(--third-text-muted);
@@ -350,8 +428,13 @@
   max-height: min(170px, 32vh);
   overflow: auto;
   display: grid;
-  gap: 4px;
+  gap: 3px;
   padding-right: 2px;
+}
+
+.objectList:focus-visible {
+  outline: 1px solid var(--third-accent);
+  outline-offset: 1px;
 }
 
 .hierarchyRoot {
@@ -362,6 +445,13 @@
   padding: 3px 6px;
   font-size: $font-xs;
   letter-spacing: 0.04em;
+}
+
+.hierarchyRoot:hover,
+.hierarchyRoot:focus-visible {
+  border-color: var(--third-accent);
+  background: var(--third-surface-hover);
+  outline: none;
 }
 
 .hierarchyRootDropHint {
@@ -380,7 +470,7 @@
 
 .hierarchyChildren {
   display: grid;
-  gap: 4px;
+  gap: 2px;
   padding-left: 10px;
   border-left: $border-thin solid var(--third-border);
 }
@@ -388,10 +478,20 @@
 .objectRow {
   display: grid;
   grid-template-columns: 14px minmax(0, 1fr) auto;
-  gap: 4px;
+  gap: 3px;
   align-items: center;
   border: $border-thin solid transparent;
   border-radius: 2px;
+  padding: 1px 0;
+}
+
+.objectRow:hover {
+  border-color: var(--third-border);
+  background: var(--third-surface-hover);
+}
+
+.objectRow:hover .objectMeta {
+  color: var(--third-accent);
 }
 
 .objectRowDropHint {
@@ -414,6 +514,7 @@
   font-size: $font-xs;
   letter-spacing: 0.03em;
   flex: 1 1 auto;
+  cursor: pointer;
 }
 
 .hierarchyItem {
@@ -463,7 +564,7 @@
 
 .objectMeta {
   font-size: $font-xs;
-  color: var(--ui-text-muted);
+  color: var(--third-text-muted);
   letter-spacing: 0.03em;
   min-width: 102px;
   text-align: right;
@@ -642,19 +743,45 @@
 }
 
 @media (max-width: $bp-phone) {
-  .inspector {
-    top: auto;
+  .sceneToolbar {
+    top: 6px;
+    left: 6px;
+    padding: 3px;
+    gap: 3px;
+  }
+
+  .sceneToolbarBtn {
+    width: 26px;
+    height: 20px;
+  }
+
+  .desktopUtilityWindow,
+  .sceneRevealBtn,
+  .inspectorRevealBtn {
+    display: none;
+  }
+
+  .mobileUtilityDrawer {
+    position: absolute;
     left: 6px;
     right: 6px;
     bottom: 6px;
-    width: auto;
-    max-height: min(52%, 290px);
+    z-index: 3;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    border: $border-thin solid var(--third-border);
+    background: var(--third-panel-bg);
+    max-height: min(58%, 320px);
   }
 
-  .inspectorRevealBtn {
-    top: auto;
+  .mobileRevealBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    left: 6px;
     right: 6px;
     bottom: 6px;
+    top: auto;
   }
 
   .viewportMenu {
@@ -674,15 +801,16 @@
   .viewportMenuGroupBtn,
   .viewportMenuItem,
   .hierarchyMenuItem,
-  .addObjectOption,
   .inlineStatus,
   .objectPhysicsBtn,
-  .inspectorRevealBtn {
+  .utilityRevealBtn,
+  .mobileUtilityTab {
     font-size: 9px;
     padding: 2px 5px;
   }
 
-  .inspectorTitle,
+  .utilityTitle,
+  .utilitySubtle,
   .inspectorObjectName,
   .inspectorVectorLabel,
   .inspectorAxisToken,
