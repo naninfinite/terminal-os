@@ -2785,7 +2785,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                       onChange={(event) => setObjectLocked(selectedObject.id, event.target.checked)}
                       aria-label="Lock selected object"
                     />
-                    LOCK OBJECT
+                    LOCK
                   </label>
                 </div>
                 {selectedObjectLocked ? (

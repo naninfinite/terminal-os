@@ -437,20 +437,20 @@
   border: $border-thin solid var(--third-border);
   background: var(--third-surface-bg);
   color: var(--third-text);
-  padding: 3px 6px;
+  padding: 2px 5px;
   font-size: $font-xs;
   letter-spacing: 0.04em;
-  min-height: 24px;
+  min-height: 20px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  width: 100%;
-  box-sizing: border-box;
+  gap: 4px;
+  width: auto;
+  justify-self: start;
 }
 
 .lockToggleCheckbox {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   margin: 0;
   accent-color: var(--third-accent);
 }
