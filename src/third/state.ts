@@ -18,6 +18,7 @@ export const THIRD_DEFAULT_SKYBOX_ID = 'default';
 export const THIRD_DEFAULT_COLOR = '#00ff66';
 export const THIRD_DEFAULT_MATERIAL_PRESET: ThirdMaterialPreset = 'matte';
 export const THIRD_MAX_OBJECTS = 120;
+export const THIRD_MAX_OBJECT_NAME_LENGTH = 48;
 
 export const THIRD_DEFAULT_CAMERA_STATE: ThirdCameraState = {
   position: { x: 4.5, y: 4.2, z: 6.8 },
@@ -56,6 +57,13 @@ const normalizeMaterialColor = (value: unknown): string => {
 const normalizeProjectionMode = (value: unknown): ThirdProjectionMode => (
   value === 'orthographic' ? 'orthographic' : 'perspective'
 );
+
+const normalizeObjectName = (value: unknown, fallback: string): string => {
+  if (typeof value !== 'string') return fallback;
+  const compact = value.trim().replace(/\s+/g, ' ');
+  if (!compact) return fallback;
+  return compact.slice(0, THIRD_MAX_OBJECT_NAME_LENGTH);
+};
 
 const normalizeParentId = (value: unknown): string | null => (
   typeof value === 'string' && value.trim() ? value.trim() : null
@@ -103,6 +111,7 @@ const normalizeObjectHierarchy = (objects: ThirdSceneObject[]): ThirdSceneObject
 
 const cloneObject = (value: ThirdSceneObject): ThirdSceneObject => ({
   ...value,
+  name: normalizeObjectName(value.name, primitiveLabel(value.type)),
   parentId: normalizeParentId(value.parentId),
   transform: {
     position: cloneVec3(value.transform.position),
@@ -303,6 +312,30 @@ export const setObjectParent = (
         }
         : object
     )),
+  };
+};
+
+export const setObjectName = (
+  state: ThirdRuntimeState,
+  id: string,
+  name: string
+): ThirdRuntimeState => {
+  let changed = false;
+  const nextObjects = state.objects.map((object) => {
+    if (object.id !== id) return object;
+    const nextName = normalizeObjectName(name, object.name);
+    if (nextName === object.name) return object;
+    changed = true;
+    return {
+      ...object,
+      name: nextName,
+    };
+  });
+
+  if (!changed) return state;
+  return {
+    ...state,
+    objects: nextObjects,
   };
 };
 

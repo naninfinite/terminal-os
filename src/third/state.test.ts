@@ -11,6 +11,7 @@ import {
   setObjectMaterialColor,
   setObjectMaterialPreset,
   setObjectMaterialWireframe,
+  setObjectName,
   setObjectParent,
   setObjectPhysicsEnabled,
   setShowAxes,
@@ -187,5 +188,15 @@ describe('third state helpers', () => {
     const withSphereSelected = setSelection(cylinderChildOfSphere, sphereId);
     const afterDelete = deleteSelected(withSphereSelected);
     expect(afterDelete.objects.find((item) => item.id === cylinderId)?.parentId).toBe(rootId);
+  });
+
+  it('supports object rename with trim and empty fallback', () => {
+    const seeded = createDefaultThirdRuntimeState();
+    const id = seeded.objects[0].id;
+    const renamed = setObjectName(seeded, id, '   Hero Cube   ');
+    expect(renamed.objects[0].name).toBe('Hero Cube');
+
+    const emptyAttempt = setObjectName(renamed, id, '   ');
+    expect(emptyAttempt.objects[0].name).toBe('Hero Cube');
   });
 });

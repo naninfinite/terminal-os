@@ -25,7 +25,10 @@ import {
   resolveThirdMaterialColorHex,
 } from './thirdTheme';
 import { useThirdRuntime } from '../../third/ThirdProvider';
-import { THIRD_DEFAULT_CAMERA_STATE } from '../../third/state';
+import {
+  THIRD_DEFAULT_CAMERA_STATE,
+  THIRD_MAX_OBJECT_NAME_LENGTH,
+} from '../../third/state';
 import type {
   ThirdAnimationPreset,
   ThirdMaterialPreset,
@@ -457,6 +460,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     toggleShowAxes,
     setObjectPhysicsEnabled,
     setObjectParent,
+    setObjectName,
     setObjectMaterialPreset,
     setObjectMaterialColor,
     setObjectMaterialWireframe,
@@ -488,6 +492,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const rightClickCandidateRef = useRef<RightClickCandidate | null>(null);
   const viewportMenuRef = useRef<HTMLDivElement | null>(null);
   const addObjectMenuRef = useRef<HTMLDivElement | null>(null);
+  const renameInputRef = useRef<HTMLInputElement | null>(null);
   const projectionModeRef = useRef<ThirdProjectionMode>(cameraState.projectionMode);
 
   const selectedObject = useMemo(
@@ -505,8 +510,15 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const [hierarchyDragObjectId, setHierarchyDragObjectId] = useState<string | null>(null);
   const [hierarchyDropTargetId, setHierarchyDropTargetId] = useState<HierarchyDropTarget>(null);
   const [addObjectMenuOpen, setAddObjectMenuOpen] = useState(false);
+  const [renamingObjectId, setRenamingObjectId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState('');
   const hierarchyTree = useMemo(() => buildHierarchyTree(objects), [objects]);
   const isEditMode = editorMode === 'edit';
+  const selectedParent = useMemo(() => (
+    selectedObject?.parentId
+      ? objects.find((object) => object.id === selectedObject.parentId) ?? null
+      : null
+  ), [objects, selectedObject]);
   const viewportMenuGroups = useMemo(() => buildThirdViewportMenu({
     mode: editorMode,
     snapEnabled,
@@ -658,6 +670,40 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     setObjectParent(hierarchyDragObjectId, parentId);
     selectObject(hierarchyDragObjectId);
   }, [canSetHierarchyParent, hierarchyDragObjectId, selectObject, setObjectParent]);
+
+  const startRenameObject = useCallback((id: string) => {
+    const target = objects.find((object) => object.id === id);
+    if (!target) return;
+    selectObject(id);
+    setRenamingObjectId(id);
+    setRenameDraft(target.name);
+  }, [objects, selectObject]);
+
+  const cancelRenameObject = useCallback(() => {
+    setRenamingObjectId(null);
+    setRenameDraft('');
+  }, []);
+
+  const commitRenameObject = useCallback(() => {
+    if (!renamingObjectId) return;
+    const target = objects.find((object) => object.id === renamingObjectId);
+    if (!target) {
+      cancelRenameObject();
+      return;
+    }
+
+    const nextName = renameDraft.trim();
+    if (nextName) {
+      setObjectName(renamingObjectId, nextName);
+    }
+    cancelRenameObject();
+  }, [cancelRenameObject, objects, renameDraft, renamingObjectId, setObjectName]);
+
+  const unparentSelectedObject = useCallback(() => {
+    if (!selectedObject?.parentId) return;
+    setObjectParent(selectedObject.id, null);
+    selectObject(selectedObject.id);
+  }, [selectObject, selectedObject, setObjectParent]);
 
   const closeViewportMenu = useCallback(() => {
     setViewportMenu(null);
@@ -1943,6 +1989,13 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.target as HTMLElement | null)?.closest?.('input, textarea, button, select')) return;
       const key = event.key.toLowerCase();
+      if (key === 'f2') {
+        if (selectionIdRef.current) {
+          event.preventDefault();
+          startRenameObject(selectionIdRef.current);
+        }
+        return;
+      }
       if (key === 'w') setTransformMode('translate');
       if (key === 'r') setTransformMode('rotate');
       if (key === 's') setTransformMode('scale');
@@ -1950,7 +2003,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [editorMode, setTransformMode, toggleSnap]);
+  }, [editorMode, setTransformMode, startRenameObject, toggleSnap]);
 
   useEffect(() => {
     if (!viewportMenu) return;
@@ -1997,18 +2050,58 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     setAddObjectMenuOpen(false);
   }, [inspectorSections.objects, inspectorVisible]);
 
+  useEffect(() => {
+    if (!renamingObjectId) return;
+    if (objects.some((object) => object.id === renamingObjectId)) return;
+    cancelRenameObject();
+  }, [cancelRenameObject, objects, renamingObjectId]);
+
+  useEffect(() => {
+    if (isEditMode) return;
+    if (!renamingObjectId) return;
+    cancelRenameObject();
+  }, [cancelRenameObject, isEditMode, renamingObjectId]);
+
+  useEffect(() => {
+    if (!renamingObjectId) return;
+    if (inspectorVisible && inspectorSections.objects) return;
+    cancelRenameObject();
+  }, [cancelRenameObject, inspectorSections.objects, inspectorVisible, renamingObjectId]);
+
+  useEffect(() => {
+    if (!renamingObjectId) return;
+    const rafId = window.requestAnimationFrame(() => {
+      const input = renameInputRef.current;
+      if (!input) return;
+      input.focus();
+      input.select();
+    });
+    return () => window.cancelAnimationFrame(rafId);
+  }, [renamingObjectId]);
+
   const renderHierarchyNodes = (nodes: HierarchyTreeNode[], depth: number): React.ReactNode => (
     nodes.map((node) => {
       const hasChildren = node.children.length > 0;
       const nodeExpanded = !hierarchyCollapsedIds.has(node.object.id);
+      const canDropHere = (
+        isEditMode
+        && hierarchyDragObjectId != null
+        && canSetHierarchyParent(hierarchyDragObjectId, node.object.id)
+      );
+      const isDropTarget = hierarchyDropTargetId === node.object.id;
+      const isRenaming = renamingObjectId === node.object.id;
       return (
         <React.Fragment key={node.object.id}>
           <div
-            className={`${styles.objectRow} ${hierarchyDropTargetId === node.object.id ? styles.objectRowDropTarget : ''}`.trim()}
+            className={[
+              styles.objectRow,
+              canDropHere ? styles.objectRowDropHint : '',
+              isDropTarget ? styles.objectRowDropTarget : '',
+            ].join(' ').trim()}
             style={{ paddingLeft: `${depth * 12}px` }}
             onDragOver={(event) => {
               if (!isEditMode || !hierarchyDragObjectId || !canSetHierarchyParent(hierarchyDragObjectId, node.object.id)) {
-                if (hierarchyDropTargetId === node.object.id) {
+                if (isDropTarget) {
                   setHierarchyDropTargetId(null);
                 }
                 return;
@@ -2018,7 +2111,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
               setHierarchyDropTargetId(node.object.id);
             }}
             onDragLeave={() => {
-              if (hierarchyDropTargetId === node.object.id) {
+              if (isDropTarget) {
                 setHierarchyDropTargetId(null);
               }
             }}
@@ -2041,22 +2134,50 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
             ) : (
               <span className={styles.hierarchyNodeSpacer} aria-hidden="true" />
             )}
-            <button
-              type="button"
-              className={`${styles.objectItem} ${styles.hierarchyItem} ${selectionId === node.object.id ? styles.objectItemActive : ''}`.trim()}
-              onClick={() => selectObject(node.object.id)}
-              draggable={isEditMode}
-              onDragStart={(event) => {
-                if (!isEditMode) return;
-                event.dataTransfer.effectAllowed = 'move';
-                event.dataTransfer.setData('text/plain', node.object.id);
-                setHierarchyDragObjectId(node.object.id);
-                setHierarchyDropTargetId(null);
-              }}
-              onDragEnd={clearHierarchyDragState}
-            >
-              {node.object.name}
-            </button>
+            {isRenaming ? (
+              <input
+                ref={renameInputRef}
+                type="text"
+                className={`${styles.objectItem} ${styles.hierarchyItem} ${styles.objectNameInput}`.trim()}
+                value={renameDraft}
+                maxLength={THIRD_MAX_OBJECT_NAME_LENGTH}
+                onChange={(event) => setRenameDraft(event.target.value)}
+                onBlur={commitRenameObject}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    commitRenameObject();
+                    return;
+                  }
+                  if (event.key === 'Escape') {
+                    event.preventDefault();
+                    cancelRenameObject();
+                  }
+                }}
+                aria-label={`Rename ${node.object.name}`}
+              />
+            ) : (
+              <button
+                type="button"
+                className={`${styles.objectItem} ${styles.hierarchyItem} ${selectionId === node.object.id ? styles.objectItemActive : ''}`.trim()}
+                onClick={() => selectObject(node.object.id)}
+                onDoubleClick={() => {
+                  if (!isEditMode) return;
+                  startRenameObject(node.object.id);
+                }}
+                draggable={isEditMode && renamingObjectId == null}
+                onDragStart={(event) => {
+                  if (!isEditMode || renamingObjectId != null) return;
+                  event.dataTransfer.effectAllowed = 'move';
+                  event.dataTransfer.setData('text/plain', node.object.id);
+                  setHierarchyDragObjectId(node.object.id);
+                  setHierarchyDropTargetId(null);
+                }}
+                onDragEnd={clearHierarchyDragState}
+              >
+                {node.object.name}
+              </button>
+            )}
             <span className={styles.objectMeta}>
               {`${node.object.type.toUpperCase()} · ${node.object.physicsEnabled ? 'PHYS' : 'STATIC'}`}
             </span>
@@ -2361,10 +2482,39 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                   <button type="button" className={styles.toolBtn} onClick={duplicateSelected} disabled={!selectionId}>DUP</button>
                   <button type="button" className={styles.toolBtn} onClick={deleteSelected} disabled={!selectionId}>DEL</button>
                 </div>
+                <div className={styles.toolRow}>
+                  <button
+                    type="button"
+                    className={`${styles.toolBtn} ${renamingObjectId != null ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={() => selectionId && startRenameObject(selectionId)}
+                    disabled={!selectionId || !isEditMode}
+                  >
+                    RENAME [F2]
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.toolBtn}
+                    onClick={unparentSelectedObject}
+                    disabled={!isEditMode || !selectedObject?.parentId}
+                  >
+                    UNPARENT
+                  </button>
+                </div>
+                <span className={styles.inlineStatus}>
+                  {selectedObject
+                    ? `PARENT: ${selectedParent?.name ?? 'ROOT'}`
+                    : 'PARENT: NO SELECTION'}
+                </span>
                 <div className={styles.objectList} aria-label="THIRD object hierarchy">
                   <button
                     type="button"
-                    className={`${styles.hierarchyRoot} ${hierarchyDropTargetId === HIERARCHY_ROOT_DROP_TARGET ? styles.objectRowDropTarget : ''}`.trim()}
+                    className={[
+                      styles.hierarchyRoot,
+                      (isEditMode && hierarchyDragObjectId && canSetHierarchyParent(hierarchyDragObjectId, null))
+                        ? styles.hierarchyRootDropHint
+                        : '',
+                      hierarchyDropTargetId === HIERARCHY_ROOT_DROP_TARGET ? styles.objectRowDropTarget : '',
+                    ].join(' ').trim()}
                     aria-expanded={hierarchyExpanded}
                     onClick={() => setHierarchyExpanded((prev) => !prev)}
                     onDragOver={(event) => {

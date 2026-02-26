@@ -13,6 +13,7 @@ import {
   setObjectMaterialColor,
   setObjectMaterialPreset,
   setObjectMaterialWireframe,
+  setObjectName,
   setObjectParent,
   setObjectPhysicsEnabled,
   setShowAxes,
@@ -66,6 +67,7 @@ type ThirdContextValue = {
   toggleShowAxes: () => void;
   setObjectPhysicsEnabled: (id: string, enabled: boolean) => void;
   setObjectParent: (id: string, parentId: string | null) => void;
+  setObjectName: (id: string, name: string) => void;
   setObjectMaterialPreset: (id: string, preset: ThirdMaterialPreset) => void;
   setObjectMaterialColor: (id: string, color: string) => void;
   setObjectMaterialWireframe: (id: string, enabled: boolean) => void;
@@ -158,6 +160,9 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
   const setObjectParentAction = useCallback((id: string, parentId: string | null) => {
     setState((prev) => setObjectParent(prev, id, parentId));
+  }, []);
+  const setObjectNameAction = useCallback((id: string, name: string) => {
+    setState((prev) => setObjectName(prev, id, name));
   }, []);
   const setObjectMaterialPresetAction = useCallback((id: string, preset: ThirdMaterialPreset) => {
     setState((prev) => setObjectMaterialPreset(prev, id, preset));
@@ -263,6 +268,7 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     toggleShowAxes: toggleShowAxesAction,
     setObjectPhysicsEnabled: setObjectPhysicsEnabledAction,
     setObjectParent: setObjectParentAction,
+    setObjectName: setObjectNameAction,
     setObjectMaterialPreset: setObjectMaterialPresetAction,
     setObjectMaterialColor: setObjectMaterialColorAction,
     setObjectMaterialWireframe: setObjectMaterialWireframeAction,
@@ -298,6 +304,7 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setObjectMaterialColorAction,
     setObjectMaterialPresetAction,
     setObjectParentAction,
+    setObjectNameAction,
     setObjectMaterialWireframeAction,
     setObjectPhysicsEnabledAction,
     setShowAxesAction,

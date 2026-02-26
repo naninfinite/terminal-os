@@ -328,6 +328,11 @@
   letter-spacing: 0.04em;
 }
 
+.hierarchyRootDropHint {
+  border-style: dashed;
+  border-color: var(--third-accent);
+}
+
 .hierarchyRoot::before {
   content: '▾';
   margin-right: 6px;
@@ -353,7 +358,13 @@
   border-radius: 2px;
 }
 
+.objectRowDropHint {
+  border-style: dashed;
+  border-color: var(--third-border);
+}
+
 .objectRowDropTarget {
+  border-style: solid;
   border-color: var(--third-accent);
   background: var(--third-surface-hover);
 }
@@ -371,6 +382,16 @@
 
 .hierarchyItem {
   padding-left: 6px;
+}
+
+.objectNameInput {
+  text-align: left;
+  cursor: text;
+}
+
+.objectNameInput:focus-visible {
+  outline: 1px solid var(--third-border);
+  outline-offset: 0;
 }
 
 .hierarchyNodeToggle,
