@@ -147,22 +147,39 @@
   left: 8px;
   z-index: 3;
   display: inline-flex;
-  gap: 4px;
+  align-items: stretch;
+  gap: 3px;
   border: $border-thin solid var(--third-border);
   background: var(--third-panel-bg);
   padding: 4px;
+}
+
+.sceneToolbarDivider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--third-border);
+  margin: 0 1px;
 }
 
 .sceneToolbarBtn {
   border: $border-thin solid var(--third-border);
   background: var(--third-surface-bg);
   color: var(--third-text);
-  width: 30px;
+  width: 28px;
   height: 22px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0;
+  transition: border-color 0.12s ease, background-color 0.12s ease, color 0.12s ease;
+}
+
+.sceneToolbarBtn:hover,
+.sceneToolbarBtn:focus-visible {
+  border-color: var(--third-accent);
+  background: var(--third-surface-hover);
+  color: var(--third-accent);
+  outline: none;
 }
 
 .sceneToolbarBtn:disabled {
@@ -833,6 +850,10 @@
     left: 6px;
     padding: 3px;
     gap: 3px;
+  }
+
+  .sceneToolbarDivider {
+    margin: 0;
   }
 
   .sceneToolbarBtn {

@@ -3203,19 +3203,27 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
       {/* TODO(THIRD mobile): Make top scene toolbar collapsible to recover viewport space on smaller screens. */}
       <div className={styles.sceneToolbar} role="toolbar" aria-label="THIRD scene toolbar">
-        {sceneToolbarItems.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={`${styles.sceneToolbarBtn} ${item.active ? styles.sceneToolbarBtnActive : ''}`.trim()}
-            onClick={() => runSceneToolbarAction(item.id)}
-            disabled={item.disabled}
-            title={item.title}
-            aria-label={item.title}
-          >
-            <span className={styles.sceneToolbarIcon}>{item.icon}</span>
-          </button>
-        ))}
+        {sceneToolbarItems.map((item, index) => {
+          const previous = sceneToolbarItems[index - 1];
+          const showDivider = previous && previous.group !== item.group;
+          return (
+            <React.Fragment key={item.id}>
+              {showDivider ? <span className={styles.sceneToolbarDivider} aria-hidden="true" /> : null}
+              <button
+                type="button"
+                className={`${styles.sceneToolbarBtn} ${item.active ? styles.sceneToolbarBtnActive : ''}`.trim()}
+                onClick={() => runSceneToolbarAction(item.id)}
+                disabled={item.disabled}
+                title={item.title}
+                aria-label={item.title}
+                aria-pressed={item.active}
+                data-toolbar-group={item.group}
+              >
+                <span className={styles.sceneToolbarIcon}>{item.icon}</span>
+              </button>
+            </React.Fragment>
+          );
+        })}
       </div>
 
       {!sceneWindowVisible ? (

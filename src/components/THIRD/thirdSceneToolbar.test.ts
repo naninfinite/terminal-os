@@ -26,6 +26,20 @@ describe('thirdSceneToolbar model', () => {
       'camera_view_right',
       'camera_reset',
     ]);
+    expect(items.map((item) => item.group)).toEqual([
+      'transform',
+      'transform',
+      'transform',
+      'transform',
+      'transform',
+      'scene',
+      'scene',
+      'camera',
+      'camera',
+      'camera',
+      'camera',
+      'camera',
+    ]);
   });
 
   it('disables transform and snap in play mode while keeping mode/grid/axes/camera enabled', () => {
@@ -87,5 +101,17 @@ describe('thirdSceneToolbar model', () => {
     expect(items.find((item) => item.id === 'camera_view_front')?.active).toBe(false);
     expect(items.find((item) => item.id === 'camera_view_right')?.active).toBe(false);
     expect(items.find((item) => item.id === 'camera_reset')?.active).toBe(false);
+  });
+
+  it('uses consistent toolbar tooltip format', () => {
+    const items = buildThirdSceneToolbar({
+      mode: 'edit',
+      transformMode: 'translate',
+      projectionMode: 'orthographic',
+      snapEnabled: false,
+      showGrid: false,
+      showAxes: true,
+    });
+    expect(items.every((item) => item.title.includes('|'))).toBe(true);
   });
 });
