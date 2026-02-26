@@ -204,6 +204,8 @@ export const createDefaultThirdRuntimeState = (): ThirdRuntimeState => {
     selectionId: cube.id,
     mode: 'play',
     physicsEnabled: false,
+    showGrid: false,
+    showAxes: false,
     snapEnabled: false,
     skyboxId: THIRD_DEFAULT_SKYBOX_ID,
     cameraState: {
@@ -228,6 +230,26 @@ export const setPhysicsEnabled = (state: ThirdRuntimeState, enabled: boolean): T
 export const togglePhysics = (state: ThirdRuntimeState): ThirdRuntimeState => ({
   ...state,
   physicsEnabled: !state.physicsEnabled,
+});
+
+export const setShowGrid = (state: ThirdRuntimeState, enabled: boolean): ThirdRuntimeState => ({
+  ...state,
+  showGrid: enabled,
+});
+
+export const toggleShowGrid = (state: ThirdRuntimeState): ThirdRuntimeState => ({
+  ...state,
+  showGrid: !state.showGrid,
+});
+
+export const setShowAxes = (state: ThirdRuntimeState, enabled: boolean): ThirdRuntimeState => ({
+  ...state,
+  showAxes: enabled,
+});
+
+export const toggleShowAxes = (state: ThirdRuntimeState): ThirdRuntimeState => ({
+  ...state,
+  showAxes: !state.showAxes,
 });
 
 export const toggleEditorMode = (state: ThirdRuntimeState): ThirdRuntimeState => (
@@ -485,6 +507,8 @@ export const serializeStateForPersistence = (
   version: THIRD_STORAGE_VERSION,
   objects: state.objects.map(cloneObject),
   physicsEnabled: state.physicsEnabled,
+  showGrid: state.showGrid === true,
+  showAxes: state.showAxes === true,
   skyboxId: state.skyboxId,
   cameraState: {
     position: cloneVec3(state.cameraState.position),
@@ -506,6 +530,8 @@ export const hydrateStateFromPersistence = (
     selectionId: hydratedObjects[0]?.id ?? null,
     mode: 'play',
     physicsEnabled: persisted.physicsEnabled === true,
+    showGrid: persisted.showGrid === true,
+    showAxes: persisted.showAxes === true,
     snapEnabled: false,
     skyboxId: persisted.skyboxId || THIRD_DEFAULT_SKYBOX_ID,
     cameraState: persisted.cameraState

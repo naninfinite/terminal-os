@@ -16,12 +16,16 @@ import {
   setObjectParent,
   setObjectPhysicsEnabled,
   setPhysicsEnabled,
+  setShowAxes,
+  setShowGrid,
   setSelection,
   setSkyboxId,
   setSnapEnabled,
   setTransformMode,
   toggleEditorMode,
   togglePhysics,
+  toggleShowAxes,
+  toggleShowGrid,
   toggleSnap,
   updateObjectTransform,
 } from './state';
@@ -49,6 +53,8 @@ type ThirdContextValue = {
   selectionId: string | null;
   mode: ThirdEditorMode;
   physicsEnabled: boolean;
+  showGrid: boolean;
+  showAxes: boolean;
   snapEnabled: boolean;
   skyboxId: string;
   cameraState: ThirdCameraState;
@@ -59,6 +65,10 @@ type ThirdContextValue = {
   toggleMode: () => void;
   setPhysicsEnabled: (enabled: boolean) => void;
   togglePhysics: () => void;
+  setShowGrid: (enabled: boolean) => void;
+  toggleShowGrid: () => void;
+  setShowAxes: (enabled: boolean) => void;
+  toggleShowAxes: () => void;
   setObjectPhysicsEnabled: (id: string, enabled: boolean) => void;
   setObjectParent: (id: string, parentId: string | null) => void;
   setObjectMaterialPreset: (id: string, preset: ThirdMaterialPreset) => void;
@@ -141,6 +151,18 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
   const togglePhysicsAction = useCallback(() => {
     setState((prev) => togglePhysics(prev));
+  }, []);
+  const setShowGridAction = useCallback((enabled: boolean) => {
+    setState((prev) => setShowGrid(prev, enabled));
+  }, []);
+  const toggleShowGridAction = useCallback(() => {
+    setState((prev) => toggleShowGrid(prev));
+  }, []);
+  const setShowAxesAction = useCallback((enabled: boolean) => {
+    setState((prev) => setShowAxes(prev, enabled));
+  }, []);
+  const toggleShowAxesAction = useCallback(() => {
+    setState((prev) => toggleShowAxes(prev));
   }, []);
   const setObjectPhysicsEnabledAction = useCallback((id: string, enabled: boolean) => {
     setState((prev) => setObjectPhysicsEnabled(prev, id, enabled));
@@ -240,6 +262,8 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     selectionId: state.selectionId,
     mode: state.mode,
     physicsEnabled: state.physicsEnabled,
+    showGrid: state.showGrid,
+    showAxes: state.showAxes,
     snapEnabled: state.snapEnabled,
     skyboxId: state.skyboxId,
     cameraState: state.cameraState,
@@ -250,6 +274,10 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     toggleMode,
     setPhysicsEnabled: setPhysicsEnabledAction,
     togglePhysics: togglePhysicsAction,
+    setShowGrid: setShowGridAction,
+    toggleShowGrid: toggleShowGridAction,
+    setShowAxes: setShowAxesAction,
+    toggleShowAxes: toggleShowAxesAction,
     setObjectPhysicsEnabled: setObjectPhysicsEnabledAction,
     setObjectParent: setObjectParentAction,
     setObjectMaterialPreset: setObjectMaterialPresetAction,
@@ -290,6 +318,8 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setObjectMaterialWireframeAction,
     setObjectPhysicsEnabledAction,
     setPhysicsEnabledAction,
+    setShowAxesAction,
+    setShowGridAction,
     setObjectAnimationPreset,
     setSkyboxIdAction,
     setSnapEnabledAction,
@@ -298,12 +328,16 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     state.mode,
     state.objects,
     state.physicsEnabled,
+    state.showAxes,
+    state.showGrid,
     state.selectionId,
     state.skyboxId,
     state.snapEnabled,
     state.transformMode,
     toggleMode,
     togglePhysicsAction,
+    toggleShowAxesAction,
+    toggleShowGridAction,
     toggleSnapAction,
     updateObjectTransformAction,
   ]);

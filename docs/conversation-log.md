@@ -1323,3 +1323,22 @@ Why it matters:
 Risks / Notes:
 - Intentional tradeoff: objects explicitly set to `#00ff66` are treated as semantic default and will render as near-black in light theme.
 - If users need always-green objects across themes, they should pick a non-default custom green.
+
+---
+
+## Entry 67 - THIRD Scene Helper Visibility Controls (Grid/Axes Off by Default)
+
+Summary:
+- User requested removing the always-visible center axes helper and making both scene helpers configurable from inspector controls.
+- Implemented `GRID` and `AXES` toggles in the inspector `SCENE` section.
+- Updated runtime defaults so both helpers start `OFF` for new/reset scenes.
+- Added persistence and sanitization support for helper visibility flags so saved scenes restore helper preferences.
+
+Why it matters:
+- Reduces default viewport clutter and keeps first-run scene presentation cleaner.
+- Preserves discoverability by keeping helper controls explicit in inspector instead of hidden keybinds.
+- Maintains deterministic behavior across reloads by persisting helper toggle state.
+
+Risks / Notes:
+- Legacy saved payloads without helper fields sanitize to `showGrid=false` and `showAxes=false`.
+- Grid color/theme behavior remains unchanged when grid is toggled on (dark green-accent, light near-black).

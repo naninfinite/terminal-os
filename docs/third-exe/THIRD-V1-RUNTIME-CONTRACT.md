@@ -44,6 +44,8 @@ Primary runtime fields:
 - `selectionId: string | null`
 - `mode: 'play' | 'edit'`
 - `physicsEnabled: boolean` (global master toggle)
+- `showGrid: boolean`
+- `showAxes: boolean`
 - `snapEnabled: boolean`
 - `transformMode: 'translate' | 'rotate' | 'scale'`
 - `skyboxId: string`
@@ -58,6 +60,8 @@ Key provider actions:
 - `setObjectAnimationPreset(id, preset)`
 - `setMode(mode)` / `toggleMode()`
 - `setPhysicsEnabled(enabled)` / `togglePhysics()`
+- `setShowGrid(enabled)` / `toggleShowGrid()`
+- `setShowAxes(enabled)` / `toggleShowAxes()`
 - `setObjectPhysicsEnabled(id, enabled)`
 - `setObjectMaterialPreset(id, preset)`
 - `setObjectMaterialColor(id, color)`
@@ -70,10 +74,10 @@ Key provider actions:
 ## 4) Scene Defaults
 
 On first load / destructive reset:
-- Grid helper on XZ plane (`y-up`).
-- Axes helper at origin.
+- Grid helper is available but hidden by default.
+- Axes helper is available but hidden by default.
 - One default cube.
-- Theme-aware baseline styling:
+- Theme-aware helper styling (when grid is visible):
   - dark theme: green-accent grid + default material tone,
   - light theme: near-black (`#101010`) grid + default material tone.
 - Solid materials by default (`wireframe=false`, default `matte` preset).
@@ -88,6 +92,7 @@ On first load / destructive reset:
 - Right-docked inspector is visible by default, hideable, and section-collapsible.
 - Full edit workflow lives inside inspector sections:
   - `SCENE`, `CAMERA`, `OBJECTS`, `TRANSFORM`, `ANIMATION`, `PHYSICS`, `MATERIAL`.
+- `SCENE` section includes explicit `GRID` and `AXES` visibility toggles.
 - Default inspector expansion opens:
   - `SCENE`, `CAMERA`, `OBJECTS`, `TRANSFORM`.
 - Default inspector expansion collapses:
@@ -160,6 +165,8 @@ Persisted payload:
 - `objects`,
   - each object includes material metadata (`color`, `preset`, `wireframe`),
 - global `physicsEnabled`,
+- `showGrid`,
+- `showAxes`,
 - per-object `physicsEnabled`,
 - `skyboxId`,
 - optional `cameraState` (`position`, `target`, `projectionMode`).

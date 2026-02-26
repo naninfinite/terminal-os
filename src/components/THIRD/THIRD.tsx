@@ -447,6 +447,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     selectionId,
     mode: editorMode,
     physicsEnabled,
+    showGrid,
+    showAxes,
     snapEnabled,
     transformMode,
     cameraState,
@@ -458,6 +460,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     setTransformMode,
     toggleSnap,
     togglePhysics,
+    toggleShowGrid,
+    toggleShowAxes,
     setObjectPhysicsEnabled,
     setObjectParent,
     setObjectMaterialPreset,
@@ -987,6 +991,14 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   }, [snapEnabled]);
 
   useEffect(() => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    engine.grid.visible = showGrid;
+    engine.axes.visible = showAxes;
+    engine.renderer.render(engine.scene, engine.camera);
+  }, [showAxes, showGrid]);
+
+  useEffect(() => {
     const mount = canvasHostRef.current;
     const container = rootRef.current;
     if (!mount || !container) return;
@@ -1031,9 +1043,11 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       material.transparent = true;
       material.opacity = palette.gridOpacity;
     });
+    grid.visible = showGrid;
     scene.add(grid);
 
     const axes = new THREE.AxesHelper(3);
+    axes.visible = showAxes;
     scene.add(axes);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.62);
@@ -2255,6 +2269,22 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                     onClick={togglePhysics}
                   >
                     PHYSICS: {physicsEnabled ? 'ON' : 'OFF'}
+                  </button>
+                </div>
+                <div className={styles.toolRow}>
+                  <button
+                    type="button"
+                    className={`${styles.toolBtn} ${showGrid ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={toggleShowGrid}
+                  >
+                    GRID: {showGrid ? 'ON' : 'OFF'}
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.toolBtn} ${showAxes ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={toggleShowAxes}
+                  >
+                    AXES: {showAxes ? 'ON' : 'OFF'}
                   </button>
                 </div>
                 <div className={styles.toolRow}>

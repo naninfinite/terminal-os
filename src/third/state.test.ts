@@ -14,7 +14,11 @@ import {
   setObjectParent,
   setObjectPhysicsEnabled,
   setPhysicsEnabled,
+  setShowAxes,
+  setShowGrid,
   setSelection,
+  toggleShowAxes,
+  toggleShowGrid,
   togglePhysics,
 } from './state';
 
@@ -30,6 +34,8 @@ describe('third state helpers', () => {
     expect(state.objects[0].material.preset).toBe('matte');
     expect(state.mode).toBe('play');
     expect(state.physicsEnabled).toBe(false);
+    expect(state.showGrid).toBe(false);
+    expect(state.showAxes).toBe(false);
     expect(state.snapEnabled).toBe(false);
     expect(state.cameraState.projectionMode).toBe('perspective');
   });
@@ -115,6 +121,26 @@ describe('third state helpers', () => {
     expect(hydrated.objects[0].physicsEnabled).toBe(true);
     expect(hydrated.objects[0].transform.position).toEqual({ x: 1, y: 2, z: 3 });
     expect(hydrated.cameraState.projectionMode).toBe('perspective');
+  });
+
+  it('toggles and persists scene helper visibility flags', () => {
+    const seeded = createDefaultThirdRuntimeState();
+    const withGrid = setShowGrid(seeded, true);
+    const withAxes = toggleShowAxes(withGrid);
+    expect(withAxes.showGrid).toBe(true);
+    expect(withAxes.showAxes).toBe(true);
+
+    const flipped = toggleShowGrid(setShowAxes(withAxes, false));
+    expect(flipped.showGrid).toBe(false);
+    expect(flipped.showAxes).toBe(false);
+
+    const persisted = serializeStateForPersistence(withAxes);
+    expect(persisted.showGrid).toBe(true);
+    expect(persisted.showAxes).toBe(true);
+
+    const hydrated = hydrateStateFromPersistence(persisted);
+    expect(hydrated.showGrid).toBe(true);
+    expect(hydrated.showAxes).toBe(true);
   });
 
   it('updates object material preset and color with sanitization', () => {

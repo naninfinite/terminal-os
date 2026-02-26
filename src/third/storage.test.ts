@@ -7,6 +7,8 @@ describe('third storage sanitization', () => {
       version: 1,
       skyboxId: 'default',
       physicsEnabled: true,
+      showGrid: true,
+      showAxes: false,
       objects: [
         {
           id: 'cube_1',
@@ -38,6 +40,8 @@ describe('third storage sanitization', () => {
     if (!scene) return;
     expect(scene.version).toBe(1);
     expect(scene.physicsEnabled).toBe(true);
+    expect(scene.showGrid).toBe(true);
+    expect(scene.showAxes).toBe(false);
     expect(scene.objects).toHaveLength(1);
     expect(scene.objects[0].animationPreset).toBe('bounce');
     expect(scene.objects[0].physicsEnabled).toBe(true);
@@ -104,6 +108,8 @@ describe('third storage sanitization', () => {
     expect(scene).not.toBeNull();
     if (!scene) return;
     expect(scene.physicsEnabled).toBe(false);
+    expect(scene.showGrid).toBe(false);
+    expect(scene.showAxes).toBe(false);
     expect(scene.objects[0].physicsEnabled).toBe(false);
     expect(scene.objects[0].material.preset).toBe('matte');
     expect(scene.objects[0].material.wireframe).toBe(false);
@@ -115,6 +121,8 @@ describe('third storage sanitization', () => {
       version: 1,
       skyboxId: 'default',
       physicsEnabled: true,
+      showGrid: true,
+      showAxes: true,
       objects: [
         {
           id: 'obj_rt',
@@ -145,6 +153,8 @@ describe('third storage sanitization', () => {
     expect(restored).not.toBeNull();
     if (!restored) return;
     expect(restored.physicsEnabled).toBe(true);
+    expect(restored.showGrid).toBe(true);
+    expect(restored.showAxes).toBe(true);
     expect(restored.objects[0].physicsEnabled).toBe(true);
     expect(restored.objects[0].material.preset).toBe('glass');
     expect(restored.objects[0].material.wireframe).toBe(false);
