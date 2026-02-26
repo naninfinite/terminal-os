@@ -2737,6 +2737,17 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
           {inspectorSections.camera ? (
             <div className={styles.inspectorSectionBody}>
               <div className={`${styles.toolRow} ${styles.toolRowThirds}`.trim()}>
+                <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('top')}>
+                  TOP
+                </button>
+                <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('front')}>
+                  FRONT
+                </button>
+                <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('right')}>
+                  RIGHT
+                </button>
+              </div>
+              <div className={styles.toolRow}>
                 <button
                   type="button"
                   className={styles.toolBtn}
@@ -2752,15 +2763,6 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                 </button>
                 <button type="button" className={styles.toolBtn} onClick={resetCameraView}>
                   RESET
-                </button>
-                <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('top')}>
-                  TOP
-                </button>
-                <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('front')}>
-                  FRONT
-                </button>
-                <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('right')}>
-                  RIGHT
                 </button>
               </div>
               <span className={styles.inlineStatus}>RMB VIEWPORT MENU HAS THE SAME CAMERA ACTIONS.</span>
