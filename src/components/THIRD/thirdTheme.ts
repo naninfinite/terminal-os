@@ -32,7 +32,9 @@ export const getThirdThemePalette = (theme: ResolvedTheme): ThirdThemePalette =>
   const palette = RUNTIME_THEME_PALETTE[theme];
   const accent = toThreeHex(palette.accent, 0x00ff66);
   const materialDefault = toThreeHex(palette.thirdMaterialDefault, accent);
-  const grid = toThreeHex(palette.thirdGrid, materialDefault);
+  const grid = theme === 'dark'
+    ? 0x00ff66
+    : toThreeHex(palette.thirdGrid, materialDefault);
   const gridOpacity = Number.isFinite(palette.thirdGridOpacity)
     ? Math.min(1, Math.max(0, palette.thirdGridOpacity))
     : 0.45;
