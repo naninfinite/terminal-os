@@ -1,6 +1,6 @@
 # THIRD.EXE V1 Runtime Contract
 
-Date: 2026-02-25  
+Date: 2026-02-26  
 Status: Implemented baseline (V1)
 
 ## 1) Scope
@@ -15,14 +15,14 @@ V1 includes:
 - split utility windows:
   - left `SCENE` object-list window,
   - right `INSPECTOR` editing window,
-- top-left scene toolbar for mode/gizmo/snap/grid/axes actions,
 - top-left scene toolbar for mode/gizmo/snap/grid/axes plus camera quick actions,
-- object hierarchy tree with drag/drop parenting, inline rename, and explicit unparent,
+- object hierarchy tree with drag/drop parenting, inline rename, explicit unparent, and context menus,
 - right-click viewport menu with grouped quick actions,
 - play-mode physics grab/drag,
 - per-object physics opt-in controls,
 - per-object material selector (`matte`, `gloss`, `glass`, `neon`) + color + wireframe,
 - camera projection toggle (`perspective`/`orthographic`) + preset view actions (`top`/`front`/`right`) + reset,
+- camera keyboard navigation hotkeys (`1`/`3`/`7`/`5`, `F`),
 - local autosave persistence,
 - preset object animations (`bounce`, `rotate`, `pulse`).
 
@@ -96,7 +96,8 @@ On first load / destructive reset:
   - drag/drop reparenting,
   - root drop target for unparent-to-scene,
   - inline rename (`double-click` or `F2`),
-  - hierarchy row context menu (`right-click` / `ContextMenu` key / `Shift+F10`) for `RENAME`, `DUPLICATE`, `DELETE`, `UNPARENT`.
+  - hierarchy row context menu (`right-click` / `ContextMenu` key / `Shift+F10`) for `FOCUS`, `RENAME`, `DUPLICATE`, `DELETE`, `UNPARENT`,
+  - scene/root context menu (`right-click` / `ContextMenu` key / `Shift+F10`) for primitive add (`CUBE`, `SPHERE`, `CYLINDER`, `PLANE`).
 - `SCENE` window is list-first and menu-driven:
   - no persistent `ADD`/`DUP`/`DEL` buttons in the list window.
 - Top-left scene toolbar owns quick scene controls:
@@ -118,6 +119,16 @@ On first load / destructive reset:
   - `R` rotate,
   - `S` scale,
   - `G` snap toggle.
+- Camera hotkeys (when not typing in a control):
+  - `1` front view,
+  - `3` right view,
+  - `7` top view,
+  - `5` projection toggle (`perspective`/`orthographic`),
+  - `F` focus selected object.
+- Focus behavior re-frames the camera to the selected object:
+  - target distance adapts by object bounds with a stable near minimum,
+  - camera applies a slight vertical bias (`+2Y`) for readability,
+  - orthographic mode also updates zoom to keep the object visible.
 - Snap toggle applies:
   - translation: `0.5`,
   - rotation: `15deg`,
@@ -218,6 +229,7 @@ Added/updated tests:
 - `src/third/state.test.ts`
 - `src/third/storage.test.ts`
 - `src/components/THIRD/transformInspector.test.ts`
+- `src/components/THIRD/thirdCameraControls.test.ts`
 - `src/components/THIRD/thirdViewportMenu.test.ts`
 - `src/components/THIRD/thirdHierarchyMenu.test.ts`
 - `src/components/THIRD/thirdSceneToolbar.test.ts`

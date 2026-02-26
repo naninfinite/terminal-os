@@ -95,12 +95,21 @@ Current implementation checkpoint (2026-02-25):
   - play-mode simulation/grab requires global + object physics `ON`;
   - primitives default to solid accent materials with per-object wireframe option;
   - axes helper keeps default RGB colors for visibility.
-- V1.3 viewport workflow baseline is now active:
-  - floating left HUD replaced by right-docked inspector workflow;
+- V1.4 viewport workflow baseline is now active:
+  - floating HUD replaced by split utility surfaces:
+    - left `SCENE` hierarchy window,
+    - right `INSPECTOR` editing window,
+    - top-left scene toolbar for quick controls;
   - viewport right-click menu provides grouped quick actions;
   - camera supports perspective/orthographic switching + top/front/right/reset actions;
-  - inspector includes mirrored camera controls and cleaner default section expansion;
+  - inspector includes mirrored camera controls;
   - camera projection mode persists in autosave payload.
+- Hierarchy/context baseline is now active:
+  - row context actions include `FOCUS`, `RENAME`, `DUPLICATE`, `DELETE`, `UNPARENT`;
+  - root/blank-area hierarchy context supports primitive add actions.
+- Camera navigation polish baseline is now active:
+  - `FOCUS` now frames objects using bounds-aware distance + orthographic zoom adjustment;
+  - camera hotkeys supported: `1`/`3`/`7`/`5` and `F` for focus.
 
 Implementation slices:
 

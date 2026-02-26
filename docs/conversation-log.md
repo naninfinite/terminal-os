@@ -1593,3 +1593,52 @@ Why it matters:
 Risks / Notes:
 - Toolbar density is higher with added camera buttons; future icon sizing/compaction may still be needed.
 - No runtime/persistence contract changes required.
+
+---
+
+## Entry 76 - THIRD Hierarchy Context Expansion (Focus + Scene Add Menu)
+
+Summary:
+- Expanded hierarchy context actions to support two contexts:
+  - object row menu now includes `FOCUS`, `RENAME`, `DUPLICATE`, `DELETE`, `UNPARENT`,
+  - scene/root blank-area menu now supports primitive add (`CUBE`, `SPHERE`, `CYLINDER`, `PLANE`).
+- Added keyboard-accessible scene-context open path (`ContextMenu` key / `Shift + F10`) on hierarchy container/root.
+- Added hierarchy visual polish:
+  - clearer row hover/active contrast,
+  - compact spacing improvements,
+  - explicit focus-visible treatment on hierarchy container.
+
+Why it matters:
+- Keeps object operations menu-driven while restoring fast add/focus actions directly where users manage scene structure.
+- Improves keyboard-first parity and avoids pointer-only context workflows.
+
+Risks / Notes:
+- Scene-context add currently covers primitives only (no empty/group object creation in this pass).
+- Context actions remain intentionally local to the SCENE hierarchy surface.
+
+---
+
+## Entry 77 - THIRD Camera Navigation Polish (Focus Framing + Hotkeys + Regression Helpers)
+
+Summary:
+- Updated `FOCUS` behavior to truly frame selected objects instead of only re-centering:
+  - framing distance now adapts by object bounds with stable near minimum,
+  - camera applies a `+2Y` offset for readability,
+  - orthographic mode updates zoom to keep focused object visible.
+- Added Blender-style camera hotkeys:
+  - `1` front,
+  - `3` right,
+  - `7` top,
+  - `5` perspective/orthographic toggle,
+  - `F` focus selected object.
+- Added deterministic camera-control helper/tests:
+  - `thirdCameraControls.ts`,
+  - `thirdCameraControls.test.ts`,
+  - hotkey routing + focus-distance math are now unit-covered.
+
+Why it matters:
+- Improves navigation speed and makes focus action reliable from both near and far camera states.
+- Locks key camera interaction rules behind deterministic tests to reduce regression risk in future inspector/camera passes.
+
+Risks / Notes:
+- Numeric hotkeys are intentionally ignored while typing in interactive controls; non-input viewport usage now reserves `1/3/7/5`.
