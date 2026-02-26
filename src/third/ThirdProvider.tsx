@@ -15,7 +15,6 @@ import {
   setObjectMaterialWireframe,
   setObjectParent,
   setObjectPhysicsEnabled,
-  setPhysicsEnabled,
   setShowAxes,
   setShowGrid,
   setSelection,
@@ -23,7 +22,6 @@ import {
   setSnapEnabled,
   setTransformMode,
   toggleEditorMode,
-  togglePhysics,
   toggleShowAxes,
   toggleShowGrid,
   toggleSnap,
@@ -52,7 +50,6 @@ type ThirdContextValue = {
   objects: ReturnType<typeof createDefaultThirdRuntimeState>['objects'];
   selectionId: string | null;
   mode: ThirdEditorMode;
-  physicsEnabled: boolean;
   showGrid: boolean;
   showAxes: boolean;
   snapEnabled: boolean;
@@ -63,8 +60,6 @@ type ThirdContextValue = {
   closeFullscreen: () => void;
   setMode: (mode: ThirdEditorMode) => void;
   toggleMode: () => void;
-  setPhysicsEnabled: (enabled: boolean) => void;
-  togglePhysics: () => void;
   setShowGrid: (enabled: boolean) => void;
   toggleShowGrid: () => void;
   setShowAxes: (enabled: boolean) => void;
@@ -145,12 +140,6 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
   const toggleMode = useCallback(() => {
     setState((prev) => toggleEditorMode(prev));
-  }, []);
-  const setPhysicsEnabledAction = useCallback((enabled: boolean) => {
-    setState((prev) => setPhysicsEnabled(prev, enabled));
-  }, []);
-  const togglePhysicsAction = useCallback(() => {
-    setState((prev) => togglePhysics(prev));
   }, []);
   const setShowGridAction = useCallback((enabled: boolean) => {
     setState((prev) => setShowGrid(prev, enabled));
@@ -241,27 +230,23 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     };
     const onToggleMode = () => toggleMode();
-    const onTogglePhysics = () => togglePhysicsAction();
 
     window.addEventListener('terminalos:third:reset-scene', onResetScene as EventListener);
     window.addEventListener('terminalos:third:set-mode', onSetMode as EventListener);
     window.addEventListener('terminalos:third:toggle-mode', onToggleMode as EventListener);
-    window.addEventListener('terminalos:third:toggle-physics', onTogglePhysics as EventListener);
 
     return () => {
       window.removeEventListener('terminalos:third:reset-scene', onResetScene as EventListener);
       window.removeEventListener('terminalos:third:set-mode', onSetMode as EventListener);
       window.removeEventListener('terminalos:third:toggle-mode', onToggleMode as EventListener);
-      window.removeEventListener('terminalos:third:toggle-physics', onTogglePhysics as EventListener);
     };
-  }, [resetScene, setMode, toggleMode, togglePhysicsAction]);
+  }, [resetScene, setMode, toggleMode]);
 
   const value = useMemo<ThirdContextValue>(() => ({
     displayMode,
     objects: state.objects,
     selectionId: state.selectionId,
     mode: state.mode,
-    physicsEnabled: state.physicsEnabled,
     showGrid: state.showGrid,
     showAxes: state.showAxes,
     snapEnabled: state.snapEnabled,
@@ -272,8 +257,6 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     closeFullscreen,
     setMode,
     toggleMode,
-    setPhysicsEnabled: setPhysicsEnabledAction,
-    togglePhysics: togglePhysicsAction,
     setShowGrid: setShowGridAction,
     toggleShowGrid: toggleShowGridAction,
     setShowAxes: setShowAxesAction,
@@ -317,7 +300,6 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setObjectParentAction,
     setObjectMaterialWireframeAction,
     setObjectPhysicsEnabledAction,
-    setPhysicsEnabledAction,
     setShowAxesAction,
     setShowGridAction,
     setObjectAnimationPreset,
@@ -327,7 +309,6 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     state.cameraState,
     state.mode,
     state.objects,
-    state.physicsEnabled,
     state.showAxes,
     state.showGrid,
     state.selectionId,
@@ -335,7 +316,6 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     state.snapEnabled,
     state.transformMode,
     toggleMode,
-    togglePhysicsAction,
     toggleShowAxesAction,
     toggleShowGridAction,
     toggleSnapAction,

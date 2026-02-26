@@ -6,7 +6,6 @@ describe('third storage sanitization', () => {
     const scene = sanitizePersistedThirdScene({
       version: 1,
       skyboxId: 'default',
-      physicsEnabled: true,
       showGrid: true,
       showAxes: false,
       objects: [
@@ -39,7 +38,6 @@ describe('third storage sanitization', () => {
     expect(scene).not.toBeNull();
     if (!scene) return;
     expect(scene.version).toBe(1);
-    expect(scene.physicsEnabled).toBe(true);
     expect(scene.showGrid).toBe(true);
     expect(scene.showAxes).toBe(false);
     expect(scene.objects).toHaveLength(1);
@@ -65,7 +63,6 @@ describe('third storage sanitization', () => {
     const scene = sanitizePersistedThirdScene({
       version: 1,
       skyboxId: 'default',
-      physicsEnabled: false,
       objects: [
         {
           id: 'obj_1',
@@ -107,7 +104,6 @@ describe('third storage sanitization', () => {
 
     expect(scene).not.toBeNull();
     if (!scene) return;
-    expect(scene.physicsEnabled).toBe(false);
     expect(scene.showGrid).toBe(false);
     expect(scene.showAxes).toBe(false);
     expect(scene.objects[0].physicsEnabled).toBe(false);
@@ -116,7 +112,7 @@ describe('third storage sanitization', () => {
     expect(scene.objects[0].parentId).toBeNull();
   });
 
-  it('round-trips persisted global and object physics flags through JSON payload', () => {
+  it('ignores legacy global physics field and preserves per-object flags', () => {
     const rawPayload = {
       version: 1,
       skyboxId: 'default',
@@ -152,7 +148,6 @@ describe('third storage sanitization', () => {
     const restored = sanitizePersistedThirdScene(JSON.parse(JSON.stringify(rawPayload)));
     expect(restored).not.toBeNull();
     if (!restored) return;
-    expect(restored.physicsEnabled).toBe(true);
     expect(restored.showGrid).toBe(true);
     expect(restored.showAxes).toBe(true);
     expect(restored.objects[0].physicsEnabled).toBe(true);
@@ -166,7 +161,6 @@ describe('third storage sanitization', () => {
     const scene = sanitizePersistedThirdScene({
       version: 1,
       skyboxId: 'default',
-      physicsEnabled: false,
       objects: [
         {
           id: 'obj_cam',

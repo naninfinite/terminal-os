@@ -29,7 +29,6 @@ export type SubsystemContextMenuActionId =
   | 'you_clear_input'
   | 'third_set_edit_mode'
   | 'third_set_play_mode'
-  | 'third_toggle_physics'
   | 'third_reset_scene'
   | 'connect_copy_banner'
   | 'todo_connect_notifications';
@@ -52,7 +51,6 @@ type BuildSubsystemContextMenuArgs = {
   youUnreadCount: number;
   thirdNotificationCount: number;
   thirdMode: ThirdEditorMode;
-  thirdPhysicsEnabled: boolean;
   connectNotificationCount: number;
 };
 
@@ -139,15 +137,8 @@ export const buildSubsystemContextMenu = (args: BuildSubsystemContextMenuArgs): 
         rows: [
           { key: 'status_notifications', kind: 'status', label: `NOTIFICATIONS: ${args.thirdNotificationCount}` },
           { key: 'status_mode', kind: 'status', label: `MODE: ${args.thirdMode.toUpperCase()}` },
-          { key: 'status_physics', kind: 'status', label: `PHYSICS: ${args.thirdPhysicsEnabled ? 'ON' : 'OFF'}` },
           { key: 'act_open_third', kind: 'action', id: 'open_third', label: openLabelForScope('third', args.origin) },
           { key: 'act_third_mode', kind: 'action', id: modeAction.id, label: modeAction.label },
-          {
-            key: 'act_third_physics',
-            kind: 'action',
-            id: 'third_toggle_physics',
-            label: args.thirdPhysicsEnabled ? 'DISABLE PHYSICS' : 'ENABLE PHYSICS',
-          },
           { key: 'act_third_reset', kind: 'action', id: 'third_reset_scene', label: 'RESET SCENE' },
         ],
       };

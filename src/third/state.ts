@@ -203,7 +203,6 @@ export const createDefaultThirdRuntimeState = (): ThirdRuntimeState => {
     objects: [cube],
     selectionId: cube.id,
     mode: 'play',
-    physicsEnabled: false,
     showGrid: false,
     showAxes: false,
     snapEnabled: false,
@@ -220,16 +219,6 @@ export const createDefaultThirdRuntimeState = (): ThirdRuntimeState => {
 export const setEditorMode = (state: ThirdRuntimeState, mode: ThirdEditorMode): ThirdRuntimeState => ({
   ...state,
   mode,
-});
-
-export const setPhysicsEnabled = (state: ThirdRuntimeState, enabled: boolean): ThirdRuntimeState => ({
-  ...state,
-  physicsEnabled: enabled,
-});
-
-export const togglePhysics = (state: ThirdRuntimeState): ThirdRuntimeState => ({
-  ...state,
-  physicsEnabled: !state.physicsEnabled,
 });
 
 export const setShowGrid = (state: ThirdRuntimeState, enabled: boolean): ThirdRuntimeState => ({
@@ -506,7 +495,6 @@ export const serializeStateForPersistence = (
 ): ThirdPersistedSceneV1 => ({
   version: THIRD_STORAGE_VERSION,
   objects: state.objects.map(cloneObject),
-  physicsEnabled: state.physicsEnabled,
   showGrid: state.showGrid === true,
   showAxes: state.showAxes === true,
   skyboxId: state.skyboxId,
@@ -529,7 +517,6 @@ export const hydrateStateFromPersistence = (
     objects: hydratedObjects,
     selectionId: hydratedObjects[0]?.id ?? null,
     mode: 'play',
-    physicsEnabled: persisted.physicsEnabled === true,
     showGrid: persisted.showGrid === true,
     showAxes: persisted.showAxes === true,
     snapEnabled: false,

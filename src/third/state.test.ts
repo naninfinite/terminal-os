@@ -13,13 +13,11 @@ import {
   setObjectMaterialWireframe,
   setObjectParent,
   setObjectPhysicsEnabled,
-  setPhysicsEnabled,
   setShowAxes,
   setShowGrid,
   setSelection,
   toggleShowAxes,
   toggleShowGrid,
-  togglePhysics,
 } from './state';
 
 describe('third state helpers', () => {
@@ -33,7 +31,6 @@ describe('third state helpers', () => {
     expect(state.objects[0].material.wireframe).toBe(false);
     expect(state.objects[0].material.preset).toBe('matte');
     expect(state.mode).toBe('play');
-    expect(state.physicsEnabled).toBe(false);
     expect(state.showGrid).toBe(false);
     expect(state.showAxes).toBe(false);
     expect(state.snapEnabled).toBe(false);
@@ -84,40 +81,30 @@ describe('third state helpers', () => {
     expect(hydrated.objects[0].animationPreset).toBe('pulse');
     expect(hydrated.objects[0].physicsEnabled).toBe(false);
     expect(hydrated.mode).toBe('play');
-    expect(hydrated.physicsEnabled).toBe(false);
     expect(hydrated.snapEnabled).toBe(false);
     expect(hydrated.transformMode).toBe('translate');
   });
 
-  it('toggles global and per-object physics state deterministically', () => {
+  it('toggles per-object physics state deterministically', () => {
     const seeded = createDefaultThirdRuntimeState();
     const firstId = seeded.objects[0].id;
-    const globalOn = setPhysicsEnabled(seeded, true);
-    expect(globalOn.physicsEnabled).toBe(true);
-
-    const globalFlipped = togglePhysics(globalOn);
-    expect(globalFlipped.physicsEnabled).toBe(false);
-
-    const objectEnabled = setObjectPhysicsEnabled(globalFlipped, firstId, true);
+    const objectEnabled = setObjectPhysicsEnabled(seeded, firstId, true);
     expect(objectEnabled.objects.find((item) => item.id === firstId)?.physicsEnabled).toBe(true);
   });
 
-  it('serializes and hydrates global/per-object physics flags', () => {
+  it('serializes and hydrates per-object physics flags', () => {
     const seeded = createDefaultThirdRuntimeState();
     const firstId = seeded.objects[0].id;
-    const globalOn = setPhysicsEnabled(seeded, true);
-    const objectOn = setObjectPhysicsEnabled(globalOn, firstId, true);
+    const objectOn = setObjectPhysicsEnabled(seeded, firstId, true);
     const moved = applyObjectTransforms(objectOn, [{
       id: firstId,
       position: { x: 1, y: 2, z: 3 },
     }]);
 
     const persisted = serializeStateForPersistence(moved);
-    expect(persisted.physicsEnabled).toBe(true);
     expect(persisted.objects[0].physicsEnabled).toBe(true);
 
     const hydrated = hydrateStateFromPersistence(persisted);
-    expect(hydrated.physicsEnabled).toBe(true);
     expect(hydrated.objects[0].physicsEnabled).toBe(true);
     expect(hydrated.objects[0].transform.position).toEqual({ x: 1, y: 2, z: 3 });
     expect(hydrated.cameraState.projectionMode).toBe('perspective');

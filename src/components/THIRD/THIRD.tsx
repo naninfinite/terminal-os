@@ -308,10 +308,6 @@ const createInspectorSectionState = (expanded = true): InspectorSectionState => 
 
 const createInitialInspectorSectionState = (): InspectorSectionState => ({
   ...createInspectorSectionState(false),
-  scene: true,
-  camera: true,
-  objects: true,
-  transform: true,
 });
 
 const projectionLabel = (mode: ThirdProjectionMode): string => (
@@ -408,7 +404,6 @@ type RuntimeObjectEntry = {
     rotation: THREE.Euler;
     scale: THREE.Vector3;
   };
-  physicsEnabled: boolean;
   animationPreset: ThirdAnimationPreset;
 };
 
@@ -446,7 +441,6 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     objects,
     selectionId,
     mode: editorMode,
-    physicsEnabled,
     showGrid,
     showAxes,
     snapEnabled,
@@ -459,7 +453,6 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     toggleMode,
     setTransformMode,
     toggleSnap,
-    togglePhysics,
     toggleShowGrid,
     toggleShowAxes,
     setObjectPhysicsEnabled,
@@ -480,7 +473,6 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const engineRef = useRef<RuntimeEngine | null>(null);
   const rafRef = useRef(0);
   const modeRef = useRef(editorMode);
-  const physicsEnabledRef = useRef(physicsEnabled);
   const objectPhysicsRef = useRef(new Map<string, boolean>());
   const selectionIdRef = useRef(selectionId);
   const transformModeRef = useRef(transformMode);
@@ -503,7 +495,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     [objects, selectionId]
   );
   const [inspectorDraft, setInspectorDraft] = useState<InspectorDraft>(() => createInspectorDraft(selectedObject));
-  const [inspectorVisible, setInspectorVisible] = useState(true);
+  const [inspectorVisible, setInspectorVisible] = useState(false);
   const [inspectorSections, setInspectorSections] = useState<InspectorSectionState>(
     () => createInitialInspectorSectionState()
   );
@@ -518,7 +510,6 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const viewportMenuGroups = useMemo(() => buildThirdViewportMenu({
     mode: editorMode,
     snapEnabled,
-    physicsEnabled,
     projectionMode: cameraState.projectionMode,
     inspectorVisible,
     hasSelection: selectedObject != null,
@@ -527,7 +518,6 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     cameraState.projectionMode,
     editorMode,
     inspectorVisible,
-    physicsEnabled,
     selectedObject,
     snapEnabled,
   ]);
@@ -820,9 +810,6 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       case 'scene_toggle_snap':
         toggleSnap();
         break;
-      case 'scene_toggle_physics':
-        togglePhysics();
-        break;
       case 'object_duplicate':
         duplicateSelected();
         break;
@@ -860,7 +847,6 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     setObjectPhysicsEnabled,
     setProjectionMode,
     toggleMode,
-    togglePhysics,
     toggleSnap,
   ]);
 
@@ -917,10 +903,6 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   useEffect(() => {
     selectedObjectRef.current = selectedObject;
   }, [selectedObject]);
-
-  useEffect(() => {
-    physicsEnabledRef.current = physicsEnabled;
-  }, [physicsEnabled]);
 
   useEffect(() => {
     projectionModeRef.current = cameraState.projectionMode;
@@ -1187,7 +1169,6 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
     const shouldObjectSimulate = (id: string): boolean => (
       modeRef.current === 'play'
-      && physicsEnabledRef.current
       && (objectPhysicsRef.current.get(id) ?? false)
     );
 
@@ -1428,7 +1409,6 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
       if (modeRef.current !== 'play') return;
       if (event.button !== 0 && event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
-      if (!physicsEnabledRef.current) return;
       const picked = pickObject(event.clientX, event.clientY, true);
       if (!picked) return;
 
@@ -1534,37 +1514,27 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
       if (modeRef.current === 'play') {
         engine.entries.forEach((entry) => applyBodySimulationMode(entry));
+        physicsAccumulator += delta;
+        while (physicsAccumulator >= FIXED_TIMESTEP_SECONDS) {
+          engine.world.step(FIXED_TIMESTEP_SECONDS, FIXED_TIMESTEP_SECONDS, MAX_PHYSICS_SUBSTEPS);
+          physicsAccumulator -= FIXED_TIMESTEP_SECONDS;
+        }
 
-        if (physicsEnabledRef.current) {
-          physicsAccumulator += delta;
-          while (physicsAccumulator >= FIXED_TIMESTEP_SECONDS) {
-            engine.world.step(FIXED_TIMESTEP_SECONDS, FIXED_TIMESTEP_SECONDS, MAX_PHYSICS_SUBSTEPS);
-            physicsAccumulator -= FIXED_TIMESTEP_SECONDS;
-          }
-
-          const updatedIds = new Set<string>();
-          engine.entries.forEach((entry) => {
-            if (!shouldObjectSimulate(entry.id)) {
-              syncMeshFromBase(entry);
-              syncBodyFromMeshWorld(entry);
-              return;
-            }
-            syncBaseFromBody(entry);
-            updatedIds.add(entry.id);
-          });
-
-          physicsCommitAccumulatorRef.current += delta;
-          if (physicsCommitAccumulatorRef.current >= PHYSICS_COMMIT_INTERVAL_SECONDS) {
-            commitRuntimeTransforms(updatedIds);
-            physicsCommitAccumulatorRef.current = 0;
-          }
-        } else {
-          physicsAccumulator = 0;
-          physicsCommitAccumulatorRef.current = 0;
-          engine.entries.forEach((entry) => {
+        const updatedIds = new Set<string>();
+        engine.entries.forEach((entry) => {
+          if (!shouldObjectSimulate(entry.id)) {
             syncMeshFromBase(entry);
             syncBodyFromMeshWorld(entry);
-          });
+            return;
+          }
+          syncBaseFromBody(entry);
+          updatedIds.add(entry.id);
+        });
+
+        physicsCommitAccumulatorRef.current += delta;
+        if (physicsCommitAccumulatorRef.current >= PHYSICS_COMMIT_INTERVAL_SECONDS) {
+          commitRuntimeTransforms(updatedIds);
+          physicsCommitAccumulatorRef.current = 0;
         }
       } else {
         engine.entries.forEach((entry) => {
@@ -1736,13 +1706,11 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
             rotation: mesh.rotation.clone(),
             scale: mesh.scale.clone(),
           },
-          physicsEnabled: object.physicsEnabled,
           animationPreset: object.animationPreset,
         });
         return;
       }
 
-      existing.physicsEnabled = object.physicsEnabled;
       existing.animationPreset = object.animationPreset;
       applyMaterialParams(existing.material, object.material, palette.materialDefault);
 
@@ -1801,7 +1769,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     objects.forEach((object) => {
       const entry = engine.entries.get(object.id);
       if (!entry) return;
-      const shouldSimulate = modeRef.current === 'play' && physicsEnabled && object.physicsEnabled;
+      const shouldSimulate = modeRef.current === 'play' && object.physicsEnabled;
       if (!shouldSimulate) {
         syncMeshFromBase(entry);
       }
@@ -1812,7 +1780,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       const entry = engine.entries.get(object.id);
       if (!entry) return;
 
-      const shouldSimulate = modeRef.current === 'play' && physicsEnabled && object.physicsEnabled;
+      const shouldSimulate = modeRef.current === 'play' && object.physicsEnabled;
       if (shouldSimulate) {
         if (entry.body.type !== CANNON.Body.DYNAMIC) {
           syncMeshFromBase(entry);
@@ -1832,7 +1800,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       }
       syncBodyFromMeshWorld(entry);
     });
-  }, [objects, physicsEnabled, resolvedTheme]);
+  }, [objects, resolvedTheme]);
 
   useEffect(() => {
     const engine = engineRef.current;
@@ -1879,7 +1847,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   useEffect(() => {
     const engine = engineRef.current;
     if (!engine) return;
-    if (editorMode !== 'play' || physicsEnabled) return;
+    if (editorMode !== 'edit') return;
 
     releaseGrabRef.current();
     const updatedIds = new Set<string>();
@@ -1893,7 +1861,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     });
     commitRuntimeRef.current(updatedIds);
     forceSave();
-  }, [editorMode, forceSave, physicsEnabled, syncEntryBaseFromBodyWorld, syncEntryBodyFromMeshWorld]);
+  }, [editorMode, forceSave, syncEntryBaseFromBodyWorld, syncEntryBodyFromMeshWorld]);
 
   useEffect(() => {
     const engine = engineRef.current;
@@ -1903,7 +1871,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     if (!activeGrab) return;
 
     const grabbedObject = objects.find((object) => object.id === activeGrab.objectId);
-    if (physicsEnabled && grabbedObject?.physicsEnabled) return;
+    if (grabbedObject?.physicsEnabled) return;
 
     releaseGrabRef.current(activeGrab.pointerId);
     const entry = engine.entries.get(activeGrab.objectId);
@@ -1916,7 +1884,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       commitRuntimeRef.current(new Set([activeGrab.objectId]));
       forceSave();
     }
-  }, [editorMode, forceSave, objects, physicsEnabled, syncEntryBaseFromBodyWorld, syncEntryBodyFromMeshWorld]);
+  }, [editorMode, forceSave, objects, syncEntryBaseFromBodyWorld, syncEntryBodyFromMeshWorld]);
 
   useEffect(() => {
     const engine = engineRef.current;
@@ -1976,8 +1944,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       if ((event.target as HTMLElement | null)?.closest?.('input, textarea, button, select')) return;
       const key = event.key.toLowerCase();
       if (key === 'w') setTransformMode('translate');
-      if (key === 'e') setTransformMode('rotate');
-      if (key === 'r') setTransformMode('scale');
+      if (key === 'r') setTransformMode('rotate');
+      if (key === 's') setTransformMode('scale');
       if (key === 'g') toggleSnap();
     };
     window.addEventListener('keydown', onKeyDown);
@@ -2230,7 +2198,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                     ))}
                   </div>
                 ) : (
-                  <p className={styles.inspectorEmpty}>SWITCH TO EDIT MODE TO ADJUST TRANSFORM NUMERIC FIELDS.</p>
+                  <p className={styles.inspectorEmpty}>TRANSFORM FIELDS ARE READ-ONLY WHILE IN PLAY MODE.</p>
                 )
               ) : (
                 <p className={styles.inspectorEmpty}>SELECT AN OBJECT TO EDIT TRANSFORM.</p>
@@ -2250,9 +2218,6 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
             {inspectorSections.scene ? (
               <div className={styles.inspectorSectionBody}>
                 <div className={styles.toolRow}>
-                  <button type="button" className={styles.toolBtn} onClick={toggleMode}>
-                    {isEditMode ? 'SWITCH TO PLAY' : 'SWITCH TO EDIT'}
-                  </button>
                   <button
                     type="button"
                     className={`${styles.toolBtn} ${snapEnabled ? styles.toolBtnActive : ''}`.trim()}
@@ -2260,15 +2225,6 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                     disabled={!isEditMode}
                   >
                     SNAP [G]: {snapEnabled ? 'ON' : 'OFF'}
-                  </button>
-                </div>
-                <div className={styles.toolRow}>
-                  <button
-                    type="button"
-                    className={`${styles.toolBtn} ${physicsEnabled ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={togglePhysics}
-                  >
-                    PHYSICS: {physicsEnabled ? 'ON' : 'OFF'}
                   </button>
                 </div>
                 <div className={styles.toolRow}>
@@ -2302,7 +2258,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                     onClick={() => setTransformMode('rotate')}
                     disabled={!isEditMode}
                   >
-                    ROTATE [E]
+                    ROTATE [R]
                   </button>
                   <button
                     type="button"
@@ -2310,7 +2266,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                     onClick={() => setTransformMode('scale')}
                     disabled={!isEditMode}
                   >
-                    SCALE [R]
+                    SCALE [S]
                   </button>
                 </div>
               </div>

@@ -43,7 +43,6 @@ Primary runtime fields:
 - `objects: ThirdSceneObject[]`
 - `selectionId: string | null`
 - `mode: 'play' | 'edit'`
-- `physicsEnabled: boolean` (global master toggle)
 - `showGrid: boolean`
 - `showAxes: boolean`
 - `snapEnabled: boolean`
@@ -59,7 +58,6 @@ Key provider actions:
 - `duplicateSelected()`
 - `setObjectAnimationPreset(id, preset)`
 - `setMode(mode)` / `toggleMode()`
-- `setPhysicsEnabled(enabled)` / `togglePhysics()`
 - `setShowGrid(enabled)` / `toggleShowGrid()`
 - `setShowAxes(enabled)` / `toggleShowAxes()`
 - `setObjectPhysicsEnabled(id, enabled)`
@@ -89,20 +87,18 @@ On first load / destructive reset:
 
 - Physics stepping is paused.
 - `TransformControls` enabled for selected object.
-- Right-docked inspector is visible by default, hideable, and section-collapsible.
+- Right-docked inspector is hidden by default and revealable via `SHOW INSPECTOR`.
+- Inspector remains section-collapsible after reveal.
 - Full edit workflow lives inside inspector sections:
   - `SCENE`, `CAMERA`, `OBJECTS`, `TRANSFORM`, `ANIMATION`, `PHYSICS`, `MATERIAL`.
 - `SCENE` section includes explicit `GRID` and `AXES` visibility toggles.
-- Default inspector expansion opens:
-  - `SCENE`, `CAMERA`, `OBJECTS`, `TRANSFORM`.
-- Default inspector expansion collapses:
-  - `ANIMATION`, `PHYSICS`, `MATERIAL`.
+- Default inspector expansion starts fully collapsed (all sections closed).
 - Rotation fields display degrees and convert to radians in runtime state.
 - Valid numeric inspector edits apply live while typing.
 - Hotkeys:
   - `W` move,
-  - `E` rotate,
-  - `R` scale,
+  - `R` rotate,
+  - `S` scale,
   - `G` snap toggle.
 - Snap toggle applies:
   - translation: `0.5`,
@@ -117,12 +113,11 @@ On first load / destructive reset:
 
 ### PLAY mode
 
-- Physics stepping runs only when global `physicsEnabled` is `ON`.
-- Object simulation/grab eligibility requires strict AND:
-  - global `physicsEnabled === true`,
+- Physics stepping/simulation is `PLAY`-only.
+- Object simulation/grab eligibility uses per-object toggle only:
   - object `physicsEnabled === true`.
 - Grab/drag uses raycast hit, fixed initial camera depth, and point-to-point constraint.
-- Disabling global physics during play releases active grab and freezes bodies at current transforms.
+- Entering `EDIT` from `PLAY` releases active grab and freezes all bodies at current transforms.
 - Orbit controls disabled while mouse grab is active.
 - Orbit panning is enabled in standard controls when not actively grabbing.
 - Touch behavior:
@@ -136,7 +131,7 @@ On first load / destructive reset:
 - Menu groups:
   - `ADD` (cube/sphere/cylinder/plane),
   - `CAMERA` (projection toggle, top/front/right, reset),
-  - `SCENE` (mode/snap/physics),
+  - `SCENE` (mode/snap),
   - `OBJECT` (duplicate/delete/object physics),
   - `INSPECTOR` (show/hide/collapse all/expand all).
 - If right-click raycast hits an object, that object is selected before menu actions.
@@ -164,7 +159,6 @@ Persisted payload:
 - versioned JSON metadata only,
 - `objects`,
   - each object includes material metadata (`color`, `preset`, `wireframe`),
-- global `physicsEnabled`,
 - `showGrid`,
 - `showAxes`,
 - per-object `physicsEnabled`,
@@ -186,13 +180,11 @@ Persistence behavior:
 Start menu (`THIRD` scope):
 - `FOCUS THIRD PANEL`
 - mode toggle action (dynamic `EDIT`/`PLAY` label)
-- physics toggle action (`PHYSICS: ON/OFF`)
 - `RESET SCENE`
 
 Subsystem right-click menu (`THIRD`):
-- status rows include current mode + physics state,
+- status rows include current mode,
 - dynamic mode-switch action for discoverable edit entry,
-- dynamic physics toggle action,
 - reset action.
 
 ## 9) Test Coverage

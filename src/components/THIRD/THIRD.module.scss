@@ -216,9 +216,30 @@
 }
 
 .toolRow {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4px;
+}
+
+.toolRow > * {
+  min-width: 0;
+}
+
+.toolRow .toolBtn,
+.toolRow .objectPhysicsBtn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.toolRow .addObjectMenu {
+  width: 100%;
+}
+
+.toolRow .addObjectMenu .toolBtn {
+  width: 100%;
 }
 
 .addObjectMenu {
@@ -229,6 +250,7 @@
   position: absolute;
   top: calc(100% + 2px);
   left: 0;
+  width: 100%;
   min-width: 132px;
   border: $border-thin solid var(--third-border);
   background: var(--third-panel-bg);

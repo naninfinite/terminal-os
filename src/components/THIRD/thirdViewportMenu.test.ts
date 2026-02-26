@@ -10,7 +10,6 @@ describe('thirdViewportMenu model', () => {
     const groups = buildThirdViewportMenu({
       mode: 'play',
       snapEnabled: false,
-      physicsEnabled: false,
       projectionMode: 'perspective',
       inspectorVisible: true,
       hasSelection: true,
@@ -33,7 +32,6 @@ describe('thirdViewportMenu model', () => {
     const groups = buildThirdViewportMenu({
       mode: 'edit',
       snapEnabled: true,
-      physicsEnabled: true,
       projectionMode: 'orthographic',
       inspectorVisible: false,
       hasSelection: false,

@@ -124,7 +124,6 @@ export const sanitizePersistedThirdScene = (raw: unknown): ThirdPersistedSceneV1
   return {
     version: THIRD_STORAGE_VERSION,
     objects,
-    physicsEnabled: data.physicsEnabled === true,
     showGrid: data.showGrid === true,
     showAxes: data.showAxes === true,
     skyboxId,

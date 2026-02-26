@@ -17,7 +17,6 @@ export type ThirdViewportMenuActionId =
   | 'camera_reset'
   | 'scene_toggle_mode'
   | 'scene_toggle_snap'
-  | 'scene_toggle_physics'
   | 'object_duplicate'
   | 'object_delete'
   | 'object_toggle_physics'
@@ -46,7 +45,6 @@ type ResolveCameraPresetPositionArgs = {
 export type BuildThirdViewportMenuArgs = {
   mode: ThirdEditorMode;
   snapEnabled: boolean;
-  physicsEnabled: boolean;
   projectionMode: ThirdProjectionMode;
   inspectorVisible: boolean;
   hasSelection: boolean;
@@ -117,10 +115,6 @@ export const buildThirdViewportMenu = (
           id: 'scene_toggle_snap',
           label: `SNAP: ${args.snapEnabled ? 'ON' : 'OFF'}`,
           disabled: args.mode !== 'edit',
-        },
-        {
-          id: 'scene_toggle_physics',
-          label: `PHYSICS: ${args.physicsEnabled ? 'ON' : 'OFF'}`,
         },
       ],
     },

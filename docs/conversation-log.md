@@ -1342,3 +1342,40 @@ Why it matters:
 Risks / Notes:
 - Legacy saved payloads without helper fields sanitize to `showGrid=false` and `showAxes=false`.
 - Grid color/theme behavior remains unchanged when grid is toggled on (dark green-accent, light near-black).
+
+---
+
+## Entry 68 - THIRD Inspector + Physics Night Pass (Per-Object Play-Only Physics)
+
+Summary:
+- Implemented the requested THIRD cleanup pass focused on inspector UX and physics behavior.
+- Physics model now uses per-object toggles only:
+  - simulation/grab runs only in `PLAY`,
+  - all physics is frozen/disabled in `EDIT`,
+  - new objects keep per-object physics default `OFF`.
+- Removed obsolete global physics controls from:
+  - inspector `SCENE` controls,
+  - viewport context menu `SCENE` group,
+  - start menu THIRD scope,
+  - subsystem context menu THIRD actions/status.
+- Updated inspector defaults and controls:
+  - inspector now starts hidden (`SHOW INSPECTOR` entry),
+  - all inspector sections start collapsed,
+  - removed inspector mode-switch button,
+  - kept transform play-mode guidance text as read-only status.
+- Updated transform hotkeys/UI labels:
+  - `W` move,
+  - `R` rotate,
+  - `S` scale,
+  - `G` snap unchanged.
+- Added two-column inspector action-row alignment pass for more consistent control layout.
+
+Why it matters:
+- Resolves confusion where physics appeared broken due to mixed global + object gating.
+- Makes inspector startup cleaner and reduces default UI clutter.
+- Aligns transform keymap with requested ergonomic mapping.
+- Keeps behavior deterministic across panel/fullscreen and persisted scene reloads.
+
+Risks / Notes:
+- Legacy saved payloads that include old global physics field are tolerated and safely ignored.
+- Mode-switching remains available outside inspector (viewport menu and shell-level THIRD actions).

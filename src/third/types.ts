@@ -45,7 +45,6 @@ export type ThirdRuntimeState = {
   objects: ThirdSceneObject[];
   selectionId: string | null;
   mode: ThirdEditorMode;
-  physicsEnabled: boolean;
   showGrid: boolean;
   showAxes: boolean;
   snapEnabled: boolean;
@@ -57,7 +56,6 @@ export type ThirdRuntimeState = {
 export type ThirdPersistedSceneV1 = {
   version: 1;
   objects: ThirdSceneObject[];
-  physicsEnabled: boolean;
   showGrid: boolean;
   showAxes: boolean;
   skyboxId: string;
