@@ -105,6 +105,42 @@
   border-bottom: 0;
 }
 
+.hierarchyMenu {
+  position: absolute;
+  z-index: 5;
+  min-width: 150px;
+  border: $border-thin solid var(--third-border);
+  background: var(--third-panel-bg);
+  box-shadow: var(--ui-shadow-focus);
+  display: grid;
+}
+
+.hierarchyMenuItem {
+  width: 100%;
+  border: 0;
+  border-bottom: $border-thin solid var(--third-border);
+  background: transparent;
+  color: var(--third-text);
+  text-align: left;
+  padding: 4px 8px;
+  font-size: $font-xs;
+  letter-spacing: 0.04em;
+}
+
+.hierarchyMenuItem:last-child {
+  border-bottom: 0;
+}
+
+.hierarchyMenuItem:hover,
+.hierarchyMenuItem:focus-visible {
+  background: var(--third-surface-hover);
+  outline: none;
+}
+
+.hierarchyMenuItem:disabled {
+  opacity: 0.45;
+}
+
 .inspectorRevealBtn {
   position: absolute;
   top: 8px;
@@ -637,6 +673,7 @@
   .inspectorInput,
   .viewportMenuGroupBtn,
   .viewportMenuItem,
+  .hierarchyMenuItem,
   .addObjectOption,
   .inlineStatus,
   .objectPhysicsBtn,

@@ -13,6 +13,10 @@ import {
   type ThirdViewportMenuGroupId,
 } from './thirdViewportMenu';
 import {
+  buildThirdHierarchyMenu,
+  type ThirdHierarchyMenuActionId,
+} from './thirdHierarchyMenu';
+import {
   clampInspectorScale,
   degToRad,
   formatInspectorNumber,
@@ -77,6 +81,12 @@ type ViewportMenuState = {
   x: number;
   y: number;
   openGroupId: ThirdViewportMenuGroupId | null;
+};
+
+type HierarchyMenuState = {
+  x: number;
+  y: number;
+  objectId: string;
 };
 
 type RightClickCandidate = {
@@ -491,6 +501,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const focusedInspectorFieldsRef = useRef(new Set<InspectorFieldKey>());
   const rightClickCandidateRef = useRef<RightClickCandidate | null>(null);
   const viewportMenuRef = useRef<HTMLDivElement | null>(null);
+  const hierarchyMenuRef = useRef<HTMLDivElement | null>(null);
   const addObjectMenuRef = useRef<HTMLDivElement | null>(null);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
   const projectionModeRef = useRef<ThirdProjectionMode>(cameraState.projectionMode);
@@ -505,6 +516,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     () => createInitialInspectorSectionState()
   );
   const [viewportMenu, setViewportMenu] = useState<ViewportMenuState | null>(null);
+  const [hierarchyMenu, setHierarchyMenu] = useState<HierarchyMenuState | null>(null);
   const [hierarchyExpanded, setHierarchyExpanded] = useState(true);
   const [hierarchyCollapsedIds, setHierarchyCollapsedIds] = useState<Set<string>>(() => new Set());
   const [hierarchyDragObjectId, setHierarchyDragObjectId] = useState<string | null>(null);
@@ -533,6 +545,17 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     selectedObject,
     snapEnabled,
   ]);
+  const hierarchyMenuObject = useMemo(() => (
+    hierarchyMenu
+      ? objects.find((object) => object.id === hierarchyMenu.objectId) ?? null
+      : null
+  ), [hierarchyMenu, objects]);
+  const hierarchyMenuItems = useMemo(() => buildThirdHierarchyMenu({
+    mode: editorMode,
+    hasSelection: hierarchyMenuObject != null,
+    selectedObjectHasParent: hierarchyMenuObject?.parentId != null,
+    isRenaming: hierarchyMenuObject != null && renamingObjectId === hierarchyMenuObject.id,
+  }), [editorMode, hierarchyMenuObject, renamingObjectId]);
 
   const setInspectorFieldDraft = useCallback((key: InspectorFieldKey, value: string) => {
     setInspectorDraft((prev) => (prev[key] === value ? prev : { ...prev, [key]: value }));
@@ -671,6 +694,31 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     selectObject(hierarchyDragObjectId);
   }, [canSetHierarchyParent, hierarchyDragObjectId, selectObject, setObjectParent]);
 
+  const closeHierarchyMenu = useCallback(() => {
+    setHierarchyMenu(null);
+  }, []);
+
+  const openHierarchyMenuForObject = useCallback((args: {
+    objectId: string;
+    clientX: number;
+    clientY: number;
+  }) => {
+    const root = rootRef.current;
+    if (!root) return;
+    const rect = root.getBoundingClientRect();
+    const localX = args.clientX - rect.left;
+    const localY = args.clientY - rect.top;
+    const clampedX = Math.max(6, Math.min(rect.width - 6, localX));
+    const clampedY = Math.max(6, Math.min(rect.height - 6, localY));
+
+    selectObject(args.objectId);
+    setHierarchyMenu({
+      x: clampedX,
+      y: clampedY,
+      objectId: args.objectId,
+    });
+  }, [selectObject]);
+
   const startRenameObject = useCallback((id: string) => {
     const target = objects.find((object) => object.id === id);
     if (!target) return;
@@ -704,6 +752,57 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     setObjectParent(selectedObject.id, null);
     selectObject(selectedObject.id);
   }, [selectObject, selectedObject, setObjectParent]);
+
+  const runHierarchyMenuAction = useCallback((actionId: ThirdHierarchyMenuActionId) => {
+    const targetObject = hierarchyMenuObject;
+    if (!targetObject) {
+      closeHierarchyMenu();
+      return;
+    }
+
+    const runOnSelectedObject = (fn: () => void) => {
+      if (selectionId === targetObject.id) {
+        fn();
+        return;
+      }
+      selectObject(targetObject.id);
+      window.requestAnimationFrame(fn);
+    };
+
+    switch (actionId) {
+      case 'hierarchy_rename':
+        if (editorMode === 'edit') {
+          startRenameObject(targetObject.id);
+        }
+        break;
+      case 'hierarchy_duplicate':
+        runOnSelectedObject(() => duplicateSelected());
+        break;
+      case 'hierarchy_delete':
+        runOnSelectedObject(() => deleteSelected());
+        break;
+      case 'hierarchy_unparent':
+        if (editorMode === 'edit' && targetObject.parentId) {
+          setObjectParent(targetObject.id, null);
+          selectObject(targetObject.id);
+        }
+        break;
+      default:
+        break;
+    }
+
+    closeHierarchyMenu();
+  }, [
+    closeHierarchyMenu,
+    deleteSelected,
+    duplicateSelected,
+    editorMode,
+    hierarchyMenuObject,
+    selectionId,
+    selectObject,
+    setObjectParent,
+    startRenameObject,
+  ]);
 
   const closeViewportMenu = useCallback(() => {
     setViewportMenu(null);
@@ -2026,6 +2125,26 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   }, [closeViewportMenu, viewportMenu]);
 
   useEffect(() => {
+    if (!hierarchyMenu) return;
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (target && hierarchyMenuRef.current?.contains(target)) return;
+      closeHierarchyMenu();
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeHierarchyMenu();
+      }
+    };
+    window.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [closeHierarchyMenu, hierarchyMenu]);
+
+  useEffect(() => {
     if (!addObjectMenuOpen) return;
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
@@ -2049,6 +2168,18 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     if (inspectorVisible && inspectorSections.objects) return;
     setAddObjectMenuOpen(false);
   }, [inspectorSections.objects, inspectorVisible]);
+
+  useEffect(() => {
+    if (!hierarchyMenu) return;
+    if (inspectorVisible && inspectorSections.objects) return;
+    closeHierarchyMenu();
+  }, [closeHierarchyMenu, hierarchyMenu, inspectorSections.objects, inspectorVisible]);
+
+  useEffect(() => {
+    if (!hierarchyMenu) return;
+    if (objects.some((object) => object.id === hierarchyMenu.objectId)) return;
+    closeHierarchyMenu();
+  }, [closeHierarchyMenu, hierarchyMenu, objects]);
 
   useEffect(() => {
     if (!renamingObjectId) return;
@@ -2160,10 +2291,32 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
               <button
                 type="button"
                 className={`${styles.objectItem} ${styles.hierarchyItem} ${selectionId === node.object.id ? styles.objectItemActive : ''}`.trim()}
-                onClick={() => selectObject(node.object.id)}
+                onClick={() => {
+                  selectObject(node.object.id);
+                  closeHierarchyMenu();
+                }}
                 onDoubleClick={() => {
                   if (!isEditMode) return;
                   startRenameObject(node.object.id);
+                }}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  openHierarchyMenuForObject({
+                    objectId: node.object.id,
+                    clientX: event.clientX,
+                    clientY: event.clientY,
+                  });
+                }}
+                onKeyDown={(event) => {
+                  if (event.key !== 'ContextMenu' && !(event.shiftKey && event.key === 'F10')) return;
+                  event.preventDefault();
+                  const rect = event.currentTarget.getBoundingClientRect();
+                  openHierarchyMenuForObject({
+                    objectId: node.object.id,
+                    clientX: rect.left + rect.width / 2,
+                    clientY: rect.top + rect.height / 2,
+                  });
                 }}
                 draggable={isEditMode && renamingObjectId == null}
                 onDragStart={(event) => {
@@ -2238,6 +2391,28 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
               </div>
             );
           })}
+        </div>
+      ) : null}
+
+      {hierarchyMenu ? (
+        <div
+          ref={hierarchyMenuRef}
+          className={styles.hierarchyMenu}
+          style={{ left: `${hierarchyMenu.x}px`, top: `${hierarchyMenu.y}px` }}
+          role="menu"
+          aria-label="Hierarchy context menu"
+        >
+          {hierarchyMenuItems.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={styles.hierarchyMenuItem}
+              onClick={() => runHierarchyMenuAction(item.id)}
+              disabled={item.disabled}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
       ) : null}
 
