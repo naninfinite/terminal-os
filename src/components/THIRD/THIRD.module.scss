@@ -391,6 +391,12 @@
   min-width: 0;
 }
 
+.sceneOptionsRow {
+  display: inline-flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
 .toolRow .toolBtn,
 .toolRow .objectPhysicsBtn {
   width: 100%;
@@ -553,12 +559,31 @@
   padding: 3px 6px;
   font-size: $font-xs;
   letter-spacing: 0.03em;
-  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
   cursor: pointer;
 }
 
 .hierarchyItem {
   padding-left: 6px;
+}
+
+.objectNameText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.objectLockBadge {
+  border: $border-thin solid var(--third-accent);
+  color: var(--third-accent);
+  font-size: 8px;
+  line-height: 1;
+  padding: 1px 2px;
+  letter-spacing: 0.02em;
 }
 
 .objectItemLocked {

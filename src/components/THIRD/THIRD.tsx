@@ -406,6 +406,10 @@ const buildHierarchyTree = (objects: ThirdSceneObject[]): HierarchyTreeNode[] =>
   return [...roots, ...remaining];
 };
 
+const compareHierarchyObjects = (a: ThirdSceneObject, b: ThirdSceneObject): number => (
+  a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true })
+);
+
 type ThirdProps = {
   mode?: 'panel' | 'fullscreen';
 };
@@ -533,9 +537,24 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const [hierarchyCollapsedIds, setHierarchyCollapsedIds] = useState<Set<string>>(() => new Set());
   const [hierarchyDragObjectId, setHierarchyDragObjectId] = useState<string | null>(null);
   const [hierarchyDropTargetId, setHierarchyDropTargetId] = useState<HierarchyDropTarget>(null);
+  const [sceneLockedOnly, setSceneLockedOnly] = useState(false);
+  const [sceneSortLockedFirst, setSceneSortLockedFirst] = useState(false);
   const [renamingObjectId, setRenamingObjectId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
-  const hierarchyTree = useMemo(() => buildHierarchyTree(objects), [objects]);
+  const visibleHierarchyObjects = useMemo(() => {
+    const filtered = sceneLockedOnly
+      ? objects.filter((object) => object.locked)
+      : objects;
+    const sorted = [...filtered].sort((a, b) => {
+      if (sceneSortLockedFirst) {
+        const lockOrder = Number(b.locked) - Number(a.locked);
+        if (lockOrder !== 0) return lockOrder;
+      }
+      return compareHierarchyObjects(a, b);
+    });
+    return sorted;
+  }, [objects, sceneLockedOnly, sceneSortLockedFirst]);
+  const hierarchyTree = useMemo(() => buildHierarchyTree(visibleHierarchyObjects), [visibleHierarchyObjects]);
   const isEditMode = editorMode === 'edit';
   const selectedObjectLocked = selectedObject?.locked === true;
   const canEditSelectedObject = isEditMode && selectedObject != null && !selectedObjectLocked;
@@ -2611,11 +2630,12 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                 }}
                 onDragEnd={clearHierarchyDragState}
               >
-                {node.object.name}
+                {isLocked ? <span className={styles.objectLockBadge}>L</span> : null}
+                <span className={styles.objectNameText}>{node.object.name}</span>
               </button>
             )}
             <span className={styles.objectMeta}>
-              {`${node.object.type.toUpperCase()} · ${node.object.physicsEnabled ? 'PHYS' : 'STATIC'}${isLocked ? ' · LOCKED' : ''}`}
+              {`${node.object.type.toUpperCase()} · ${node.object.physicsEnabled ? 'PHYS' : 'STATIC'}`}
             </span>
           </div>
           {hasChildren && nodeExpanded ? renderHierarchyNodes(node.children, depth + 1) : null}
@@ -2640,6 +2660,22 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         </button>
       </header>
       <div className={styles.utilityBody}>
+        <div className={styles.sceneOptionsRow}>
+          <button
+            type="button"
+            className={`${styles.toolBtn} ${sceneLockedOnly ? styles.toolBtnActive : ''}`.trim()}
+            onClick={() => setSceneLockedOnly((prev) => !prev)}
+          >
+            LOCKED
+          </button>
+          <button
+            type="button"
+            className={`${styles.toolBtn} ${sceneSortLockedFirst ? styles.toolBtnActive : ''}`.trim()}
+            onClick={() => setSceneSortLockedFirst((prev) => !prev)}
+          >
+            LOCK FIRST
+          </button>
+        </div>
         <span className={styles.inlineStatus}>OBJECT ACTIONS VIA HIERARCHY CONTEXT MENU.</span>
         <div
           className={styles.objectList}
@@ -2718,11 +2754,13 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
               clearHierarchyDragState();
             }}
           >
-            SCENE ({objects.length})
+            SCENE ({visibleHierarchyObjects.length})
           </button>
           {hierarchyExpanded ? (
             <div className={styles.hierarchyChildren}>
-              {renderHierarchyNodes(hierarchyTree, 0)}
+              {hierarchyTree.length > 0
+                ? renderHierarchyNodes(hierarchyTree, 0)
+                : <p className={styles.inspectorEmpty}>NO OBJECTS MATCH CURRENT FILTER.</p>}
             </div>
           ) : null}
         </div>
