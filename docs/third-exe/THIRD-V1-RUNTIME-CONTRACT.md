@@ -209,3 +209,10 @@ Validation baseline:
     - light resolves to near-black (`#101010`),
   - custom non-default material colors remain user-defined and unchanged across themes,
   - future palette tuning (swatches/preset defaults) can still be layered if needed.
+- Inspector polish follow-up:
+  - normalize mixed-label button sizing (notably camera projection + reset row) to consistent dimensions,
+  - keep multi-object drag-box selection out of current scope,
+  - schedule a dedicated broader inspector UI/UX cleanup pass later.
+- Primitive catalog expansion follow-up:
+  - evaluate adding additional primitives after inspector polish baseline is stable
+  - initial candidates: `cone`, `torus`, `capsule`, `pyramid`, `icosphere`.

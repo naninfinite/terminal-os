@@ -1379,3 +1379,28 @@ Why it matters:
 Risks / Notes:
 - Legacy saved payloads that include old global physics field are tolerated and safely ignored.
 - Mode-switching remains available outside inspector (viewport menu and shell-level THIRD actions).
+
+---
+
+## Entry 69 - Deferred TODO: Inspector Button Sizing + Selection Scope + Future Primitive Set
+
+Summary:
+- Captured follow-up UI polish request for THIRD inspector button sizing consistency.
+- Specific issue noted: the camera projection toggle (`PERSPECTIVE`/`ORTHOGRAPHIC`) and adjacent `RESET` button should be uniform in size/width with surrounding controls.
+- Locked decision to defer drag-box multi-select for now (not in immediate scope).
+- Locked decision to defer broader inspector UX cleanup to a later dedicated pass.
+- Captured future primitive expansion as open design follow-up.
+
+Why it matters:
+- Uneven button sizes reduce visual consistency and make inspector controls feel noisy.
+- Explicitly deferring multi-select avoids scope creep while current interaction model stabilizes.
+- Primitive expansion can improve scene-blockout workflow once current UX baseline is stable.
+
+Risks / Notes:
+- Deferred item only in this pass; no runtime behavior changed.
+- Candidate primitives for later evaluation:
+  - `cone`,
+  - `torus`,
+  - `capsule`,
+  - `pyramid` (or generic poly prism),
+  - `icosphere`.
