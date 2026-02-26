@@ -25,6 +25,7 @@ V1 includes:
 - camera keyboard navigation hotkeys (`1`/`3`/`7`/`5`, `F`),
 - local autosave persistence,
 - preset object animations (`bounce`, `rotate`, `pulse`).
+- history undo/redo for core object edits.
 
 V1 excludes:
 - mesh/face editing,
@@ -119,6 +120,10 @@ On first load / destructive reset:
   - `R` rotate,
   - `S` scale,
   - `G` snap toggle.
+- History hotkeys:
+  - `Cmd/Ctrl + Z` undo,
+  - `Cmd/Ctrl + Shift + Z` redo,
+  - `Cmd/Ctrl + Y` redo.
 - Camera hotkeys (when not typing in a control):
   - `1` front view,
   - `3` right view,
@@ -238,6 +243,7 @@ Added/updated tests:
 - `src/components/THIRD/thirdViewportMenu.test.ts`
 - `src/components/THIRD/thirdHierarchyMenu.test.ts`
 - `src/components/THIRD/thirdSceneToolbar.test.ts`
+- `src/third/history.test.ts`
 - `src/components/StatusBar/subsystemContextMenu.test.ts`
 - `src/meos/menu/scopes.test.ts`
 

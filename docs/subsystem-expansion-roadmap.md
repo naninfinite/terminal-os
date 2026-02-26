@@ -110,6 +110,9 @@ Current implementation checkpoint (2026-02-25):
 - Camera navigation polish baseline is now active:
   - `FOCUS` now frames objects using bounds-aware distance + orthographic zoom adjustment;
   - camera hotkeys supported: `1`/`3`/`7`/`5` and `F` for focus.
+- Edit safety baseline is now active:
+  - core object edits support undo/redo history with keyboard shortcuts and inspector controls;
+  - transform edits are coalesced to avoid excessive undo frames during drag/scrub.
 
 Implementation slices:
 

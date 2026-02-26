@@ -1664,3 +1664,34 @@ Why it matters:
 
 Risks / Notes:
 - This is a UI/interaction polish pass only; no persistence/state schema changes.
+
+---
+
+## Entry 79 - THIRD Undo/Redo History Baseline (Core Edit Safety)
+
+Summary:
+- Added runtime undo/redo history in `ThirdProvider` for core object edits:
+  - add / delete / duplicate,
+  - transform edits,
+  - material changes,
+  - physics toggle,
+  - parenting + rename,
+  - animation preset changes.
+- Added coalescing for rapid transform updates so drag/scrub sequences group into a single undo frame.
+- Added inspector header controls:
+  - `UNDO`,
+  - `REDO`.
+- Added keyboard shortcuts:
+  - `Cmd/Ctrl + Z` undo,
+  - `Cmd/Ctrl + Shift + Z` redo,
+  - `Cmd/Ctrl + Y` redo.
+- Added deterministic history helper/tests:
+  - `src/third/history.ts`,
+  - `src/third/history.test.ts`.
+
+Why it matters:
+- Gives users safe iteration loops while manipulating objects in a playground/editor workflow.
+- Prevents transform-drag history spam via coalesced checkpointing.
+
+Risks / Notes:
+- Runtime-only toggles and camera/orbit changes are intentionally excluded from history tracking in this pass.
