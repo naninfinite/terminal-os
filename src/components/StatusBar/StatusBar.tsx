@@ -666,6 +666,10 @@ const StatusBar: React.FC = () => {
           onPointerMove={meDockContextTrigger.onPointerMove}
           onPointerUp={meDockContextTrigger.onPointerUp}
           onPointerCancel={meDockContextTrigger.onPointerCancel}
+          onTouchStart={meDockContextTrigger.onTouchStart}
+          onTouchMove={meDockContextTrigger.onTouchMove}
+          onTouchEnd={meDockContextTrigger.onTouchEnd}
+          onTouchCancel={meDockContextTrigger.onTouchCancel}
           onClickCapture={meDockContextTrigger.onClickCapture}
           onKeyDown={meDockContextTrigger.onKeyDown}
         >
@@ -682,6 +686,10 @@ const StatusBar: React.FC = () => {
           onPointerMove={youDockContextTrigger.onPointerMove}
           onPointerUp={youDockContextTrigger.onPointerUp}
           onPointerCancel={youDockContextTrigger.onPointerCancel}
+          onTouchStart={youDockContextTrigger.onTouchStart}
+          onTouchMove={youDockContextTrigger.onTouchMove}
+          onTouchEnd={youDockContextTrigger.onTouchEnd}
+          onTouchCancel={youDockContextTrigger.onTouchCancel}
           onClickCapture={youDockContextTrigger.onClickCapture}
           onKeyDown={youDockContextTrigger.onKeyDown}
         >
@@ -698,6 +706,10 @@ const StatusBar: React.FC = () => {
           onPointerMove={thirdDockContextTrigger.onPointerMove}
           onPointerUp={thirdDockContextTrigger.onPointerUp}
           onPointerCancel={thirdDockContextTrigger.onPointerCancel}
+          onTouchStart={thirdDockContextTrigger.onTouchStart}
+          onTouchMove={thirdDockContextTrigger.onTouchMove}
+          onTouchEnd={thirdDockContextTrigger.onTouchEnd}
+          onTouchCancel={thirdDockContextTrigger.onTouchCancel}
           onClickCapture={thirdDockContextTrigger.onClickCapture}
           onKeyDown={thirdDockContextTrigger.onKeyDown}
         >
@@ -714,6 +726,10 @@ const StatusBar: React.FC = () => {
           onPointerMove={connectDockContextTrigger.onPointerMove}
           onPointerUp={connectDockContextTrigger.onPointerUp}
           onPointerCancel={connectDockContextTrigger.onPointerCancel}
+          onTouchStart={connectDockContextTrigger.onTouchStart}
+          onTouchMove={connectDockContextTrigger.onTouchMove}
+          onTouchEnd={connectDockContextTrigger.onTouchEnd}
+          onTouchCancel={connectDockContextTrigger.onTouchCancel}
           onClickCapture={connectDockContextTrigger.onClickCapture}
           onKeyDown={connectDockContextTrigger.onKeyDown}
         >

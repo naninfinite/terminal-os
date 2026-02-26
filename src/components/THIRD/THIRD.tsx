@@ -43,6 +43,7 @@ import {
   parseInspectorNumber,
   radToDeg,
 } from './transformInspector';
+import { useContextTrigger } from '../shared/useContextTrigger';
 import { useTheme } from '../../theme/ThemeProvider';
 import {
   getThirdThemePalette,
@@ -68,9 +69,19 @@ const MAX_PHYSICS_SUBSTEPS = 3;
 const PHYSICS_COMMIT_INTERVAL_SECONDS = 0.4;
 const CAMERA_SAVE_DEBOUNCE_MS = 250;
 const RIGHT_CLICK_OPEN_TOLERANCE_PX = 6;
+const TOUCH_CONTEXT_LONG_PRESS_MS = 450;
+const TOUCH_CONTEXT_MOVE_TOLERANCE_PX = 10;
 const MIN_CAMERA_DISTANCE = 1.2;
 const ORTHOGRAPHIC_FRUSTUM_HEIGHT = 11;
 const HIERARCHY_ROOT_DROP_TARGET = '__root__' as const;
+const EDITABLE_CONTEXT_SELECTOR = [
+  'input',
+  'textarea',
+  '[contenteditable]',
+  '[contenteditable=""]',
+  '[contenteditable="true"]',
+  '[contenteditable="plaintext-only"]',
+].join(', ');
 const MATERIAL_PRESETS: ReadonlyArray<ThirdMaterialPreset> = ['matte', 'gloss', 'glass', 'neon'];
 const MATERIAL_SWATCHES: ReadonlyArray<string> = [
   '#00ff66',
@@ -108,6 +119,13 @@ type RightClickCandidate = {
   startX: number;
   startY: number;
   moved: boolean;
+};
+
+type TouchContextCandidate = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  timerId: number;
 };
 
 type HierarchyTreeNode = {
@@ -517,6 +535,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const rightClickCandidateRef = useRef<RightClickCandidate | null>(null);
   const viewportMenuRef = useRef<HTMLDivElement | null>(null);
   const hierarchyMenuRef = useRef<HTMLDivElement | null>(null);
+  const hierarchyContextTargetRef = useRef<EventTarget | null>(null);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
   const projectionModeRef = useRef<ThirdProjectionMode>(cameraState.projectionMode);
 
@@ -798,6 +817,59 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     });
   }, []);
 
+  const resolveHierarchyContextTarget = useCallback((target: EventTarget | null): (
+    { kind: 'object'; objectId: string }
+    | { kind: 'scene' }
+    | { kind: 'ignore' }
+  ) => {
+    if (!target || typeof target !== 'object') return { kind: 'scene' };
+    const candidate = target as {
+      closest?: (selector: string) => Element | null;
+      parentElement?: Element | null;
+    };
+    const anchor = typeof candidate.closest === 'function'
+      ? candidate
+      : candidate.parentElement;
+    if (!anchor || typeof anchor.closest !== 'function') return { kind: 'scene' };
+    if (anchor.closest(EDITABLE_CONTEXT_SELECTOR)) return { kind: 'ignore' };
+    const objectHost = anchor.closest('[data-hierarchy-object-id]');
+    if (!(objectHost instanceof HTMLElement)) return { kind: 'scene' };
+    const objectId = objectHost.dataset.hierarchyObjectId;
+    return objectId ? { kind: 'object', objectId } : { kind: 'scene' };
+  }, []);
+
+  const openHierarchyMenuFromContextTarget = useCallback((args: {
+    target: EventTarget | null;
+    clientX: number;
+    clientY: number;
+  }) => {
+    const target = resolveHierarchyContextTarget(args.target);
+    if (target.kind === 'ignore') return;
+    if (target.kind === 'object') {
+      openHierarchyMenuForObject({
+        objectId: target.objectId,
+        clientX: args.clientX,
+        clientY: args.clientY,
+      });
+      return;
+    }
+    openHierarchyMenuForScene({
+      clientX: args.clientX,
+      clientY: args.clientY,
+    });
+  }, [openHierarchyMenuForObject, openHierarchyMenuForScene, resolveHierarchyContextTarget]);
+
+  const hierarchyContextTrigger = useContextTrigger<HTMLDivElement>({
+    suppressInteractiveTargets: false,
+    onOpen: ({ x, y }) => {
+      openHierarchyMenuFromContextTarget({
+        target: hierarchyContextTargetRef.current,
+        clientX: x,
+        clientY: y,
+      });
+    },
+  });
+
   const startRenameObject = useCallback((id: string) => {
     const target = objects.find((object) => object.id === id);
     if (!target) return;
@@ -1010,12 +1082,41 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       window.requestAnimationFrame(fn);
     };
 
+    const addChildPrimitive = (type: ThirdPrimitiveType) => {
+      if (editorMode !== 'edit' || targetObject.locked) return;
+      setHierarchyCollapsedIds((prev) => {
+        if (!prev.has(targetObject.id)) return prev;
+        const next = new Set(prev);
+        next.delete(targetObject.id);
+        return next;
+      });
+      addPrimitive(type);
+      window.requestAnimationFrame(() => {
+        const childId = selectionIdRef.current;
+        if (!childId || childId === targetObject.id) return;
+        setObjectParent(childId, targetObject.id);
+        selectObject(childId);
+      });
+    };
+
     switch (actionId) {
       case 'hierarchy_focus':
         focusObjectInCamera(targetObject.id);
         break;
       case 'hierarchy_toggle_lock':
         setObjectLocked(targetObject.id, !targetObject.locked);
+        break;
+      case 'hierarchy_add_child_cube':
+        addChildPrimitive('cube');
+        break;
+      case 'hierarchy_add_child_sphere':
+        addChildPrimitive('sphere');
+        break;
+      case 'hierarchy_add_child_cylinder':
+        addChildPrimitive('cylinder');
+        break;
+      case 'hierarchy_add_child_plane':
+        addChildPrimitive('plane');
         break;
       case 'hierarchy_rename':
         if (editorMode === 'edit') {
@@ -1052,6 +1153,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     focusObjectInCamera,
     hierarchyMenuObject,
     selectionId,
+    setHierarchyCollapsedIds,
     selectObject,
     setObjectLocked,
     setObjectParent,
@@ -1472,6 +1574,14 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const localQuaternion = new THREE.Quaternion();
     let physicsAccumulator = 0;
     let elapsedSeconds = 0;
+    let touchContextCandidate: TouchContextCandidate | null = null;
+
+    const clearTouchContextCandidate = (pointerId?: number) => {
+      if (!touchContextCandidate) return;
+      if (pointerId != null && touchContextCandidate.pointerId !== pointerId) return;
+      window.clearTimeout(touchContextCandidate.timerId);
+      touchContextCandidate = null;
+    };
 
     const syncMeshFromBase = (entry: RuntimeObjectEntry) => {
       entry.mesh.position.copy(entry.base.position);
@@ -1760,6 +1870,36 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         engine.touchPointers.add(event.pointerId);
       }
 
+      clearTouchContextCandidate(event.pointerId);
+      if (
+        (event.pointerType === 'touch' || event.pointerType === 'pen')
+        && event.button === 0
+      ) {
+        const pointerId = event.pointerId;
+        const startX = event.clientX;
+        const startY = event.clientY;
+        const timerId = window.setTimeout(() => {
+          if (!touchContextCandidate || touchContextCandidate.pointerId !== pointerId) return;
+          if (engine.activeGrab && engine.activeGrab.pointerId === pointerId) {
+            releaseGrab(pointerId);
+          }
+          const picked = pickObject(startX, startY);
+          if (picked) {
+            selectObject(picked.id);
+            selectionIdRef.current = picked.id;
+            updateTransformAttachment();
+          }
+          openViewportMenu(startX, startY);
+          touchContextCandidate = null;
+        }, TOUCH_CONTEXT_LONG_PRESS_MS);
+        touchContextCandidate = {
+          pointerId,
+          startX,
+          startY,
+          timerId,
+        };
+      }
+
       if (event.button === 2 && event.pointerType !== 'touch') {
         rightClickCandidateRef.current = {
           pointerId: event.pointerId,
@@ -1811,12 +1951,24 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         }
       }
 
+      if (touchContextCandidate && touchContextCandidate.pointerId === event.pointerId) {
+        const touchDistance = Math.hypot(
+          event.clientX - touchContextCandidate.startX,
+          event.clientY - touchContextCandidate.startY
+        );
+        if (touchDistance > TOUCH_CONTEXT_MOVE_TOLERANCE_PX) {
+          clearTouchContextCandidate(event.pointerId);
+        }
+      }
+
       const activeGrab = engine.activeGrab;
       if (!activeGrab || activeGrab.pointerId !== event.pointerId) return;
       moveGrabTarget(event.clientX, event.clientY);
     };
 
     const onPointerUpOrCancel = (event: PointerEvent) => {
+      clearTouchContextCandidate(event.pointerId);
+
       const rightClickCandidate = rightClickCandidateRef.current;
       if (rightClickCandidate && rightClickCandidate.pointerId === event.pointerId) {
         rightClickCandidateRef.current = null;
@@ -1945,6 +2097,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       renderer.domElement.removeEventListener('pointerup', onPointerUpOrCancel);
       renderer.domElement.removeEventListener('pointercancel', onPointerUpOrCancel);
       renderer.domElement.removeEventListener('contextmenu', onContextMenu);
+      clearTouchContextCandidate();
 
       engine.entries.forEach((entry) => {
         engine.world.removeBody(entry.body);
@@ -2521,6 +2674,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
               isDropTarget ? styles.objectRowDropTarget : '',
             ].join(' ').trim()}
             data-hierarchy-node="true"
+            data-hierarchy-object-id={node.object.id}
             style={{ paddingLeft: `${depth * 12}px` }}
             onDragOver={(event) => {
               if (!isEditMode || !hierarchyDragObjectId || !canSetHierarchyParent(hierarchyDragObjectId, node.object.id)) {
@@ -2682,15 +2836,24 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
           aria-label="THIRD object hierarchy"
           tabIndex={0}
           onContextMenu={(event) => {
-            const target = event.target as HTMLElement | null;
-            if (target?.closest('[data-hierarchy-node="true"]')) return;
-            event.preventDefault();
-            event.stopPropagation();
-            openHierarchyMenuForScene({
-              clientX: event.clientX,
-              clientY: event.clientY,
-            });
+            hierarchyContextTargetRef.current = event.target;
+            hierarchyContextTrigger.onContextMenu(event);
           }}
+          onPointerDown={(event) => {
+            hierarchyContextTargetRef.current = event.target;
+            hierarchyContextTrigger.onPointerDown(event);
+          }}
+          onPointerMove={hierarchyContextTrigger.onPointerMove}
+          onPointerUp={hierarchyContextTrigger.onPointerUp}
+          onPointerCancel={hierarchyContextTrigger.onPointerCancel}
+          onTouchStart={(event) => {
+            hierarchyContextTargetRef.current = event.target;
+            hierarchyContextTrigger.onTouchStart(event);
+          }}
+          onTouchMove={hierarchyContextTrigger.onTouchMove}
+          onTouchEnd={hierarchyContextTrigger.onTouchEnd}
+          onTouchCancel={hierarchyContextTrigger.onTouchCancel}
+          onClickCapture={hierarchyContextTrigger.onClickCapture}
           onKeyDown={(event) => {
             if (event.defaultPrevented) return;
             if (event.target !== event.currentTarget) return;

@@ -158,6 +158,67 @@ describe('useContextTrigger controller', () => {
     expect(onOpen).toHaveBeenCalledWith({ x: 30, y: 30, source: 'longpress' });
   });
 
+  it('opens from touch-event fallback long-press path', () => {
+    vi.useFakeTimers();
+    const onOpen = vi.fn();
+    const controller = createContextTriggerController({ onOpen });
+
+    controller.touchStart({
+      identifier: 9,
+      clientX: 22,
+      clientY: 44,
+      target: null,
+    });
+    vi.advanceTimersByTime(CONTEXT_LONG_PRESS_MS);
+
+    expect(onOpen).toHaveBeenCalledWith({ x: 22, y: 44, source: 'longpress' });
+  });
+
+  it('deduplicates fallback when touch pointer events already handled the press', () => {
+    vi.useFakeTimers();
+    const onOpen = vi.fn();
+    const controller = createContextTriggerController({ onOpen });
+
+    controller.pointerDown({
+      pointerId: 11,
+      pointerType: 'touch',
+      clientX: 60,
+      clientY: 80,
+      target: null,
+    });
+    controller.touchStart({
+      identifier: 77,
+      clientX: 60,
+      clientY: 80,
+      target: null,
+    });
+
+    vi.advanceTimersByTime(CONTEXT_LONG_PRESS_MS);
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(onOpen).toHaveBeenCalledWith({ x: 60, y: 80, source: 'longpress' });
+  });
+
+  it('cancels fallback long-press on touch move beyond tolerance', () => {
+    vi.useFakeTimers();
+    const onOpen = vi.fn();
+    const controller = createContextTriggerController({ onOpen });
+
+    controller.touchStart({
+      identifier: 15,
+      clientX: 10,
+      clientY: 10,
+      target: null,
+    });
+    controller.touchMove({
+      identifier: 15,
+      clientX: 10 + CONTEXT_MOVE_TOLERANCE_PX + 1,
+      clientY: 10,
+    });
+    vi.advanceTimersByTime(CONTEXT_LONG_PRESS_MS);
+
+    expect(onOpen).not.toHaveBeenCalled();
+  });
+
   it('opens from keyboard shortcuts', () => {
     const onOpen = vi.fn();
     const controller = createContextTriggerController({ onOpen });

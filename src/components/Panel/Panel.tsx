@@ -85,6 +85,10 @@ const Panel: React.FC<PanelProps> = ({
       onPointerMove={contextTrigger.onPointerMove}
       onPointerUp={contextTrigger.onPointerUp}
       onPointerCancel={contextTrigger.onPointerCancel}
+      onTouchStart={contextTrigger.onTouchStart}
+      onTouchMove={contextTrigger.onTouchMove}
+      onTouchEnd={contextTrigger.onTouchEnd}
+      onTouchCancel={contextTrigger.onTouchCancel}
       onClickCapture={contextTrigger.onClickCapture}
       onKeyDown={contextTrigger.onKeyDown}
     >
