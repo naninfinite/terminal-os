@@ -15,6 +15,7 @@ import {
   setObjectMaterialWireframe,
   setObjectName,
   setObjectParent,
+  setObjectLocked,
   setObjectPhysicsEnabled,
   setShowAxes,
   setShowGrid,
@@ -79,6 +80,7 @@ type ThirdContextValue = {
   toggleShowAxes: () => void;
   setObjectPhysicsEnabled: (id: string, enabled: boolean) => void;
   setObjectParent: (id: string, parentId: string | null) => void;
+  setObjectLocked: (id: string, enabled: boolean) => void;
   setObjectName: (id: string, name: string) => void;
   setObjectMaterialPreset: (id: string, preset: ThirdMaterialPreset) => void;
   setObjectMaterialColor: (id: string, color: string) => void;
@@ -214,6 +216,12 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const setObjectParentAction = useCallback((id: string, parentId: string | null) => {
     mutateStore({
       mutate: (prev) => setObjectParent(prev, id, parentId),
+      track: true,
+    });
+  }, [mutateStore]);
+  const setObjectLockedAction = useCallback((id: string, enabled: boolean) => {
+    mutateStore({
+      mutate: (prev) => setObjectLocked(prev, id, enabled),
       track: true,
     });
   }, [mutateStore]);
@@ -391,6 +399,7 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     toggleShowAxes: toggleShowAxesAction,
     setObjectPhysicsEnabled: setObjectPhysicsEnabledAction,
     setObjectParent: setObjectParentAction,
+    setObjectLocked: setObjectLockedAction,
     setObjectName: setObjectNameAction,
     setObjectMaterialPreset: setObjectMaterialPresetAction,
     setObjectMaterialColor: setObjectMaterialColorAction,
@@ -430,6 +439,7 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setObjectMaterialColorAction,
     setObjectMaterialPresetAction,
     setObjectParentAction,
+    setObjectLockedAction,
     setObjectNameAction,
     setObjectMaterialWireframeAction,
     setObjectPhysicsEnabledAction,

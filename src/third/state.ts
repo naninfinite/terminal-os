@@ -124,7 +124,24 @@ const cloneObject = (value: ThirdSceneObject): ThirdSceneObject => ({
     preset: normalizeMaterialPreset(value.material.preset),
   },
   physicsEnabled: Boolean(value.physicsEnabled),
+  locked: value.locked === true,
 });
+
+const resolveSelectionId = (
+  objects: ThirdSceneObject[],
+  candidate: string | null
+): string | null => {
+  if (candidate == null) return null;
+  if (candidate) {
+    const selected = objects.find((object) => object.id === candidate);
+    if (selected && !selected.locked) return selected.id;
+  }
+  return null;
+};
+
+const fallbackUnlockedSelectionId = (objects: ThirdSceneObject[]): string | null => (
+  objects.find((object) => !object.locked)?.id ?? null
+);
 
 const primitiveLabel = (type: ThirdPrimitiveType): string => {
   switch (type) {
@@ -202,6 +219,7 @@ export const createSceneObject = (args: {
       preset: THIRD_DEFAULT_MATERIAL_PRESET,
     },
     physicsEnabled: false,
+    locked: false,
     animationPreset: args.animationPreset ?? 'none',
   };
 };
@@ -227,7 +245,10 @@ export const createDefaultThirdRuntimeState = (): ThirdRuntimeState => {
 
 export const cloneRuntimeState = (state: ThirdRuntimeState): ThirdRuntimeState => ({
   objects: state.objects.map(cloneObject),
-  selectionId: state.selectionId,
+  selectionId: (
+    resolveSelectionId(state.objects, state.selectionId)
+    ?? fallbackUnlockedSelectionId(state.objects)
+  ),
   mode: state.mode,
   showGrid: state.showGrid === true,
   showAxes: state.showAxes === true,
@@ -289,7 +310,7 @@ export const toggleSnap = (state: ThirdRuntimeState): ThirdRuntimeState => ({
 
 export const setSelection = (state: ThirdRuntimeState, selectionId: string | null): ThirdRuntimeState => ({
   ...state,
-  selectionId,
+  selectionId: resolveSelectionId(state.objects, selectionId),
 });
 
 export const setObjectPhysicsEnabled = (
@@ -299,7 +320,9 @@ export const setObjectPhysicsEnabled = (
 ): ThirdRuntimeState => ({
   ...state,
   objects: state.objects.map((object) => (
-    object.id === id ? { ...object, physicsEnabled: enabled } : object
+    object.id === id && !object.locked
+      ? { ...object, physicsEnabled: enabled }
+      : object
   )),
 });
 
@@ -311,6 +334,7 @@ export const setObjectParent = (
   const objectById = new Map(state.objects.map((object) => [object.id, object]));
   const current = objectById.get(id);
   if (!current) return state;
+  if (current.locked) return state;
 
   const nextParentId = normalizeParentId(parentId);
   if (nextParentId === id) return state;
@@ -339,6 +363,7 @@ export const setObjectName = (
   let changed = false;
   const nextObjects = state.objects.map((object) => {
     if (object.id !== id) return object;
+    if (object.locked) return object;
     const nextName = normalizeObjectName(name, object.name);
     if (nextName === object.name) return object;
     changed = true;
@@ -363,6 +388,7 @@ export const setObjectMaterialPreset = (
   ...state,
   objects: state.objects.map((object) => (
     object.id === id
+      && !object.locked
       ? {
         ...object,
         material: {
@@ -382,6 +408,7 @@ export const setObjectMaterialColor = (
   ...state,
   objects: state.objects.map((object) => (
     object.id === id
+      && !object.locked
       ? {
         ...object,
         material: {
@@ -401,6 +428,7 @@ export const setObjectMaterialWireframe = (
   ...state,
   objects: state.objects.map((object) => (
     object.id === id
+      && !object.locked
       ? {
         ...object,
         material: {
@@ -442,6 +470,7 @@ export const addPrimitive = (
 export const deleteSelected = (state: ThirdRuntimeState): ThirdRuntimeState => {
   if (!state.selectionId) return state;
   const selected = state.objects.find((object) => object.id === state.selectionId);
+  if (!selected || selected.locked) return state;
   const selectedParentId = selected?.parentId ?? null;
   const nextObjects = state.objects
     .filter((object) => object.id !== state.selectionId)
@@ -465,6 +494,7 @@ export const duplicateSelected = (state: ThirdRuntimeState): ThirdRuntimeState =
   if (!state.selectionId || state.objects.length >= THIRD_MAX_OBJECTS) return state;
   const selected = state.objects.find((object) => object.id === state.selectionId);
   if (!selected) return state;
+  if (selected.locked) return state;
 
   const duplicate = createSceneObject({
     type: selected.type,
@@ -505,7 +535,7 @@ export const updateObjectTransform = (
 ): ThirdRuntimeState => ({
   ...state,
   objects: state.objects.map((object) => (
-    object.id === patch.id ? mergeTransform(object, patch) : object
+    object.id === patch.id && !object.locked ? mergeTransform(object, patch) : object
   )),
 });
 
@@ -523,8 +553,36 @@ export const applyObjectTransforms = (
     ...state,
     objects: state.objects.map((object) => {
       const patch = patchById.get(object.id);
-      return patch ? mergeTransform(object, patch) : object;
+      if (!patch || object.locked) return object;
+      return mergeTransform(object, patch);
     }),
+  };
+};
+
+export const setObjectLocked = (
+  state: ThirdRuntimeState,
+  id: string,
+  enabled: boolean
+): ThirdRuntimeState => {
+  let changed = false;
+  const nextObjects = state.objects.map((object) => {
+    if (object.id !== id) return object;
+    if (object.locked === enabled) return object;
+    changed = true;
+    return {
+      ...object,
+      locked: enabled,
+    };
+  });
+
+  if (!changed) return state;
+  return {
+    ...state,
+    objects: nextObjects,
+    selectionId: (
+      resolveSelectionId(nextObjects, state.selectionId)
+      ?? fallbackUnlockedSelectionId(nextObjects)
+    ),
   };
 };
 
@@ -535,7 +593,7 @@ export const setAnimationPreset = (
 ): ThirdRuntimeState => ({
   ...state,
   objects: state.objects.map((object) => (
-    object.id === id ? { ...object, animationPreset: preset } : object
+    object.id === id && !object.locked ? { ...object, animationPreset: preset } : object
   )),
 });
 
@@ -564,7 +622,7 @@ export const hydrateStateFromPersistence = (
 
   return {
     objects: hydratedObjects,
-    selectionId: hydratedObjects[0]?.id ?? null,
+    selectionId: fallbackUnlockedSelectionId(hydratedObjects),
     mode: 'play',
     showGrid: persisted.showGrid === true,
     showAxes: persisted.showAxes === true,

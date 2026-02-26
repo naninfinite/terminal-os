@@ -38,6 +38,7 @@ export type ThirdSceneObject = {
   transform: ThirdObjectTransform;
   material: ThirdMaterialParams;
   physicsEnabled: boolean;
+  locked: boolean;
   animationPreset: ThirdAnimationPreset;
 };
 

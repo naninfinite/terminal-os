@@ -89,6 +89,7 @@ const sanitizeSceneObject = (raw: unknown): ThirdSceneObject | null => {
       preset: sanitizeMaterialPreset(materialData.preset),
     },
     physicsEnabled: data.physicsEnabled === true,
+    locked: data.locked === true,
     animationPreset,
   };
 };

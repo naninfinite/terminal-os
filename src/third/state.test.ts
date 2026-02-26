@@ -12,6 +12,7 @@ import {
   setObjectMaterialPreset,
   setObjectMaterialWireframe,
   setObjectName,
+  setObjectLocked,
   setObjectParent,
   setObjectPhysicsEnabled,
   setShowAxes,
@@ -19,6 +20,7 @@ import {
   setSelection,
   toggleShowAxes,
   toggleShowGrid,
+  updateObjectTransform,
 } from './state';
 
 describe('third state helpers', () => {
@@ -29,6 +31,7 @@ describe('third state helpers', () => {
     expect(state.objects[0].transform.position).toEqual({ x: 0, y: 0.5, z: 0 });
     expect(state.objects[0].parentId).toBeNull();
     expect(state.objects[0].physicsEnabled).toBe(false);
+    expect(state.objects[0].locked).toBe(false);
     expect(state.objects[0].material.wireframe).toBe(false);
     expect(state.objects[0].material.preset).toBe('matte');
     expect(state.mode).toBe('play');
@@ -148,10 +151,11 @@ describe('third state helpers', () => {
     const seeded = createDefaultThirdRuntimeState();
     const firstId = seeded.objects[0].id;
     const wireframeOn = setObjectMaterialWireframe(seeded, firstId, true);
+    const locked = setObjectLocked(wireframeOn, firstId, true);
     const withOrtho = {
-      ...wireframeOn,
+      ...locked,
       cameraState: {
-        ...wireframeOn.cameraState,
+        ...locked.cameraState,
         projectionMode: 'orthographic' as const,
       },
     };
@@ -159,10 +163,13 @@ describe('third state helpers', () => {
     const persisted = serializeStateForPersistence(withOrtho);
     expect(persisted.cameraState?.projectionMode).toBe('orthographic');
     expect(persisted.objects[0].material.wireframe).toBe(true);
+    expect(persisted.objects[0].locked).toBe(true);
 
     const hydrated = hydrateStateFromPersistence(persisted);
     expect(hydrated.cameraState.projectionMode).toBe('orthographic');
     expect(hydrated.objects[0].material.wireframe).toBe(true);
+    expect(hydrated.objects[0].locked).toBe(true);
+    expect(hydrated.selectionId).toBeNull();
   });
 
   it('supports parent reparenting and blocks cyclic hierarchy links', () => {
@@ -198,5 +205,45 @@ describe('third state helpers', () => {
 
     const emptyAttempt = setObjectName(renamed, id, '   ');
     expect(emptyAttempt.objects[0].name).toBe('Hero Cube');
+  });
+
+  it('locks object edits and prevents selecting locked objects', () => {
+    const seeded = createDefaultThirdRuntimeState();
+    const rootId = seeded.objects[0].id;
+    const locked = setObjectLocked(seeded, rootId, true);
+    const unlocked = setObjectLocked(locked, rootId, false);
+
+    expect(locked.objects[0].locked).toBe(true);
+    expect(locked.selectionId).toBeNull();
+    expect(setSelection(locked, rootId).selectionId).toBeNull();
+
+    const renamed = setObjectName(locked, rootId, 'Locked Name');
+    expect(renamed.objects[0].name).toBe('Cube 1');
+
+    const physicsOn = setObjectPhysicsEnabled(locked, rootId, true);
+    expect(physicsOn.objects[0].physicsEnabled).toBe(false);
+
+    const moved = updateObjectTransform(locked, {
+      id: rootId,
+      position: { x: 5, y: 5, z: 5 },
+    });
+    expect(moved.objects[0].transform.position).toEqual(seeded.objects[0].transform.position);
+
+    const withSelected = setSelection(unlocked, rootId);
+    const duplicateAttempt = duplicateSelected(setObjectLocked(withSelected, rootId, true));
+    expect(duplicateAttempt.objects).toHaveLength(1);
+    const deleteAttempt = deleteSelected(duplicateAttempt);
+    expect(deleteAttempt.objects).toHaveLength(1);
+  });
+
+  it('moves selection to an unlocked object when locking current selection', () => {
+    const seeded = createDefaultThirdRuntimeState();
+    const withSphere = addPrimitive(seeded, 'sphere');
+    const selectedId = withSphere.selectionId;
+    expect(selectedId).toBeTruthy();
+    if (!selectedId) return;
+
+    const lockedSelected = setObjectLocked(withSphere, selectedId, true);
+    expect(lockedSelected.selectionId).toBe(seeded.objects[0].id);
   });
 });

@@ -48,6 +48,7 @@ export type BuildThirdViewportMenuArgs = {
   projectionMode: ThirdProjectionMode;
   inspectorVisible: boolean;
   hasSelection: boolean;
+  selectedObjectLocked: boolean;
   selectedObjectPhysicsEnabled: boolean;
 };
 
@@ -76,7 +77,7 @@ export const resolveCameraPresetPosition = (
 export const buildThirdViewportMenu = (
   args: BuildThirdViewportMenuArgs
 ): ThirdViewportMenuGroup[] => {
-  const objectActionDisabled = !args.hasSelection;
+  const objectActionDisabled = !args.hasSelection || args.selectedObjectLocked;
 
   return [
     {

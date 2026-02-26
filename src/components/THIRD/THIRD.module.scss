@@ -503,6 +503,15 @@
   color: var(--third-accent);
 }
 
+.objectRowLocked {
+  border-color: var(--third-border);
+  background: var(--third-surface-bg);
+}
+
+.objectRowLocked .objectMeta {
+  color: var(--third-accent);
+}
+
 .objectRowDropHint {
   border-style: dashed;
   border-color: var(--third-border);
@@ -528,6 +537,18 @@
 
 .hierarchyItem {
   padding-left: 6px;
+}
+
+.objectItemLocked {
+  border-style: dashed;
+  color: var(--third-text-muted);
+}
+
+.objectItemLocked:hover,
+.objectItemLocked:focus-visible {
+  border-color: var(--third-border);
+  background: var(--third-surface-bg);
+  color: var(--third-text);
 }
 
 .objectNameInput {

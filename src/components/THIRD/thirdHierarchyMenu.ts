@@ -2,6 +2,7 @@ import type { ThirdEditorMode } from '../../third/types';
 
 export type ThirdHierarchyMenuActionId =
   | 'hierarchy_focus'
+  | 'hierarchy_toggle_lock'
   | 'hierarchy_rename'
   | 'hierarchy_duplicate'
   | 'hierarchy_delete'
@@ -23,6 +24,7 @@ export type BuildThirdHierarchyMenuArgs = {
   context: ThirdHierarchyMenuContext;
   mode: ThirdEditorMode;
   hasSelection: boolean;
+  selectedObjectLocked: boolean;
   selectedObjectHasParent: boolean;
   isRenaming: boolean;
 };
@@ -40,14 +42,20 @@ export const buildThirdHierarchyMenu = (
   }
 
   const hasSelection = args.hasSelection;
-  const canRename = hasSelection && args.mode === 'edit' && !args.isRenaming;
-  const canUnparent = hasSelection && args.mode === 'edit' && args.selectedObjectHasParent;
+  const canEditObject = hasSelection && !args.selectedObjectLocked;
+  const canRename = canEditObject && args.mode === 'edit' && !args.isRenaming;
+  const canUnparent = canEditObject && args.mode === 'edit' && args.selectedObjectHasParent;
 
   return [
     { id: 'hierarchy_focus', label: 'FOCUS', disabled: !hasSelection },
+    {
+      id: 'hierarchy_toggle_lock',
+      label: args.selectedObjectLocked ? 'UNLOCK' : 'LOCK',
+      disabled: !hasSelection,
+    },
     { id: 'hierarchy_rename', label: 'RENAME', disabled: !canRename },
-    { id: 'hierarchy_duplicate', label: 'DUPLICATE', disabled: !hasSelection },
-    { id: 'hierarchy_delete', label: 'DELETE', disabled: !hasSelection },
+    { id: 'hierarchy_duplicate', label: 'DUPLICATE', disabled: !canEditObject },
+    { id: 'hierarchy_delete', label: 'DELETE', disabled: !canEditObject },
     { id: 'hierarchy_unparent', label: 'UNPARENT', disabled: !canUnparent },
   ];
 };

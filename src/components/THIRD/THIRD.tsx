@@ -476,6 +476,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     toggleShowGrid,
     toggleShowAxes,
     setObjectPhysicsEnabled,
+    setObjectLocked,
     setObjectParent,
     setObjectName,
     setObjectMaterialPreset,
@@ -497,6 +498,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const rafRef = useRef(0);
   const modeRef = useRef(editorMode);
   const objectPhysicsRef = useRef(new Map<string, boolean>());
+  const objectLockedRef = useRef(new Map<string, boolean>());
   const selectionIdRef = useRef(selectionId);
   const transformModeRef = useRef(transformMode);
   const snapEnabledRef = useRef(snapEnabled);
@@ -535,17 +537,21 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const [renameDraft, setRenameDraft] = useState('');
   const hierarchyTree = useMemo(() => buildHierarchyTree(objects), [objects]);
   const isEditMode = editorMode === 'edit';
+  const selectedObjectLocked = selectedObject?.locked === true;
+  const canEditSelectedObject = isEditMode && selectedObject != null && !selectedObjectLocked;
   const viewportMenuGroups = useMemo(() => buildThirdViewportMenu({
     mode: editorMode,
     snapEnabled,
     projectionMode: cameraState.projectionMode,
     inspectorVisible: inspectorWindowVisible,
     hasSelection: selectedObject != null,
+    selectedObjectLocked,
     selectedObjectPhysicsEnabled: selectedObject?.physicsEnabled ?? false,
   }), [
     cameraState.projectionMode,
     editorMode,
     inspectorWindowVisible,
+    selectedObjectLocked,
     selectedObject,
     snapEnabled,
   ]);
@@ -577,6 +583,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       context,
       mode: editorMode,
       hasSelection,
+      selectedObjectLocked: hierarchyMenuObject?.locked === true,
       selectedObjectHasParent: hierarchyMenuObject?.parentId != null,
       isRenaming: hasSelection && renamingObjectId === hierarchyMenuObject?.id,
     });
@@ -594,6 +601,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     // TODO(THIRD transform): Add per-group XYZ lock toggle so position/rotation/scale axes can update together.
     const selected = selectedObjectRef.current;
     if (!selected) return;
+    if (selected.locked) return;
 
     if (group === 'position') {
       updateObjectTransform({
@@ -693,8 +701,10 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const objectById = new Map(objects.map((object) => [object.id, object]));
     const child = objectById.get(childId);
     if (!child) return false;
+    if (child.locked) return false;
     if (parentId === childId) return false;
     if (child.parentId === parentId) return false;
+    if (parentId && objectById.get(parentId)?.locked) return false;
 
     let currentId = parentId;
     const visited = new Set<string>();
@@ -737,14 +747,17 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const clampedX = Math.max(6, Math.min(rect.width - 6, localX));
     const clampedY = Math.max(6, Math.min(rect.height - 6, localY));
 
-    selectObject(args.objectId);
+    const target = objects.find((object) => object.id === args.objectId);
+    if (target && !target.locked) {
+      selectObject(args.objectId);
+    }
     setHierarchyMenu({
       x: clampedX,
       y: clampedY,
       context: 'object',
       objectId: args.objectId,
     });
-  }, [selectObject]);
+  }, [objects, selectObject]);
 
   const openHierarchyMenuForScene = useCallback((args: {
     clientX: number;
@@ -769,6 +782,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const startRenameObject = useCallback((id: string) => {
     const target = objects.find((object) => object.id === id);
     if (!target) return;
+    if (target.locked) return;
     selectObject(id);
     setRenamingObjectId(id);
     setRenameDraft(target.name);
@@ -979,7 +993,10 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
     switch (actionId) {
       case 'hierarchy_focus':
-        runOnTargetObject(() => focusObjectInCamera(targetObject.id));
+        focusObjectInCamera(targetObject.id);
+        break;
+      case 'hierarchy_toggle_lock':
+        setObjectLocked(targetObject.id, !targetObject.locked);
         break;
       case 'hierarchy_rename':
         if (editorMode === 'edit') {
@@ -987,10 +1004,14 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         }
         break;
       case 'hierarchy_duplicate':
-        runOnTargetObject(() => duplicateSelected());
+        if (!targetObject.locked) {
+          runOnTargetObject(() => duplicateSelected());
+        }
         break;
       case 'hierarchy_delete':
-        runOnTargetObject(() => deleteSelected());
+        if (!targetObject.locked) {
+          runOnTargetObject(() => deleteSelected());
+        }
         break;
       case 'hierarchy_unparent':
         if (editorMode === 'edit' && targetObject.parentId) {
@@ -1013,6 +1034,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     hierarchyMenuObject,
     selectionId,
     selectObject,
+    setObjectLocked,
     setObjectParent,
     startRenameObject,
   ]);
@@ -1125,13 +1147,15 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         toggleSnap();
         break;
       case 'object_duplicate':
+        if (selectedObjectLocked) break;
         duplicateSelected();
         break;
       case 'object_delete':
+        if (selectedObjectLocked) break;
         deleteSelected();
         break;
       case 'object_toggle_physics':
-        if (selectedObject) {
+        if (selectedObject && !selectedObjectLocked) {
           setObjectPhysicsEnabled(selectedObject.id, !selectedObject.physicsEnabled);
         }
         break;
@@ -1157,6 +1181,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     resetCameraView,
     saveCameraFromRuntime,
     selectedObject,
+    selectedObjectLocked,
     setAllInspectorSections,
     setObjectPhysicsEnabled,
     setProjectionMode,
@@ -1224,6 +1249,10 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
   useEffect(() => {
     objectPhysicsRef.current = new Map(objects.map((object) => [object.id, object.physicsEnabled]));
+  }, [objects]);
+
+  useEffect(() => {
+    objectLockedRef.current = new Map(objects.map((object) => [object.id, object.locked]));
   }, [objects]);
 
   useEffect(() => {
@@ -1303,6 +1332,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(palette.background);
 
+    // TODO(THIRD camera): Increase camera far clip distance; current far plane is too shallow for larger scenes.
     const perspectiveCamera = new THREE.PerspectiveCamera(55, 1, 0.1, 400);
     perspectiveCamera.position.set(
       cameraState.position.x,
@@ -1484,6 +1514,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const shouldObjectSimulate = (id: string): boolean => (
       modeRef.current === 'play'
       && (objectPhysicsRef.current.get(id) ?? false)
+      && !(objectLockedRef.current.get(id) ?? false)
     );
 
     const applyBodySimulationMode = (entry: RuntimeObjectEntry) => {
@@ -1553,7 +1584,10 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       if (!toNdc(clientX, clientY)) return null;
       raycaster.setFromCamera(pointerNdc, engine.camera);
       const meshes = [...engine.entries.values()]
-        .filter((entry) => !requirePhysicsEligible || shouldObjectSimulate(entry.id))
+        .filter((entry) => {
+          if (objectLockedRef.current.get(entry.id) === true) return false;
+          return !requirePhysicsEligible || shouldObjectSimulate(entry.id);
+        })
         .map((entry) => entry.mesh);
       if (meshes.length === 0) return null;
       const hit = raycaster.intersectObjects(meshes, false)[0];
@@ -1632,6 +1666,11 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         transform.enabled = false;
         return;
       }
+      if (objectLockedRef.current.get(selectedId) === true) {
+        transform.detach();
+        transform.enabled = false;
+        return;
+      }
 
       transform.enabled = true;
       transform.attach(selected.mesh);
@@ -1656,6 +1695,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const onTransformObjectChange = () => {
       const selectedId = selectionIdRef.current;
       if (!selectedId) return;
+      if (objectLockedRef.current.get(selectedId) === true) return;
       const selected = engine.entries.get(selectedId);
       if (!selected) return;
       syncBaseFromMesh(selected);
@@ -2083,7 +2123,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     objects.forEach((object) => {
       const entry = engine.entries.get(object.id);
       if (!entry) return;
-      const shouldSimulate = modeRef.current === 'play' && object.physicsEnabled;
+      const shouldSimulate = modeRef.current === 'play' && object.physicsEnabled && !object.locked;
       if (!shouldSimulate) {
         syncMeshFromBase(entry);
       }
@@ -2094,7 +2134,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       const entry = engine.entries.get(object.id);
       if (!entry) return;
 
-      const shouldSimulate = modeRef.current === 'play' && object.physicsEnabled;
+      const shouldSimulate = modeRef.current === 'play' && object.physicsEnabled && !object.locked;
       if (shouldSimulate) {
         if (entry.body.type !== CANNON.Body.DYNAMIC) {
           syncMeshFromBase(entry);
@@ -2148,7 +2188,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     }
 
     const selected = selectedId ? engine.entries.get(selectedId) : null;
-    if (!selected) {
+    if (!selected || (selectedId && (objectLockedRef.current.get(selectedId) ?? false))) {
       engine.transform.detach();
       engine.transform.enabled = false;
       return;
@@ -2185,7 +2225,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     if (!activeGrab) return;
 
     const grabbedObject = objects.find((object) => object.id === activeGrab.objectId);
-    if (grabbedObject?.physicsEnabled) return;
+    if (grabbedObject?.physicsEnabled && !grabbedObject.locked) return;
 
     releaseGrabRef.current(activeGrab.pointerId);
     const entry = engine.entries.get(activeGrab.objectId);
@@ -2451,11 +2491,13 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       );
       const isDropTarget = hierarchyDropTargetId === node.object.id;
       const isRenaming = renamingObjectId === node.object.id;
+      const isLocked = node.object.locked;
       return (
         <React.Fragment key={node.object.id}>
           <div
             className={[
               styles.objectRow,
+              isLocked ? styles.objectRowLocked : '',
               canDropHere ? styles.objectRowDropHint : '',
               isDropTarget ? styles.objectRowDropTarget : '',
             ].join(' ').trim()}
@@ -2521,13 +2563,22 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
             ) : (
               <button
                 type="button"
-                className={`${styles.objectItem} ${styles.hierarchyItem} ${selectionId === node.object.id ? styles.objectItemActive : ''}`.trim()}
+                className={[
+                  styles.objectItem,
+                  styles.hierarchyItem,
+                  selectionId === node.object.id ? styles.objectItemActive : '',
+                  isLocked ? styles.objectItemLocked : '',
+                ].join(' ').trim()}
                 onClick={() => {
-                  selectObject(node.object.id);
+                  if (!isLocked) {
+                    selectObject(node.object.id);
+                  }
                   closeHierarchyMenu();
                 }}
                 onDoubleClick={() => {
-                  selectObject(node.object.id);
+                  if (!isLocked) {
+                    selectObject(node.object.id);
+                  }
                   closeHierarchyMenu();
                   focusObjectInCamera(node.object.id);
                 }}
@@ -2550,9 +2601,9 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                     clientY: rect.top + rect.height / 2,
                   });
                 }}
-                draggable={isEditMode && renamingObjectId == null}
+                draggable={isEditMode && renamingObjectId == null && !isLocked}
                 onDragStart={(event) => {
-                  if (!isEditMode || renamingObjectId != null) return;
+                  if (!isEditMode || renamingObjectId != null || isLocked) return;
                   event.dataTransfer.effectAllowed = 'move';
                   event.dataTransfer.setData('text/plain', node.object.id);
                   setHierarchyDragObjectId(node.object.id);
@@ -2564,7 +2615,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
               </button>
             )}
             <span className={styles.objectMeta}>
-              {`${node.object.type.toUpperCase()} · ${node.object.physicsEnabled ? 'PHYS' : 'STATIC'}`}
+              {`${node.object.type.toUpperCase()} · ${node.object.physicsEnabled ? 'PHYS' : 'STATIC'}${isLocked ? ' · LOCKED' : ''}`}
             </span>
           </div>
           {hasChildren && nodeExpanded ? renderHierarchyNodes(node.children, depth + 1) : null}
@@ -2724,37 +2775,50 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
           </button>
           {inspectorSections.transform ? (
             selectedObject ? (
-              isEditMode ? (
-                <div className={styles.inspectorGrid}>
-                  {/* TODO(THIRD transform): Support Unity-style click-drag horizontal scrubbing for transform numeric fields. */}
-                  {INSPECTOR_GROUPS.map((group) => (
-                    <div key={group} className={styles.inspectorVectorRow}>
-                      <span className={styles.inspectorVectorLabel}>{inspectorGroupLabel(group)}</span>
-                      {INSPECTOR_AXES.map((axis) => {
-                        const fieldKey = toInspectorFieldKey(group, axis);
-                        return (
-                          <label key={fieldKey} className={styles.inspectorAxisField}>
-                            <span className={styles.inspectorAxisToken}>{axis.toUpperCase()}</span>
-                            <input
-                              type="number"
-                              className={styles.inspectorInput}
-                              step={inspectorStepByGroup(group)}
-                              value={inspectorDraft[fieldKey] ?? ''}
-                              inputMode="decimal"
-                              onFocus={() => onInspectorFieldFocus(group, axis)}
-                              onChange={(event) => onInspectorFieldChange(group, axis, event.target.value)}
-                              onBlur={() => onInspectorFieldBlur(group, axis)}
-                              aria-label={`${inspectorGroupLabel(group)} ${axis.toUpperCase()}`}
-                            />
-                          </label>
-                        );
-                      })}
-                    </div>
-                  ))}
+              <div className={styles.inspectorSectionBody}>
+                <div className={styles.toolRow}>
+                  <button
+                    type="button"
+                    className={`${styles.toolBtn} ${selectedObjectLocked ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={() => setObjectLocked(selectedObject.id, !selectedObjectLocked)}
+                  >
+                    {selectedObjectLocked ? 'UNLOCK OBJECT' : 'LOCK OBJECT'}
+                  </button>
                 </div>
-              ) : (
-                <p className={styles.inspectorEmpty}>TRANSFORM FIELDS ARE READ-ONLY WHILE IN PLAY MODE.</p>
-              )
+                {selectedObjectLocked ? (
+                  <p className={styles.inspectorEmpty}>OBJECT IS LOCKED. UNLOCK TO EDIT TRANSFORM.</p>
+                ) : isEditMode ? (
+                  <div className={styles.inspectorGrid}>
+                    {/* TODO(THIRD transform): Support Unity-style click-drag horizontal scrubbing for transform numeric fields. */}
+                    {INSPECTOR_GROUPS.map((group) => (
+                      <div key={group} className={styles.inspectorVectorRow}>
+                        <span className={styles.inspectorVectorLabel}>{inspectorGroupLabel(group)}</span>
+                        {INSPECTOR_AXES.map((axis) => {
+                          const fieldKey = toInspectorFieldKey(group, axis);
+                          return (
+                            <label key={fieldKey} className={styles.inspectorAxisField}>
+                              <span className={styles.inspectorAxisToken}>{axis.toUpperCase()}</span>
+                              <input
+                                type="number"
+                                className={styles.inspectorInput}
+                                step={inspectorStepByGroup(group)}
+                                value={inspectorDraft[fieldKey] ?? ''}
+                                inputMode="decimal"
+                                onFocus={() => onInspectorFieldFocus(group, axis)}
+                                onChange={(event) => onInspectorFieldChange(group, axis, event.target.value)}
+                                onBlur={() => onInspectorFieldBlur(group, axis)}
+                                aria-label={`${inspectorGroupLabel(group)} ${axis.toUpperCase()}`}
+                              />
+                            </label>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={styles.inspectorEmpty}>TRANSFORM FIELDS ARE READ-ONLY WHILE IN PLAY MODE.</p>
+                )}
+              </div>
             ) : (
               <p className={styles.inspectorEmpty}>SELECT AN OBJECT TO EDIT TRANSFORM.</p>
             )
@@ -2779,7 +2843,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                     type="button"
                     className={`${styles.toolBtn} ${selectedObject?.material.preset === preset ? styles.toolBtnActive : ''}`.trim()}
                     onClick={() => selectionId && setObjectMaterialPreset(selectionId, preset)}
-                    disabled={!selectionId || !isEditMode}
+                    disabled={!selectionId || !canEditSelectedObject}
                   >
                     {preset.toUpperCase()}
                   </button>
@@ -2793,7 +2857,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                     className={`${styles.materialSwatch} ${selectedObject?.material.color.toLowerCase() === swatch ? styles.materialSwatchActive : ''}`.trim()}
                     style={{ backgroundColor: swatch }}
                     onClick={() => selectionId && setObjectMaterialColor(selectionId, swatch)}
-                    disabled={!selectionId || !isEditMode}
+                    disabled={!selectionId || !canEditSelectedObject}
                     aria-label={`Set material color ${swatch}`}
                     title={swatch}
                   />
@@ -2807,7 +2871,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                     className={styles.materialColorInput}
                     value={selectedObject?.material.color ?? '#00ff66'}
                     onChange={(event) => selectionId && setObjectMaterialColor(selectionId, event.target.value)}
-                    disabled={!selectionId || !isEditMode}
+                    disabled={!selectionId || !canEditSelectedObject}
                     aria-label="Material custom color"
                   />
                 </label>
@@ -2815,11 +2879,14 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                   type="button"
                   className={`${styles.toolBtn} ${selectedObject?.material.wireframe ? styles.toolBtnActive : ''}`.trim()}
                   onClick={() => selectedObject && setObjectMaterialWireframe(selectedObject.id, !selectedObject.material.wireframe)}
-                  disabled={!selectedObject || !isEditMode}
+                  disabled={!canEditSelectedObject}
                 >
                   WIREFRAME: {selectedObject?.material.wireframe ? 'ON' : 'OFF'}
                 </button>
               </div>
+              {selectedObjectLocked ? (
+                <p className={styles.inspectorEmpty}>MATERIAL CONTROLS ARE DISABLED WHILE OBJECT IS LOCKED.</p>
+              ) : null}
             </div>
           ) : null}
         </section>
@@ -2840,7 +2907,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                   type="button"
                   className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'none' ? styles.toolBtnActive : ''}`.trim()}
                   onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'none')}
-                  disabled={!selectionId || !isEditMode}
+                  disabled={!selectionId || !canEditSelectedObject}
                 >
                   NONE
                 </button>
@@ -2848,7 +2915,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                   type="button"
                   className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'bounce' ? styles.toolBtnActive : ''}`.trim()}
                   onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'bounce')}
-                  disabled={!selectionId || !isEditMode}
+                  disabled={!selectionId || !canEditSelectedObject}
                 >
                   BOUNCE
                 </button>
@@ -2856,7 +2923,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                   type="button"
                   className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'rotate' ? styles.toolBtnActive : ''}`.trim()}
                   onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'rotate')}
-                  disabled={!selectionId || !isEditMode}
+                  disabled={!selectionId || !canEditSelectedObject}
                 >
                   ROTATE
                 </button>
@@ -2864,11 +2931,14 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                   type="button"
                   className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'pulse' ? styles.toolBtnActive : ''}`.trim()}
                   onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'pulse')}
-                  disabled={!selectionId || !isEditMode}
+                  disabled={!selectionId || !canEditSelectedObject}
                 >
                   PULSE
                 </button>
               </div>
+              {selectedObjectLocked ? (
+                <p className={styles.inspectorEmpty}>ANIMATION CONTROLS ARE DISABLED WHILE OBJECT IS LOCKED.</p>
+              ) : null}
             </div>
           ) : null}
         </section>
@@ -2888,12 +2958,14 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                 type="button"
                 className={`${styles.objectPhysicsBtn} ${selectedObject?.physicsEnabled ? styles.objectPhysicsBtnActive : ''}`.trim()}
                 onClick={() => selectedObject && setObjectPhysicsEnabled(selectedObject.id, !selectedObject.physicsEnabled)}
-                disabled={!selectedObject}
+                disabled={!selectedObject || selectedObjectLocked}
               >
                 {selectedObject?.physicsEnabled ? 'REMOVE PHYSICS' : 'ADD PHYSICS'}
               </button>
               <p className={styles.inspectorEmpty}>
-                PLAY GRAB/SIM REQUIRES OBJECT PHYSICS ON.
+                {selectedObjectLocked
+                  ? 'OBJECT IS LOCKED. UNLOCK TO CHANGE PHYSICS.'
+                  : 'PLAY GRAB/SIM REQUIRES OBJECT PHYSICS ON.'}
               </p>
             </div>
           ) : null}

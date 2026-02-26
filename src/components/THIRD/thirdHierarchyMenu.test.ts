@@ -7,12 +7,14 @@ describe('thirdHierarchyMenu model', () => {
       context: 'object',
       mode: 'edit',
       hasSelection: true,
+      selectedObjectLocked: false,
       selectedObjectHasParent: true,
       isRenaming: false,
     });
 
     expect(items.map((item) => item.id)).toEqual([
       'hierarchy_focus',
+      'hierarchy_toggle_lock',
       'hierarchy_rename',
       'hierarchy_duplicate',
       'hierarchy_delete',
@@ -25,6 +27,7 @@ describe('thirdHierarchyMenu model', () => {
       context: 'scene',
       mode: 'play',
       hasSelection: false,
+      selectedObjectLocked: false,
       selectedObjectHasParent: false,
       isRenaming: false,
     });
@@ -43,6 +46,7 @@ describe('thirdHierarchyMenu model', () => {
       context: 'object',
       mode: 'edit',
       hasSelection: false,
+      selectedObjectLocked: false,
       selectedObjectHasParent: false,
       isRenaming: false,
     });
@@ -55,16 +59,19 @@ describe('thirdHierarchyMenu model', () => {
       context: 'object',
       mode: 'play',
       hasSelection: true,
+      selectedObjectLocked: false,
       selectedObjectHasParent: true,
       isRenaming: false,
     });
 
     const focus = items.find((item) => item.id === 'hierarchy_focus');
+    const toggleLock = items.find((item) => item.id === 'hierarchy_toggle_lock');
     const rename = items.find((item) => item.id === 'hierarchy_rename');
     const duplicate = items.find((item) => item.id === 'hierarchy_duplicate');
     const remove = items.find((item) => item.id === 'hierarchy_unparent');
 
     expect(focus?.disabled).toBe(false);
+    expect(toggleLock?.disabled).toBe(false);
     expect(rename?.disabled).toBe(true);
     expect(duplicate?.disabled).toBe(false);
     expect(remove?.disabled).toBe(true);
@@ -75,11 +82,32 @@ describe('thirdHierarchyMenu model', () => {
       context: 'object',
       mode: 'edit',
       hasSelection: true,
+      selectedObjectLocked: false,
       selectedObjectHasParent: false,
       isRenaming: true,
     });
 
     const rename = items.find((item) => item.id === 'hierarchy_rename');
     expect(rename?.disabled).toBe(true);
+  });
+
+  it('disables edit actions and flips lock label when object is locked', () => {
+    const items = buildThirdHierarchyMenu({
+      context: 'object',
+      mode: 'edit',
+      hasSelection: true,
+      selectedObjectLocked: true,
+      selectedObjectHasParent: true,
+      isRenaming: false,
+    });
+
+    const toggleLock = items.find((item) => item.id === 'hierarchy_toggle_lock');
+    const duplicate = items.find((item) => item.id === 'hierarchy_duplicate');
+    const remove = items.find((item) => item.id === 'hierarchy_unparent');
+
+    expect(toggleLock?.label).toBe('UNLOCK');
+    expect(toggleLock?.disabled).toBe(false);
+    expect(duplicate?.disabled).toBe(true);
+    expect(remove?.disabled).toBe(true);
   });
 });

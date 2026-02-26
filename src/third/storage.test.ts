@@ -25,6 +25,7 @@ describe('third storage sanitization', () => {
             preset: 'neon',
           },
           physicsEnabled: true,
+          locked: true,
           animationPreset: 'bounce',
         },
       ],
@@ -43,6 +44,7 @@ describe('third storage sanitization', () => {
     expect(scene.objects).toHaveLength(1);
     expect(scene.objects[0].animationPreset).toBe('bounce');
     expect(scene.objects[0].physicsEnabled).toBe(true);
+    expect(scene.objects[0].locked).toBe(true);
     expect(scene.objects[0].material.wireframe).toBe(true);
     expect(scene.objects[0].material.preset).toBe('neon');
     expect(scene.objects[0].parentId).toBeNull();
@@ -107,6 +109,7 @@ describe('third storage sanitization', () => {
     expect(scene.showGrid).toBe(false);
     expect(scene.showAxes).toBe(false);
     expect(scene.objects[0].physicsEnabled).toBe(false);
+    expect(scene.objects[0].locked).toBe(false);
     expect(scene.objects[0].material.preset).toBe('matte');
     expect(scene.objects[0].material.wireframe).toBe(false);
     expect(scene.objects[0].parentId).toBeNull();
@@ -136,6 +139,7 @@ describe('third storage sanitization', () => {
             preset: 'glass',
           },
           physicsEnabled: true,
+          locked: true,
           animationPreset: 'none',
         },
       ],
@@ -151,6 +155,7 @@ describe('third storage sanitization', () => {
     expect(restored.showGrid).toBe(true);
     expect(restored.showAxes).toBe(true);
     expect(restored.objects[0].physicsEnabled).toBe(true);
+    expect(restored.objects[0].locked).toBe(true);
     expect(restored.objects[0].material.preset).toBe('glass');
     expect(restored.objects[0].material.wireframe).toBe(false);
     expect(restored.objects[0].parentId).toBe('obj_parent');

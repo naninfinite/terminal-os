@@ -13,6 +13,7 @@ describe('thirdViewportMenu model', () => {
       projectionMode: 'perspective',
       inspectorVisible: true,
       hasSelection: true,
+      selectedObjectLocked: false,
       selectedObjectPhysicsEnabled: false,
     });
 
@@ -35,6 +36,7 @@ describe('thirdViewportMenu model', () => {
       projectionMode: 'orthographic',
       inspectorVisible: false,
       hasSelection: false,
+      selectedObjectLocked: false,
       selectedObjectPhysicsEnabled: false,
     });
 
@@ -43,6 +45,21 @@ describe('thirdViewportMenu model', () => {
 
     const sceneSnap = groups.find((group) => group.id === 'scene')?.items.find((item) => item.id === 'scene_toggle_snap');
     expect(sceneSnap?.disabled).toBe(false);
+  });
+
+  it('disables object actions when selected object is locked', () => {
+    const groups = buildThirdViewportMenu({
+      mode: 'edit',
+      snapEnabled: true,
+      projectionMode: 'perspective',
+      inspectorVisible: true,
+      hasSelection: true,
+      selectedObjectLocked: true,
+      selectedObjectPhysicsEnabled: true,
+    });
+
+    const objectItems = groups.find((group) => group.id === 'object')?.items ?? [];
+    expect(objectItems.every((item) => item.disabled === true)).toBe(true);
   });
 });
 
