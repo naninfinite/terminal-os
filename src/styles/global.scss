@@ -119,6 +119,26 @@ html, body {
 /* Hide native cursor when custom cursor is active */
 .custom-cursor-enabled, .custom-cursor-enabled * { cursor: none !important; }
 
+/* Interaction lockdown: disable passive text extraction while preserving editable fields. */
+.interaction-lock-enabled, .interaction-lock-enabled * {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.interaction-lock-enabled input,
+.interaction-lock-enabled textarea,
+.interaction-lock-enabled [contenteditable],
+.interaction-lock-enabled [contenteditable=""],
+.interaction-lock-enabled [contenteditable="true"],
+.interaction-lock-enabled [contenteditable="plaintext-only"],
+.interaction-lock-enabled [data-allow-selection="true"],
+.interaction-lock-enabled [data-allow-selection="true"] * {
+  user-select: text;
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
+}
+
 /* Ensure form controls inherit global typography */
 input, button, select, textarea {
   font-family: inherit;

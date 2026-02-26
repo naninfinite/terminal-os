@@ -25,6 +25,7 @@ import { ThirdProvider } from './third/ThirdProvider';
 import { ConnectProvider } from './connect/ConnectProvider';
 import { ThirdFullscreenLayer } from './components/THIRD/ThirdFullscreenLayer';
 import { ConnectFullscreenLayer } from './components/CONNECT/ConnectFullscreenLayer';
+import { shouldAllowNativeContextMenu } from './components/shared/interactionLockdown';
 
 const App: React.FC = () => {
   const [entered, setEntered] = useState(false);
@@ -66,6 +67,19 @@ const App: React.FC = () => {
       };
     }
   }, [exiting, entered]);
+
+  useEffect(() => {
+    document.body.classList.add('interaction-lock-enabled');
+    const onContextMenu = (event: MouseEvent) => {
+      if (shouldAllowNativeContextMenu(event.target)) return;
+      event.preventDefault();
+    };
+    window.addEventListener('contextmenu', onContextMenu, true);
+    return () => {
+      window.removeEventListener('contextmenu', onContextMenu, true);
+      document.body.classList.remove('interaction-lock-enabled');
+    };
+  }, []);
 
   return (
     <>

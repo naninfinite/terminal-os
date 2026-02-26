@@ -192,6 +192,11 @@ const StatusBar: React.FC = () => {
       }
     }
 
+    // Pointer/touch context triggers should open exactly at the cursor location.
+    if (detail.source === 'contextmenu' || detail.source === 'longpress') {
+      return { x: detail.x, y: detail.y };
+    }
+
     const fullscreenTarget = document.querySelector(
       `[aria-label="${FULLSCREEN_LAYER_LABEL_BY_SCOPE[detail.scope]}"]`
     );
