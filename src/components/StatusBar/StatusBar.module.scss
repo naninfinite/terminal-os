@@ -1,6 +1,8 @@
 @use 'sass:math';
 @use '../../styles/variables' as *;
 
+$status-context-overlay-z: 44;
+
 .statusBar {
   /* Fixed bottom shell bar that stays visible over desktop content. */
   --status-gutter: #{$grid-gap};
@@ -25,6 +27,10 @@
   max-width: 100dvw;
   box-sizing: border-box;
   z-index: 5;
+}
+
+.statusBarOverlay {
+  z-index: $status-context-overlay-z;
 }
 
 .left {
@@ -128,7 +134,7 @@
   padding: 6px;
   display: grid;
   gap: 4px;
-  z-index: 24;
+  z-index: $status-context-overlay-z;
   box-sizing: border-box;
 }
 
@@ -174,7 +180,7 @@
   padding: 6px;
   display: grid;
   gap: 4px;
-  z-index: 24;
+  z-index: $status-context-overlay-z;
   box-sizing: border-box;
 }
 

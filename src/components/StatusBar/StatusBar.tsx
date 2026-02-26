@@ -602,9 +602,14 @@ const StatusBar: React.FC = () => {
       });
     },
   });
+  const hasOverlayMenuOpen = menuOpen || subsystemMenu != null;
 
   return (
-    <div className={styles.statusBar} role="contentinfo" aria-label="System status bar">
+    <div
+      className={`${styles.statusBar} ${hasOverlayMenuOpen ? styles.statusBarOverlay : ''}`.trim()}
+      role="contentinfo"
+      aria-label="System status bar"
+    >
       <div className={styles.left}>
         <button
           type="button"
