@@ -227,6 +227,7 @@ const applyPresetAnimation = (
   mesh: THREE.Mesh,
   base: RuntimeObjectEntry['base']
 ): void => {
+  // TODO(THIRD animation): Evaluate replacing preset math animations with GSAP timelines.
   mesh.position.copy(base.position);
   mesh.rotation.set(base.rotation.x, base.rotation.y, base.rotation.z);
   mesh.scale.copy(base.scale);
@@ -2735,7 +2736,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
           </button>
           {inspectorSections.camera ? (
             <div className={styles.inspectorSectionBody}>
-              <div className={styles.toolRow}>
+              <div className={`${styles.toolRow} ${styles.toolRowThirds}`.trim()}>
                 <button
                   type="button"
                   className={styles.toolBtn}
@@ -2747,13 +2748,11 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                     saveCameraFromRuntime();
                   }}
                 >
-                  PROJECTION: {projectionLabel(cameraState.projectionMode)}
+                  {projectionLabel(cameraState.projectionMode)}
                 </button>
                 <button type="button" className={styles.toolBtn} onClick={resetCameraView}>
                   RESET
                 </button>
-              </div>
-              <div className={styles.toolRow}>
                 <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('top')}>
                   TOP
                 </button>

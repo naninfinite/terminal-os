@@ -381,6 +381,10 @@
   gap: 4px;
 }
 
+.toolRowThirds {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .toolRow > * {
   min-width: 0;
 }
