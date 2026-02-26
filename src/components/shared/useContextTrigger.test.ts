@@ -23,6 +23,27 @@ describe('useContextTrigger controller', () => {
     expect(onOpen).toHaveBeenCalledWith({ x: 16, y: 24, source: 'contextmenu' });
   });
 
+  it('suppresses next click for touch-style context menu events', () => {
+    const onOpen = vi.fn();
+    const controller = createContextTriggerController({ onOpen });
+
+    controller.contextMenu({ clientX: 16, clientY: 24, button: 0, target: null });
+
+    expect(onOpen).toHaveBeenCalledWith({ x: 16, y: 24, source: 'contextmenu' });
+    expect(controller.consumeClickSuppression()).toBe(true);
+    expect(controller.consumeClickSuppression()).toBe(false);
+  });
+
+  it('does not suppress click for right-button desktop context menu events', () => {
+    const onOpen = vi.fn();
+    const controller = createContextTriggerController({ onOpen });
+
+    controller.contextMenu({ clientX: 16, clientY: 24, button: 2, target: null });
+
+    expect(onOpen).toHaveBeenCalledWith({ x: 16, y: 24, source: 'contextmenu' });
+    expect(controller.consumeClickSuppression()).toBe(false);
+  });
+
   it('suppresses desktop context menu on interactive targets by default', () => {
     const onOpen = vi.fn();
     const target = {
@@ -60,6 +81,53 @@ describe('useContextTrigger controller', () => {
     controller.pointerDown({
       pointerId: 1,
       pointerType: 'touch',
+      clientX: 40,
+      clientY: 72,
+      target: null,
+    });
+
+    vi.advanceTimersByTime(CONTEXT_LONG_PRESS_MS - 1);
+    expect(onOpen).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1);
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(onOpen).toHaveBeenCalledWith({ x: 40, y: 72, source: 'longpress' });
+    expect(controller.consumeClickSuppression()).toBe(true);
+    expect(controller.consumeClickSuppression()).toBe(false);
+  });
+
+  it('keeps long-press click suppression if a contextmenu event follows', () => {
+    vi.useFakeTimers();
+    const onOpen = vi.fn();
+    const controller = createContextTriggerController({ onOpen });
+
+    controller.pointerDown({
+      pointerId: 6,
+      pointerType: 'touch',
+      clientX: 80,
+      clientY: 120,
+      target: null,
+    });
+    vi.advanceTimersByTime(CONTEXT_LONG_PRESS_MS);
+
+    controller.contextMenu({
+      clientX: 80,
+      clientY: 120,
+      button: 0,
+      target: null,
+    });
+
+    expect(controller.consumeClickSuppression()).toBe(true);
+    expect(controller.consumeClickSuppression()).toBe(false);
+  });
+
+  it('opens on long-press via touch-event fallback', () => {
+    vi.useFakeTimers();
+    const onOpen = vi.fn();
+    const controller = createContextTriggerController({ onOpen });
+
+    controller.touchStart({
+      identifier: 10,
       clientX: 40,
       clientY: 72,
       target: null,

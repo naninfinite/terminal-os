@@ -26,6 +26,7 @@ const formatTimestamp = (iso: string): string => {
 
 const YOU: React.FC<YouProps> = ({ mode = 'panel' }) => {
   const {
+    displayMode,
     messages,
     draftName,
     draftBody,
@@ -47,6 +48,7 @@ const YOU: React.FC<YouProps> = ({ mode = 'panel' }) => {
   } = useYouBoard();
 
   const panelFeedRef = useRef<HTMLDivElement | null>(null);
+  const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [panelPreviewLimit, setPanelPreviewLimit] = useState(PANEL_PREVIEW_DEFAULT_COUNT);
   const panelVisibleCount = mode === 'panel'
     ? Math.min(messages.length, panelPreviewLimit)
@@ -72,6 +74,22 @@ const YOU: React.FC<YouProps> = ({ mode = 'panel' }) => {
       window.removeEventListener('terminalos:you:clear-input', onClear as EventListener);
     };
   }, [clearDraft, mode, submitDraft]);
+
+  useEffect(() => {
+    const onTypeMessage = () => {
+      const activeMode = displayMode === 'fullscreen' ? 'fullscreen' : 'panel';
+      if (activeMode !== mode) return;
+      const input = messageInputRef.current;
+      if (!input) return;
+      input.focus();
+      const end = input.value.length;
+      input.setSelectionRange(end, end);
+    };
+    window.addEventListener('terminalos:you:type-message', onTypeMessage as EventListener);
+    return () => {
+      window.removeEventListener('terminalos:you:type-message', onTypeMessage as EventListener);
+    };
+  }, [displayMode, mode]);
 
   useEffect(() => {
     if (mode !== 'panel') return undefined;
@@ -137,6 +155,7 @@ const YOU: React.FC<YouProps> = ({ mode = 'panel' }) => {
             aria-label="Display name"
           />
           <textarea
+            ref={messageInputRef}
             className={styles.messageInput}
             value={draftBody}
             maxLength={MAX_BODY_LENGTH}

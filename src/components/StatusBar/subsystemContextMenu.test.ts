@@ -88,6 +88,8 @@ describe('subsystemContextMenu model', () => {
     const noDraftActions = noDraft.rows
       .filter((row): row is Extract<typeof row, { kind: 'action' }> => row.kind === 'action');
 
+    expect(noDraftActions.map((row) => row.id)).toContain('you_type_message');
+    expect(noDraftActions.find((row) => row.id === 'you_type_message')?.disabled).toBeFalsy();
     expect(noDraftActions.find((row) => row.id === 'you_save_input')?.disabled).toBe(true);
     expect(noDraftActions.find((row) => row.id === 'you_clear_input')?.disabled).toBe(true);
 
@@ -104,6 +106,8 @@ describe('subsystemContextMenu model', () => {
     const withDraftActions = withDraft.rows
       .filter((row): row is Extract<typeof row, { kind: 'action' }> => row.kind === 'action');
 
+    expect(withDraftActions.map((row) => row.id)).toContain('you_type_message');
+    expect(withDraftActions.find((row) => row.id === 'you_type_message')?.disabled).toBeFalsy();
     expect(withDraftActions.find((row) => row.id === 'you_save_input')?.disabled).toBe(false);
     expect(withDraftActions.find((row) => row.id === 'you_clear_input')?.disabled).toBe(false);
   });

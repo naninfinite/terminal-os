@@ -36,6 +36,8 @@ const Desktop: React.FC = () => {
         scopeId="me"
         stretchBody
         bodyClassName={styles.panelBodyFlush}
+        enableTouchContextFallback
+        suppressInteractiveTargets={false}
         onActivate={() => setActiveScope(null)}
         onRequestContextMenu={({ x, y, source }) => {
           requestPanelContextMenu({
@@ -54,6 +56,7 @@ const Desktop: React.FC = () => {
         title="YOU.EXE"
         scopeId="you"
         bodyClassName={styles.panelBodyFlush}
+        enableTouchContextFallback
         onActivate={() => setActiveScope('you')}
         onRequestContextMenu={({ x, y, source }) => {
           requestPanelContextMenu({
@@ -73,6 +76,7 @@ const Desktop: React.FC = () => {
         scopeId="third"
         stretchBody
         bodyClassName={styles.panelBodyFlush}
+        enableTouchContextFallback
         onActivate={() => setActiveScope('third')}
         onRequestContextMenu={({ x, y, source }) => {
           requestPanelContextMenu({
@@ -91,6 +95,7 @@ const Desktop: React.FC = () => {
         title="CONNECT.EXE"
         scopeId="connect"
         bodyClassName={styles.panelBodyFlush}
+        enableTouchContextFallback
         onActivate={() => setActiveScope('connect')}
         onRequestContextMenu={({ x, y, source }) => {
           requestPanelContextMenu({

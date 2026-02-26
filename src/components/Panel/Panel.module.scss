@@ -42,6 +42,19 @@
   position: relative;
   transition: border-color 180ms ease, box-shadow 180ms ease;
   box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.panel input,
+.panel textarea,
+.panel select,
+.panel [contenteditable=''],
+.panel [contenteditable='true'] {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 @media (max-width: $bp-narrow) {

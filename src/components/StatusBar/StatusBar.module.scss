@@ -27,6 +27,10 @@ $status-context-overlay-z: 44;
   max-width: 100dvw;
   box-sizing: border-box;
   z-index: 5;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .statusBarOverlay {

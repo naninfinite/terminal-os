@@ -43,6 +43,10 @@ import {
   parseInspectorNumber,
   radToDeg,
 } from './transformInspector';
+import {
+  CONTEXT_LONG_PRESS_MS,
+  CONTEXT_MOVE_TOLERANCE_PX,
+} from '../shared/useContextTrigger';
 import { useTheme } from '../../theme/ThemeProvider';
 import {
   getThirdThemePalette,
@@ -68,6 +72,8 @@ const MAX_PHYSICS_SUBSTEPS = 3;
 const PHYSICS_COMMIT_INTERVAL_SECONDS = 0.4;
 const CAMERA_SAVE_DEBOUNCE_MS = 250;
 const RIGHT_CLICK_OPEN_TOLERANCE_PX = 6;
+const TOUCH_CONTEXT_MENU_OPEN_DELAY_MS = CONTEXT_LONG_PRESS_MS;
+const TOUCH_CONTEXT_MENU_OPEN_TOLERANCE_PX = CONTEXT_MOVE_TOLERANCE_PX;
 const MIN_CAMERA_DISTANCE = 1.2;
 const ORTHOGRAPHIC_FRUSTUM_HEIGHT = 11;
 const HIERARCHY_ROOT_DROP_TARGET = '__root__' as const;
@@ -108,6 +114,21 @@ type RightClickCandidate = {
   startX: number;
   startY: number;
   moved: boolean;
+};
+
+type TouchContextMenuCandidate = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  timeoutId: number;
+};
+
+type HierarchyTouchContextMenuCandidate = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  objectId: string | null;
+  timeoutId: number;
 };
 
 type HierarchyTreeNode = {
@@ -515,6 +536,9 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const pendingTransformPatchRef = useRef<ThirdTransformPatch | null>(null);
   const focusedInspectorFieldsRef = useRef(new Set<InspectorFieldKey>());
   const rightClickCandidateRef = useRef<RightClickCandidate | null>(null);
+  const touchContextMenuCandidateRef = useRef<TouchContextMenuCandidate | null>(null);
+  const hierarchyTouchContextMenuCandidateRef = useRef<HierarchyTouchContextMenuCandidate | null>(null);
+  const suppressHierarchyTouchClickRef = useRef(false);
   const viewportMenuRef = useRef<HTMLDivElement | null>(null);
   const hierarchyMenuRef = useRef<HTMLDivElement | null>(null);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
@@ -796,6 +820,119 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       context: 'scene',
       objectId: null,
     });
+  }, []);
+
+  const clearHierarchyTouchContextMenuCandidate = useCallback((pointerId?: number) => {
+    const candidate = hierarchyTouchContextMenuCandidateRef.current;
+    if (!candidate) return;
+    if (pointerId != null && candidate.pointerId !== pointerId) return;
+    window.clearTimeout(candidate.timeoutId);
+    hierarchyTouchContextMenuCandidateRef.current = null;
+  }, []);
+
+  const beginHierarchyTouchContextMenuCandidate = useCallback((args: {
+    pointerId: number;
+    clientX: number;
+    clientY: number;
+    objectId: string | null;
+  }) => {
+    clearHierarchyTouchContextMenuCandidate();
+    const timeoutId = window.setTimeout(() => {
+      const candidate = hierarchyTouchContextMenuCandidateRef.current;
+      if (!candidate || candidate.pointerId !== args.pointerId) return;
+      hierarchyTouchContextMenuCandidateRef.current = null;
+      suppressHierarchyTouchClickRef.current = true;
+
+      if (candidate.objectId) {
+        openHierarchyMenuForObject({
+          objectId: candidate.objectId,
+          clientX: candidate.startX,
+          clientY: candidate.startY,
+        });
+        return;
+      }
+
+      openHierarchyMenuForScene({
+        clientX: candidate.startX,
+        clientY: candidate.startY,
+      });
+    }, TOUCH_CONTEXT_MENU_OPEN_DELAY_MS);
+
+    hierarchyTouchContextMenuCandidateRef.current = {
+      pointerId: args.pointerId,
+      startX: args.clientX,
+      startY: args.clientY,
+      objectId: args.objectId,
+      timeoutId,
+    };
+  }, [clearHierarchyTouchContextMenuCandidate, openHierarchyMenuForObject, openHierarchyMenuForScene]);
+
+  const updateHierarchyTouchContextMenuCandidate = useCallback((args: {
+    pointerId: number;
+    clientX: number;
+    clientY: number;
+  }) => {
+    const candidate = hierarchyTouchContextMenuCandidateRef.current;
+    if (!candidate || candidate.pointerId !== args.pointerId) return;
+    const distance = Math.hypot(
+      args.clientX - candidate.startX,
+      args.clientY - candidate.startY
+    );
+    if (distance > TOUCH_CONTEXT_MENU_OPEN_TOLERANCE_PX) {
+      clearHierarchyTouchContextMenuCandidate(args.pointerId);
+    }
+  }, [clearHierarchyTouchContextMenuCandidate]);
+
+  const onHierarchyListPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== 'touch') return;
+    suppressHierarchyTouchClickRef.current = false;
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"]')) {
+      return;
+    }
+
+    const objectContextTarget = target?.closest<HTMLElement>('[data-hierarchy-context-object-id]');
+    if (objectContextTarget) {
+      const objectId = objectContextTarget.dataset.hierarchyContextObjectId?.trim() ?? null;
+      if (!objectId) return;
+      beginHierarchyTouchContextMenuCandidate({
+        pointerId: event.pointerId,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        objectId,
+      });
+      return;
+    }
+
+    if (target?.closest('[data-hierarchy-node="true"]')) return;
+
+    beginHierarchyTouchContextMenuCandidate({
+      pointerId: event.pointerId,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      objectId: null,
+    });
+  }, [beginHierarchyTouchContextMenuCandidate]);
+
+  const onHierarchyListPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== 'touch') return;
+    updateHierarchyTouchContextMenuCandidate({
+      pointerId: event.pointerId,
+      clientX: event.clientX,
+      clientY: event.clientY,
+    });
+  }, [updateHierarchyTouchContextMenuCandidate]);
+
+  const onHierarchyListPointerUpOrCancel = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== 'touch') return;
+    clearHierarchyTouchContextMenuCandidate(event.pointerId);
+  }, [clearHierarchyTouchContextMenuCandidate]);
+
+  const onHierarchyListClickCapture = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    if (!suppressHierarchyTouchClickRef.current) return;
+    suppressHierarchyTouchClickRef.current = false;
+    event.preventDefault();
+    event.stopPropagation();
   }, []);
 
   const startRenameObject = useCallback((id: string) => {
@@ -1785,9 +1922,47 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       }, CAMERA_SAVE_DEBOUNCE_MS);
     };
 
+    const clearTouchContextMenuCandidate = (pointerId?: number) => {
+      const candidate = touchContextMenuCandidateRef.current;
+      if (!candidate) return;
+      if (pointerId != null && candidate.pointerId !== pointerId) return;
+      window.clearTimeout(candidate.timeoutId);
+      touchContextMenuCandidateRef.current = null;
+    };
+
+    const openViewportMenuAtPointer = (clientX: number, clientY: number) => {
+      const picked = pickObject(clientX, clientY);
+      if (picked) {
+        selectObject(picked.id);
+        selectionIdRef.current = picked.id;
+        updateTransformAttachment();
+      }
+      openViewportMenu(clientX, clientY);
+    };
+
     const onPointerDown = (event: PointerEvent) => {
       if (event.pointerType === 'touch') {
         engine.touchPointers.add(event.pointerId);
+        clearTouchContextMenuCandidate();
+
+        if (engine.touchPointers.size === 1) {
+          const pointerId = event.pointerId;
+          const startX = event.clientX;
+          const startY = event.clientY;
+          const timeoutId = window.setTimeout(() => {
+            const candidate = touchContextMenuCandidateRef.current;
+            if (!candidate || candidate.pointerId !== pointerId) return;
+            touchContextMenuCandidateRef.current = null;
+            releaseGrab(pointerId);
+            openViewportMenuAtPointer(startX, startY);
+          }, TOUCH_CONTEXT_MENU_OPEN_DELAY_MS);
+          touchContextMenuCandidateRef.current = {
+            pointerId,
+            startX,
+            startY,
+            timeoutId,
+          };
+        }
       }
 
       if (event.button === 2 && event.pointerType !== 'touch') {
@@ -1830,6 +2005,17 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     };
 
     const onPointerMove = (event: PointerEvent) => {
+      const touchContextMenuCandidate = touchContextMenuCandidateRef.current;
+      if (touchContextMenuCandidate && touchContextMenuCandidate.pointerId === event.pointerId) {
+        const distance = Math.hypot(
+          event.clientX - touchContextMenuCandidate.startX,
+          event.clientY - touchContextMenuCandidate.startY
+        );
+        if (distance > TOUCH_CONTEXT_MENU_OPEN_TOLERANCE_PX) {
+          clearTouchContextMenuCandidate(event.pointerId);
+        }
+      }
+
       const rightClickCandidate = rightClickCandidateRef.current;
       if (rightClickCandidate && rightClickCandidate.pointerId === event.pointerId) {
         const distance = Math.hypot(
@@ -1847,17 +2033,13 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     };
 
     const onPointerUpOrCancel = (event: PointerEvent) => {
+      clearTouchContextMenuCandidate(event.pointerId);
+
       const rightClickCandidate = rightClickCandidateRef.current;
       if (rightClickCandidate && rightClickCandidate.pointerId === event.pointerId) {
         rightClickCandidateRef.current = null;
         if (event.pointerType !== 'touch' && event.button === 2 && !rightClickCandidate.moved) {
-          const picked = pickObject(event.clientX, event.clientY);
-          if (picked) {
-            selectObject(picked.id);
-            selectionIdRef.current = picked.id;
-            updateTransformAttachment();
-          }
-          openViewportMenu(event.clientX, event.clientY);
+          openViewportMenuAtPointer(event.clientX, event.clientY);
         }
       }
 
@@ -1960,6 +2142,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         window.clearTimeout(cameraSaveTimerRef.current);
         cameraSaveTimerRef.current = null;
       }
+      clearTouchContextMenuCandidate();
       if (transformSyncRafRef.current != null) {
         window.cancelAnimationFrame(transformSyncRafRef.current);
         transformSyncRafRef.current = null;
@@ -2458,6 +2641,20 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   }, [closeViewportMenu, viewportMenu]);
 
   useEffect(() => {
+    const onPointerEnd = (event: PointerEvent) => {
+      clearHierarchyTouchContextMenuCandidate(event.pointerId);
+    };
+    window.addEventListener('pointerup', onPointerEnd);
+    window.addEventListener('pointercancel', onPointerEnd);
+    return () => {
+      window.removeEventListener('pointerup', onPointerEnd);
+      window.removeEventListener('pointercancel', onPointerEnd);
+      clearHierarchyTouchContextMenuCandidate();
+      suppressHierarchyTouchClickRef.current = false;
+    };
+  }, [clearHierarchyTouchContextMenuCandidate]);
+
+  useEffect(() => {
     if (!hierarchyMenu) return;
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
@@ -2618,6 +2815,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                   selectionId === node.object.id ? styles.objectItemActive : '',
                   isLocked ? styles.objectItemLocked : '',
                 ].join(' ').trim()}
+                data-hierarchy-context-object-id={node.object.id}
                 onClick={() => {
                   if (!isLocked) {
                     selectObject(node.object.id);
@@ -2711,6 +2909,11 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
           className={styles.objectList}
           aria-label="THIRD object hierarchy"
           tabIndex={0}
+          onPointerDown={onHierarchyListPointerDown}
+          onPointerMove={onHierarchyListPointerMove}
+          onPointerUp={onHierarchyListPointerUpOrCancel}
+          onPointerCancel={onHierarchyListPointerUpOrCancel}
+          onClickCapture={onHierarchyListClickCapture}
           onContextMenu={(event) => {
             const target = event.target as HTMLElement | null;
             if (target?.closest('[data-hierarchy-node="true"]')) return;
@@ -3116,7 +3319,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                   })}
                 </div>
               ))}
-              <span className={styles.inlineStatus}>RMB VIEWPORT MENU HAS THE SAME CAMERA ACTIONS.</span>
+              <span className={styles.inlineStatus}>RMB OR TOUCH-HOLD VIEWPORT MENU HAS THE SAME CAMERA ACTIONS.</span>
             </div>
           ) : null}
         </section>

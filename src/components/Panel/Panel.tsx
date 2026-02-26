@@ -26,6 +26,10 @@ export type PanelProps = {
   hideHeader?: boolean;
   /** Optional extra class for the body wrapper. */
   bodyClassName?: string;
+  /** Enable touch-event fallback for long-press context menus on touch-only browsers. */
+  enableTouchContextFallback?: boolean;
+  /** Suppress context trigger on interactive descendants (inputs, buttons, links). */
+  suppressInteractiveTargets?: boolean;
   /** Optional hook for notifying parent when this panel becomes active/focused. */
   onActivate?: () => void;
   /** Optional hook for opening scope-level context menu from panel roots. */
@@ -53,11 +57,14 @@ const Panel: React.FC<PanelProps> = ({
   disableHover,
   hideHeader,
   bodyClassName,
+  enableTouchContextFallback,
+  suppressInteractiveTargets,
   onActivate,
   onRequestContextMenu,
 }) => {
   const contextTrigger = useContextTrigger<HTMLElement>({
     disabled: !scopeId || !onRequestContextMenu,
+    suppressInteractiveTargets,
     onOpen: ({ x, y, source }) => {
       if (!scopeId || !onRequestContextMenu) return;
       onRequestContextMenu({
@@ -85,6 +92,10 @@ const Panel: React.FC<PanelProps> = ({
       onPointerMove={contextTrigger.onPointerMove}
       onPointerUp={contextTrigger.onPointerUp}
       onPointerCancel={contextTrigger.onPointerCancel}
+      onTouchStart={enableTouchContextFallback ? contextTrigger.onTouchStart : undefined}
+      onTouchMove={enableTouchContextFallback ? contextTrigger.onTouchMove : undefined}
+      onTouchEnd={enableTouchContextFallback ? contextTrigger.onTouchEnd : undefined}
+      onTouchCancel={enableTouchContextFallback ? contextTrigger.onTouchCancel : undefined}
       onClickCapture={contextTrigger.onClickCapture}
       onKeyDown={contextTrigger.onKeyDown}
     >

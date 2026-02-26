@@ -40,6 +40,8 @@ const CONTEXT_MENU_WIDTH_PX = 288;
 const CONTEXT_MENU_HEIGHT_PX = 320;
 const CONTEXT_MENU_MARGIN_PX = 8;
 const DOCK_CONTEXT_MENU_GAP_PX = 8;
+const MOBILE_DOCK_LONG_PRESS_MS = 380;
+const MOBILE_DOCK_MOVE_TOLERANCE_PX = 18;
 const SUBSYSTEM_CONTEXT_MENU_OFFSET_X_PX = 8;
 const SUBSYSTEM_CONTEXT_MENU_OFFSET_Y_PX = 32;
 const MOBILE_FULLSCREEN_LOCK_MAX_WIDTH_PX = 1024;
@@ -315,6 +317,14 @@ const StatusBar: React.FC = () => {
     window.dispatchEvent(new CustomEvent(eventName));
   };
 
+  const dispatchYouTypeMessage = () => {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        dispatchShellEvent('terminalos:you:type-message');
+      });
+    });
+  };
+
   const dispatchFileManCommand = (commandId: FileManCommandId) => {
     const emit = () => {
       window.dispatchEvent(new CustomEvent<FileManCommandDetail>(FILEMAN_COMMAND_EVENT, {
@@ -485,6 +495,10 @@ const StatusBar: React.FC = () => {
       case 'open_you':
         onSubsystemDockClick('you');
         return;
+      case 'you_type_message':
+        onSubsystemDockClick('you');
+        dispatchYouTypeMessage();
+        return;
       case 'open_third':
         onSubsystemDockClick('third');
         return;
@@ -561,6 +575,8 @@ const StatusBar: React.FC = () => {
 
   const meDockContextTrigger = useContextTrigger<HTMLButtonElement>({
     suppressInteractiveTargets: false,
+    longPressMs: MOBILE_DOCK_LONG_PRESS_MS,
+    moveTolerancePx: MOBILE_DOCK_MOVE_TOLERANCE_PX,
     onOpen: ({ x, y, source }) => {
       openSubsystemContextMenu({
         scope: 'me',
@@ -573,6 +589,8 @@ const StatusBar: React.FC = () => {
   });
   const youDockContextTrigger = useContextTrigger<HTMLButtonElement>({
     suppressInteractiveTargets: false,
+    longPressMs: MOBILE_DOCK_LONG_PRESS_MS,
+    moveTolerancePx: MOBILE_DOCK_MOVE_TOLERANCE_PX,
     onOpen: ({ x, y, source }) => {
       openSubsystemContextMenu({
         scope: 'you',
@@ -585,6 +603,8 @@ const StatusBar: React.FC = () => {
   });
   const thirdDockContextTrigger = useContextTrigger<HTMLButtonElement>({
     suppressInteractiveTargets: false,
+    longPressMs: MOBILE_DOCK_LONG_PRESS_MS,
+    moveTolerancePx: MOBILE_DOCK_MOVE_TOLERANCE_PX,
     onOpen: ({ x, y, source }) => {
       openSubsystemContextMenu({
         scope: 'third',
@@ -597,6 +617,8 @@ const StatusBar: React.FC = () => {
   });
   const connectDockContextTrigger = useContextTrigger<HTMLButtonElement>({
     suppressInteractiveTargets: false,
+    longPressMs: MOBILE_DOCK_LONG_PRESS_MS,
+    moveTolerancePx: MOBILE_DOCK_MOVE_TOLERANCE_PX,
     onOpen: ({ x, y, source }) => {
       openSubsystemContextMenu({
         scope: 'connect',

@@ -44,6 +44,24 @@
   background: $bg-black;
 }
 
+.canvas,
+.sceneToolbarBtn,
+.utilityRevealBtn,
+.toolBtn,
+.lockToggleLabel,
+.objectList,
+.hierarchyRoot,
+button.objectItem,
+.viewportMenuGroupBtn,
+.viewportMenuItem,
+.hierarchyMenuItem,
+.mobileUtilityTab {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .viewportMenu {
   position: absolute;
   z-index: 4;

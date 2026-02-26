@@ -25,6 +25,7 @@ export type SubsystemContextMenuActionId =
   | 'open_file'
   | 'open_projects'
   | 'open_media'
+  | 'you_type_message'
   | 'you_save_input'
   | 'you_clear_input'
   | 'third_set_edit_mode'
@@ -110,6 +111,7 @@ export const buildSubsystemContextMenu = (args: BuildSubsystemContextMenuArgs): 
           { key: 'status_draft', kind: 'status', label: `DRAFT: ${args.youHasDraft ? 'YES' : 'NO'}` },
           { key: 'div_actions', kind: 'divider' },
           { key: 'act_open_you', kind: 'action', id: 'open_you', label: openLabelForScope('you', args.origin) },
+          { key: 'act_you_type', kind: 'action', id: 'you_type_message', label: 'TYPE MESSAGE' },
           {
             key: 'act_you_save',
             kind: 'action',

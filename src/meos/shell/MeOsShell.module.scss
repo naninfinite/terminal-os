@@ -10,6 +10,14 @@
   background: $bg-black;
 }
 
+.viewport,
+.viewport button {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .panelMode {
   /* Panel mode keeps native sizing so desktop preview matches fullscreen scale. */
   --meos-scale: 1;
