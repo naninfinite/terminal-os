@@ -13,6 +13,7 @@ V1 includes:
 - `PLAY` and `EDIT` modes,
 - edit gizmo with snap,
 - Unity-style transform inspector sections (scene/camera/objects/transform/animation/physics/material),
+- object hierarchy tree with drag/drop parenting, inline rename, and explicit unparent,
 - right-click viewport menu with grouped quick actions,
 - play-mode physics grab/drag,
 - global + per-object physics opt-in controls,
@@ -23,7 +24,6 @@ V1 includes:
 
 V1 excludes:
 - mesh/face editing,
-- parenting/hierarchy UI,
 - model import,
 - deep inspector panels.
 
@@ -91,6 +91,11 @@ On first load / destructive reset:
 - Inspector remains section-collapsible after reveal.
 - Full edit workflow lives inside inspector sections:
   - `SCENE`, `CAMERA`, `OBJECTS`, `TRANSFORM`, `ANIMATION`, `PHYSICS`, `MATERIAL`.
+- `OBJECTS` section includes hierarchy UX controls:
+  - drag/drop reparenting,
+  - root drop target for unparent-to-scene,
+  - explicit `UNPARENT` action for selected child,
+  - inline rename (`double-click` or `F2`).
 - `SCENE` section includes explicit `GRID` and `AXES` visibility toggles.
 - Default inspector expansion starts fully collapsed (all sections closed).
 - Rotation fields display degrees and convert to radians in runtime state.
@@ -216,3 +221,9 @@ Validation baseline:
 - Primitive catalog expansion follow-up:
   - evaluate adding additional primitives after inspector polish baseline is stable
   - initial candidates: `cone`, `torus`, `capsule`, `pyramid`, `icosphere`.
+- Hierarchy context action follow-up:
+  - add object-level right-click options inside the hierarchy tree after menu behavior is finalized.
+- Inspector ordering follow-up:
+  - revisit section ordering after hierarchy/material/camera controls settle.
+- Scene toolbar follow-up:
+  - evaluate an icon-based top-left scene toolbar row (Unity/Blender style) as an alternative quick-action surface.

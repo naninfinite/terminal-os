@@ -1404,3 +1404,45 @@ Risks / Notes:
   - `capsule`,
   - `pyramid` (or generic poly prism),
   - `icosphere`.
+
+---
+
+## Entry 70 - THIRD Hierarchy UX Polish (Rename + Unparent + Drop Affordance)
+
+Summary:
+- Implemented hierarchy workflow polish inside the inspector `OBJECTS` section.
+- Added inline object rename in hierarchy rows:
+  - `double-click` to rename,
+  - `F2` shortcut to rename selected object,
+  - `Enter` to commit / `Escape` to cancel.
+- Added explicit selected-object `UNPARENT` action in inspector controls.
+- Added stronger hierarchy drag/drop affordances:
+  - valid drop targets now show a dashed hint while dragging,
+  - active target remains clearly highlighted.
+- Added minimal runtime support for safe object renaming via provider/state action (`setObjectName`) with trim + empty fallback behavior.
+
+Why it matters:
+- Reduces friction in common hierarchy tasks (naming and restructuring).
+- Makes hierarchy parenting interactions easier to understand before adding richer context actions.
+- Keeps keyboard-first editing viable (`F2`, Enter/Escape) and avoids click-only flows.
+
+Risks / Notes:
+- Rename is intentionally simple in this pass (single-line name, no batch rename).
+- Hierarchy context-menu actions are deferred to a later dedicated pass.
+
+---
+
+## Entry 71 - Deferred TODO: Hierarchy Context Menu + Inspector Order + Scene Toolbar Concept
+
+Summary:
+- Captured additional deferred THIRD UX requests from active iteration:
+  - add right-click options directly in hierarchy rows,
+  - revisit inspector section ordering in a later pass,
+  - evaluate an icon-based scene toolbar row at top-left (Unity/Blender-like quick actions).
+
+Why it matters:
+- Preserves discoverability goals while preventing immediate scope bloat in the hierarchy polish pass.
+- Locks requested direction so future inspector/menu refactors stay aligned with user intent.
+
+Risks / Notes:
+- Deferred only; no behavior change in this log-only entry.
