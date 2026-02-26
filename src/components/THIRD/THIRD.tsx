@@ -55,6 +55,9 @@ const CAMERA_SAVE_DEBOUNCE_MS = 250;
 const RIGHT_CLICK_OPEN_TOLERANCE_PX = 6;
 const MIN_CAMERA_DISTANCE = 1.2;
 const ORTHOGRAPHIC_FRUSTUM_HEIGHT = 11;
+const FOCUS_CAMERA_DISTANCE = 5;
+const FOCUS_PADDING_MULTIPLIER = 3.2;
+const FOCUS_CAMERA_Y_OFFSET = 2;
 const HIERARCHY_ROOT_DROP_TARGET = '__root__' as const;
 const MATERIAL_PRESETS: ReadonlyArray<ThirdMaterialPreset> = ['matte', 'gloss', 'glass', 'neon'];
 const MATERIAL_SWATCHES: ReadonlyArray<string> = [
@@ -861,20 +864,38 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     if (!entry) return;
 
     const worldPosition = new THREE.Vector3();
+    const bounds = new THREE.Box3();
+    const boundsSize = new THREE.Vector3();
     entry.mesh.updateMatrixWorld(true);
     entry.mesh.getWorldPosition(worldPosition);
+    bounds.setFromObject(entry.mesh);
+    bounds.getSize(boundsSize);
+    const objectRadius = Math.max(0.25, boundsSize.length() * 0.5);
+    const desiredDistance = Math.max(
+      FOCUS_CAMERA_DISTANCE,
+      withClampedDistance(objectRadius * FOCUS_PADDING_MULTIPLIER)
+    );
 
-    const cameraOffset = engine.camera.position.clone().sub(engine.orbit.target);
-    const currentDistance = cameraOffset.length();
-    const distance = withClampedDistance(currentDistance);
-    if (currentDistance < 0.0001) {
-      cameraOffset.set(0, distance * 0.6, distance);
-    } else if (Math.abs(currentDistance - distance) > 0.0001) {
-      cameraOffset.setLength(distance);
+    const cameraDirection = engine.camera.position.clone().sub(engine.orbit.target);
+    if (cameraDirection.lengthSq() < 0.000001) {
+      cameraDirection.set(0, 0.5, 1);
     }
+    cameraDirection.normalize();
 
     engine.orbit.target.copy(worldPosition);
-    engine.camera.position.copy(worldPosition).add(cameraOffset);
+    engine.camera.position.copy(worldPosition).addScaledVector(cameraDirection, desiredDistance);
+    engine.camera.position.y += FOCUS_CAMERA_Y_OFFSET;
+
+    if (engine.projectionMode === 'orthographic') {
+      const framedHeight = Math.max(0.5, objectRadius * 4);
+      engine.orthographicCamera.zoom = THREE.MathUtils.clamp(
+        ORTHOGRAPHIC_FRUSTUM_HEIGHT / framedHeight,
+        0.2,
+        8
+      );
+      engine.orthographicCamera.updateProjectionMatrix();
+    }
+
     engine.camera.lookAt(engine.orbit.target);
     engine.orbit.update();
     saveCameraFromRuntime();
