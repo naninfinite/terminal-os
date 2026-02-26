@@ -1300,3 +1300,26 @@ Why it matters:
 Risks / Notes:
 - Scope is intentionally narrow to THIRD interaction routing only.
 - Dock/context behavior outside THIRD remains unchanged.
+
+---
+
+## Entry 66 - THIRD Theme Color Pass (Light Grid + Default Material Tone)
+
+Summary:
+- Implemented the deferred THIRD light-theme visual pass.
+- Grid rendering is now theme-specific:
+  - dark remains accent green,
+  - light now uses near-black `#101010`.
+- Default material color behavior is now theme-semantic in renderer:
+  - legacy/default `#00ff66` values resolve to near-black in light theme,
+  - dark theme continues to resolve that default to green.
+- Explicit custom material colors remain unchanged across themes.
+- Added `thirdTheme` helper tests for palette resolution + legacy-default color mapping behavior.
+
+Why it matters:
+- Aligns THIRD light theme with monochrome shell direction and removes green-heavy visuals.
+- Preserves compatibility with existing saved scenes while improving light-theme readability.
+
+Risks / Notes:
+- Intentional tradeoff: objects explicitly set to `#00ff66` are treated as semantic default and will render as near-black in light theme.
+- If users need always-green objects across themes, they should pick a non-default custom green.

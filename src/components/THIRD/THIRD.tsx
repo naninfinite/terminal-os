@@ -20,8 +20,10 @@ import {
   radToDeg,
 } from './transformInspector';
 import { useTheme } from '../../theme/ThemeProvider';
-import { RUNTIME_THEME_PALETTE } from '../../theme/runtimePalette';
-import type { ResolvedTheme } from '../../theme/types';
+import {
+  getThirdThemePalette,
+  resolveThirdMaterialColorHex,
+} from './thirdTheme';
 import { useThirdRuntime } from '../../third/ThirdProvider';
 import { THIRD_DEFAULT_CAMERA_STATE } from '../../third/state';
 import type {
@@ -88,23 +90,12 @@ type HierarchyTreeNode = {
 
 type HierarchyDropTarget = string | typeof HIERARCHY_ROOT_DROP_TARGET | null;
 
-const toThreeHex = (value: string, fallback: number): number => {
-  const parsed = Number.parseInt(value.replace('#', ''), 16);
-  return Number.isFinite(parsed) ? parsed : fallback;
-};
-
-const normalizeHexColor = (value: string, fallbackHex: number): string => {
-  const normalized = value.trim().toLowerCase();
-  if (/^#[0-9a-f]{6}$/.test(normalized)) return normalized;
-  return `#${fallbackHex.toString(16).padStart(6, '0')}`;
-};
-
 const applyMaterialParams = (
   material: THREE.MeshPhongMaterial,
   params: ThirdSceneObject['material'],
   fallbackHex: number
 ): void => {
-  const colorHex = toThreeHex(normalizeHexColor(params.color, fallbackHex), fallbackHex);
+  const colorHex = resolveThirdMaterialColorHex(params.color, fallbackHex);
   const color = new THREE.Color(colorHex);
 
   material.color.copy(color);
@@ -143,14 +134,6 @@ const applyMaterialParams = (
   }
 
   material.needsUpdate = true;
-};
-
-const getThirdPalette = (theme: ResolvedTheme): { background: number; accent: number } => {
-  const palette = RUNTIME_THEME_PALETTE[theme];
-  return {
-    background: toThreeHex(palette.background, 0x000000),
-    accent: toThreeHex(palette.accent, 0x00ff66),
-  };
 };
 
 const vec3FromThree = (value: THREE.Vector3): ThirdVec3 => ({
@@ -1008,7 +991,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const container = rootRef.current;
     if (!mount || !container) return;
 
-    const palette = getThirdPalette(resolvedTheme);
+    const palette = getThirdThemePalette(resolvedTheme);
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(palette.background);
 
@@ -1042,11 +1025,11 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     renderer.domElement.style.touchAction = 'none';
     mount.appendChild(renderer.domElement);
 
-    const grid = new THREE.GridHelper(48, 48, palette.accent, palette.accent);
+    const grid = new THREE.GridHelper(48, 48, palette.grid, palette.grid);
     const initialGridMaterials = Array.isArray(grid.material) ? grid.material : [grid.material];
     initialGridMaterials.forEach((material) => {
       material.transparent = true;
-      material.opacity = 0.45;
+      material.opacity = palette.gridOpacity;
     });
     scene.add(grid);
 
@@ -1631,14 +1614,16 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const engine = engineRef.current;
     if (!engine) return;
 
-    const palette = getThirdPalette(resolvedTheme);
+    const palette = getThirdThemePalette(resolvedTheme);
     engine.scene.background = new THREE.Color(palette.background);
     const gridMaterials = Array.isArray(engine.grid.material)
       ? engine.grid.material
       : [engine.grid.material];
     gridMaterials.forEach((material) => {
       if (!('color' in material)) return;
-      (material as THREE.Material & { color: THREE.Color }).color.setHex(palette.accent);
+      (material as THREE.Material & { color: THREE.Color }).color.setHex(palette.grid);
+      material.transparent = true;
+      material.opacity = palette.gridOpacity;
     });
     engine.renderer.render(engine.scene, engine.camera);
   }, [resolvedTheme]);
@@ -1646,7 +1631,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   useEffect(() => {
     const engine = engineRef.current;
     if (!engine) return;
-    const palette = getThirdPalette(resolvedTheme);
+    const palette = getThirdThemePalette(resolvedTheme);
     const nextIds = new Set(objects.map((object) => object.id));
     const meshWorldPosition = new THREE.Vector3();
     const meshWorldQuaternion = new THREE.Quaternion();
@@ -1690,7 +1675,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       if (!existing) {
         const geometry = createGeometry(object.type);
         const material = new THREE.MeshPhongMaterial();
-        applyMaterialParams(material, object.material, palette.accent);
+        applyMaterialParams(material, object.material, palette.materialDefault);
         const mesh = new THREE.Mesh(geometry, material);
         mesh.userData.thirdObjectId = object.id;
         mesh.position.set(
@@ -1745,7 +1730,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
       existing.physicsEnabled = object.physicsEnabled;
       existing.animationPreset = object.animationPreset;
-      applyMaterialParams(existing.material, object.material, palette.accent);
+      applyMaterialParams(existing.material, object.material, palette.materialDefault);
 
       if (existing.shapeKey !== shapeKey) {
         engine.world.removeBody(existing.body);

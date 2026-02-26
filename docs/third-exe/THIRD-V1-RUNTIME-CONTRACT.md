@@ -73,7 +73,10 @@ On first load / destructive reset:
 - Grid helper on XZ plane (`y-up`).
 - Axes helper at origin.
 - One default cube.
-- Solid green-accent material style (default `wireframe=false`, default `matte` preset).
+- Theme-aware baseline styling:
+  - dark theme: green-accent grid + default material tone,
+  - light theme: near-black (`#101010`) grid + default material tone.
+- Solid materials by default (`wireframe=false`, default `matte` preset).
 - Orbit camera control.
 
 ## 5) Interaction Contract
@@ -201,11 +204,9 @@ Validation baseline:
 
 ## 10) Deferred TODOs / Future Notes
 
-- Light-theme grid tone follow-up:
-  - target future behavior: THIRD grid in `light` theme uses near-black `#101010` instead of accent green,
-  - dark-theme grid behavior remains unchanged (accent-driven),
-  - implementation must preserve existing runtime stability during theme switching (no remount/reset).
 - Spawn material policy follow-up:
-  - default spawn material color direction is intentionally unresolved in V1.x docs-only capture,
-  - current default spawn color remains unchanged until dedicated material-direction work,
-  - candidate directions to evaluate later: neutral monochrome default, theme-derived default, or preset-derived defaults.
+  - baseline now treats the legacy default material color as theme-semantic at render time:
+    - dark resolves to green-accent (`#00ff66`),
+    - light resolves to near-black (`#101010`),
+  - custom non-default material colors remain user-defined and unchanged across themes,
+  - future palette tuning (swatches/preset defaults) can still be layered if needed.
