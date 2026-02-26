@@ -15,6 +15,10 @@ describe('thirdHierarchyMenu model', () => {
     expect(items.map((item) => item.id)).toEqual([
       'hierarchy_focus',
       'hierarchy_toggle_lock',
+      'hierarchy_add_child_cube',
+      'hierarchy_add_child_sphere',
+      'hierarchy_add_child_cylinder',
+      'hierarchy_add_child_plane',
       'hierarchy_rename',
       'hierarchy_duplicate',
       'hierarchy_delete',
@@ -66,12 +70,14 @@ describe('thirdHierarchyMenu model', () => {
 
     const focus = items.find((item) => item.id === 'hierarchy_focus');
     const toggleLock = items.find((item) => item.id === 'hierarchy_toggle_lock');
+    const addChild = items.find((item) => item.id === 'hierarchy_add_child_cube');
     const rename = items.find((item) => item.id === 'hierarchy_rename');
     const duplicate = items.find((item) => item.id === 'hierarchy_duplicate');
     const remove = items.find((item) => item.id === 'hierarchy_unparent');
 
     expect(focus?.disabled).toBe(false);
     expect(toggleLock?.disabled).toBe(false);
+    expect(addChild?.disabled).toBe(true);
     expect(rename?.disabled).toBe(true);
     expect(duplicate?.disabled).toBe(false);
     expect(remove?.disabled).toBe(true);
@@ -102,12 +108,30 @@ describe('thirdHierarchyMenu model', () => {
     });
 
     const toggleLock = items.find((item) => item.id === 'hierarchy_toggle_lock');
+    const addChild = items.find((item) => item.id === 'hierarchy_add_child_cube');
     const duplicate = items.find((item) => item.id === 'hierarchy_duplicate');
     const remove = items.find((item) => item.id === 'hierarchy_unparent');
 
     expect(toggleLock?.label).toBe('UNLOCK');
     expect(toggleLock?.disabled).toBe(false);
+    expect(addChild?.disabled).toBe(true);
     expect(duplicate?.disabled).toBe(true);
     expect(remove?.disabled).toBe(true);
+  });
+
+  it('enables add-child actions for unlocked selections in edit mode', () => {
+    const items = buildThirdHierarchyMenu({
+      context: 'object',
+      mode: 'edit',
+      hasSelection: true,
+      selectedObjectLocked: false,
+      selectedObjectHasParent: false,
+      isRenaming: false,
+    });
+
+    const addChildCube = items.find((item) => item.id === 'hierarchy_add_child_cube');
+    const addChildSphere = items.find((item) => item.id === 'hierarchy_add_child_sphere');
+    expect(addChildCube?.disabled).toBe(false);
+    expect(addChildSphere?.disabled).toBe(false);
   });
 });

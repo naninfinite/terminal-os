@@ -3,6 +3,10 @@ import type { ThirdEditorMode } from '../../third/types';
 export type ThirdHierarchyMenuActionId =
   | 'hierarchy_focus'
   | 'hierarchy_toggle_lock'
+  | 'hierarchy_add_child_cube'
+  | 'hierarchy_add_child_sphere'
+  | 'hierarchy_add_child_cylinder'
+  | 'hierarchy_add_child_plane'
   | 'hierarchy_rename'
   | 'hierarchy_duplicate'
   | 'hierarchy_delete'
@@ -43,6 +47,7 @@ export const buildThirdHierarchyMenu = (
 
   const hasSelection = args.hasSelection;
   const canEditObject = hasSelection && !args.selectedObjectLocked;
+  const canAddChild = canEditObject && args.mode === 'edit';
   const canRename = canEditObject && args.mode === 'edit' && !args.isRenaming;
   const canUnparent = canEditObject && args.mode === 'edit' && args.selectedObjectHasParent;
 
@@ -53,6 +58,10 @@ export const buildThirdHierarchyMenu = (
       label: args.selectedObjectLocked ? 'UNLOCK' : 'LOCK',
       disabled: !hasSelection,
     },
+    { id: 'hierarchy_add_child_cube', label: 'ADD CHILD CUBE', disabled: !canAddChild },
+    { id: 'hierarchy_add_child_sphere', label: 'ADD CHILD SPHERE', disabled: !canAddChild },
+    { id: 'hierarchy_add_child_cylinder', label: 'ADD CHILD CYLINDER', disabled: !canAddChild },
+    { id: 'hierarchy_add_child_plane', label: 'ADD CHILD PLANE', disabled: !canAddChild },
     { id: 'hierarchy_rename', label: 'RENAME', disabled: !canRename },
     { id: 'hierarchy_duplicate', label: 'DUPLICATE', disabled: !canEditObject },
     { id: 'hierarchy_delete', label: 'DELETE', disabled: !canEditObject },
