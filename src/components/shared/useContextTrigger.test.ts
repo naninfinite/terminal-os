@@ -96,6 +96,30 @@ describe('useContextTrigger controller', () => {
     expect(controller.consumeClickSuppression()).toBe(false);
   });
 
+  it('cancels pointer long-press when a second touch pointer starts', () => {
+    vi.useFakeTimers();
+    const onOpen = vi.fn();
+    const controller = createContextTriggerController({ onOpen });
+
+    controller.pointerDown({
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 40,
+      clientY: 72,
+      target: null,
+    });
+    controller.pointerDown({
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 44,
+      clientY: 76,
+      target: null,
+    });
+
+    vi.advanceTimersByTime(CONTEXT_LONG_PRESS_MS);
+    expect(onOpen).not.toHaveBeenCalled();
+  });
+
   it('keeps long-press click suppression if a contextmenu event follows', () => {
     vi.useFakeTimers();
     const onOpen = vi.fn();
@@ -141,6 +165,28 @@ describe('useContextTrigger controller', () => {
     expect(onOpen).toHaveBeenCalledWith({ x: 40, y: 72, source: 'longpress' });
     expect(controller.consumeClickSuppression()).toBe(true);
     expect(controller.consumeClickSuppression()).toBe(false);
+  });
+
+  it('cancels touch-event fallback long-press when a second touch starts', () => {
+    vi.useFakeTimers();
+    const onOpen = vi.fn();
+    const controller = createContextTriggerController({ onOpen });
+
+    controller.touchStart({
+      identifier: 10,
+      clientX: 40,
+      clientY: 72,
+      target: null,
+    });
+    controller.touchStart({
+      identifier: 11,
+      clientX: 44,
+      clientY: 76,
+      target: null,
+    });
+
+    vi.advanceTimersByTime(CONTEXT_LONG_PRESS_MS);
+    expect(onOpen).not.toHaveBeenCalled();
   });
 
   it('cancels long-press when pointer movement exceeds threshold', () => {

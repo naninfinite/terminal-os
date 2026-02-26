@@ -3334,6 +3334,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       ref={rootRef}
       className={`${styles.root} ${mode === 'fullscreen' ? styles.rootFullscreen : ''}`.trim()}
       data-context-ignore="true"
+      data-panel-zoom-block="true"
     >
       <div ref={canvasHostRef} className={styles.canvasHost} />
 

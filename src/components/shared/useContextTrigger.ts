@@ -123,6 +123,8 @@ export const createContextTriggerController = (
   let pointerPressState: PointerPressState | null = null;
   let timerId: ReturnType<typeof setTimeout> | null = null;
   let suppressNextClick = false;
+  const activeTouchPointerIds = new Set<number>();
+  const activeTouchFallbackIds = new Set<number>();
 
   const clearPointerState = () => {
     if (timerId != null) {
@@ -188,6 +190,13 @@ export const createContextTriggerController = (
       // Accept touch/pen and unknown pointer types; skip true mouse interactions.
       if (pointerType === 'mouse') return;
       if (typeof button === 'number' && button !== 0) return;
+      if (pointerType === 'touch') {
+        activeTouchPointerIds.add(pointerId);
+        if (activeTouchPointerIds.size > 1) {
+          clearPointerState();
+          return;
+        }
+      }
       beginPress({
         pressId: pointerId,
         clientX,
@@ -199,12 +208,24 @@ export const createContextTriggerController = (
       movePress({ pressId: pointerId, clientX, clientY });
     },
     pointerUp: ({ pointerId }) => {
+      activeTouchPointerIds.delete(pointerId);
       endPress(pointerId);
     },
     pointerCancel: (args) => {
-      endPress(args?.pointerId);
+      if (typeof args?.pointerId === 'number') {
+        activeTouchPointerIds.delete(args.pointerId);
+        endPress(args.pointerId);
+        return;
+      }
+      activeTouchPointerIds.clear();
+      endPress();
     },
     touchStart: ({ identifier, clientX, clientY, target }) => {
+      activeTouchFallbackIds.add(identifier);
+      if (activeTouchFallbackIds.size > 1) {
+        clearPointerState();
+        return;
+      }
       beginPress({
         pressId: identifier,
         clientX,
@@ -213,6 +234,10 @@ export const createContextTriggerController = (
       });
     },
     touchMove: ({ identifier, clientX, clientY }) => {
+      if (activeTouchFallbackIds.size > 1) {
+        clearPointerState();
+        return;
+      }
       movePress({
         pressId: identifier,
         clientX,
@@ -220,10 +245,17 @@ export const createContextTriggerController = (
       });
     },
     touchEnd: ({ identifier }) => {
+      activeTouchFallbackIds.delete(identifier);
       endPress(identifier);
     },
     touchCancel: (args) => {
-      endPress(args?.identifier);
+      if (typeof args?.identifier === 'number') {
+        activeTouchFallbackIds.delete(args.identifier);
+        endPress(args.identifier);
+        return;
+      }
+      activeTouchFallbackIds.clear();
+      endPress();
     },
     keyboard: ({ key, shiftKey, rect }) => {
       if (options.disabled) return false;
@@ -239,6 +271,8 @@ export const createContextTriggerController = (
     dispose: () => {
       clearPointerState();
       suppressNextClick = false;
+      activeTouchPointerIds.clear();
+      activeTouchFallbackIds.clear();
     },
   };
 };
@@ -317,6 +351,10 @@ export const useContextTrigger = <T extends HTMLElement = HTMLElement>(
       controller.pointerCancel({ pointerId: event.pointerId });
     },
     onTouchStart: (event) => {
+      if (event.touches.length > 1) {
+        controller.touchCancel();
+        return;
+      }
       const touch = event.changedTouches.item(0) ?? event.touches.item(0);
       if (!touch) return;
       controller.touchStart({
@@ -327,6 +365,10 @@ export const useContextTrigger = <T extends HTMLElement = HTMLElement>(
       });
     },
     onTouchMove: (event) => {
+      if (event.touches.length > 1) {
+        controller.touchCancel();
+        return;
+      }
       const touch = event.changedTouches.item(0) ?? event.touches.item(0);
       if (!touch) return;
       controller.touchMove({

@@ -18,15 +18,22 @@ import {
   type SubsystemContextMenuEventDetail,
 } from '../StatusBar/subsystemContextMenu';
 
+type DesktopPanelScope = 'me' | 'you' | 'third' | 'connect';
+
 const Desktop: React.FC = () => {
   const { setActiveScope } = useMeOs();
   const { displayMode: thirdDisplayMode } = useThirdRuntime();
   const { displayMode: connectDisplayMode } = useConnectRuntime();
+  const [activeZoomPanel, setActiveZoomPanel] = React.useState<DesktopPanelScope>('me');
   const requestPanelContextMenu = useCallback((detail: SubsystemContextMenuEventDetail) => {
     window.dispatchEvent(
       new CustomEvent<SubsystemContextMenuEventDetail>(SUBSYSTEM_CONTEXT_MENU_EVENT, { detail })
     );
   }, []);
+  const activatePanel = useCallback((scope: DesktopPanelScope) => {
+    setActiveZoomPanel(scope);
+    setActiveScope(scope === 'me' ? null : scope);
+  }, [setActiveScope]);
 
   return (
     <div className={styles.desktop} role="main">
@@ -37,8 +44,9 @@ const Desktop: React.FC = () => {
         stretchBody
         bodyClassName={styles.panelBodyFlush}
         enableTouchContextFallback
+        enableMobilePinchZoom={activeZoomPanel === 'me'}
         suppressInteractiveTargets={false}
-        onActivate={() => setActiveScope(null)}
+        onActivate={() => activatePanel('me')}
         onRequestContextMenu={({ x, y, source }) => {
           requestPanelContextMenu({
             scope: 'me',
@@ -57,7 +65,8 @@ const Desktop: React.FC = () => {
         scopeId="you"
         bodyClassName={styles.panelBodyFlush}
         enableTouchContextFallback
-        onActivate={() => setActiveScope('you')}
+        enableMobilePinchZoom={activeZoomPanel === 'you'}
+        onActivate={() => activatePanel('you')}
         onRequestContextMenu={({ x, y, source }) => {
           requestPanelContextMenu({
             scope: 'you',
@@ -77,7 +86,7 @@ const Desktop: React.FC = () => {
         stretchBody
         bodyClassName={styles.panelBodyFlush}
         enableTouchContextFallback
-        onActivate={() => setActiveScope('third')}
+        onActivate={() => activatePanel('third')}
         onRequestContextMenu={({ x, y, source }) => {
           requestPanelContextMenu({
             scope: 'third',
@@ -96,7 +105,8 @@ const Desktop: React.FC = () => {
         scopeId="connect"
         bodyClassName={styles.panelBodyFlush}
         enableTouchContextFallback
-        onActivate={() => setActiveScope('connect')}
+        enableMobilePinchZoom={activeZoomPanel === 'connect'}
+        onActivate={() => activatePanel('connect')}
         onRequestContextMenu={({ x, y, source }) => {
           requestPanelContextMenu({
             scope: 'connect',

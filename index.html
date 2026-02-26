@@ -2,11 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!-- TODO(mobile zoom): Decide pinch-zoom policy on panels.
-      Option A: disable page-level zoom so dock/window framing cannot break.
-      Option B: allow zoom only inside active panel content while dock/frame stay fixed.
+    <!-- Mobile zoom policy (Option B):
+      - disable page-level pinch zoom so shell framing remains stable.
+      - allow pinch scaling only inside active panel content.
     -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="color-scheme" content="dark" />
     <title>TERMINAL-OS</title>
   </head>
@@ -15,5 +15,4 @@
     <script type="module" src="/src/main.tsx"></script>
   </body>
   </html>
-
 
