@@ -111,7 +111,7 @@ On first load / destructive reset:
   - camera reset.
 - `INSPECTOR` window includes sections:
   - `TRANSFORM`, `CAMERA`, `ANIMATION`, `PHYSICS`, `MATERIAL`.
-- Default inspector expansion starts fully collapsed (all sections closed).
+- Default inspector expansion starts with `TRANSFORM` open and remaining sections collapsed.
 - Rotation fields display degrees and convert to radians in runtime state.
 - Valid numeric inspector edits apply live while typing.
 - Hotkeys:
@@ -165,6 +165,9 @@ On first load / destructive reset:
   - `INSPECTOR` (show/hide/collapse all/expand all).
 - If right-click raycast hits an object, that object is selected before menu actions.
 - Inspector `CAMERA` section mirrors projection + preset actions for keyboard-first access.
+- Inspector `CAMERA` section layout order:
+  - first row: `TOP` / `FRONT` / `RIGHT`,
+  - second row: `PERSPECTIVE`/`ORTHOGRAPHIC` toggle + `RESET`.
 
 ### Mobile utility layout
 
@@ -230,6 +233,8 @@ Added/updated tests:
 - `src/third/storage.test.ts`
 - `src/components/THIRD/transformInspector.test.ts`
 - `src/components/THIRD/thirdCameraControls.test.ts`
+- `src/components/THIRD/thirdInspectorCameraLayout.test.ts`
+- `src/components/THIRD/thirdInspectorSections.test.ts`
 - `src/components/THIRD/thirdViewportMenu.test.ts`
 - `src/components/THIRD/thirdHierarchyMenu.test.ts`
 - `src/components/THIRD/thirdSceneToolbar.test.ts`

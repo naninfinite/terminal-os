@@ -1642,3 +1642,25 @@ Why it matters:
 
 Risks / Notes:
 - Numeric hotkeys are intentionally ignored while typing in interactive controls; non-input viewport usage now reserves `1/3/7/5`.
+
+---
+
+## Entry 78 - THIRD Inspector Usability Polish (Default Transform Open + Camera Row Contract)
+
+Summary:
+- Updated inspector defaults so `TRANSFORM` opens by default while other sections start collapsed.
+- Added deterministic camera-layout helper/tests for inspector camera controls:
+  - top row remains `TOP` / `FRONT` / `RIGHT`,
+  - second row remains projection toggle + `RESET`.
+- Applied inspector spacing/sizing polish:
+  - section/header/body spacing is more consistent,
+  - action buttons share more uniform heights and row rhythm,
+  - material color control aligns with adjacent action button sizing.
+
+Why it matters:
+- Improves first-time usability for non-3D users by exposing transform immediately without extra clicks.
+- Prevents accidental camera-row regressions by locking the intended row order in a focused test.
+- Reduces visual noise and inconsistent control sizing across inspector sections.
+
+Risks / Notes:
+- This is a UI/interaction polish pass only; no persistence/state schema changes.
