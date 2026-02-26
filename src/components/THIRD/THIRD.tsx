@@ -22,6 +22,11 @@ import {
   type ThirdSceneToolbarActionId,
 } from './thirdSceneToolbar';
 import {
+  resolveFocusCameraDistance,
+  resolveThirdCameraHotkey,
+  THIRD_FOCUS_CAMERA_Y_OFFSET,
+} from './thirdCameraControls';
+import {
   clampInspectorScale,
   degToRad,
   formatInspectorNumber,
@@ -55,9 +60,6 @@ const CAMERA_SAVE_DEBOUNCE_MS = 250;
 const RIGHT_CLICK_OPEN_TOLERANCE_PX = 6;
 const MIN_CAMERA_DISTANCE = 1.2;
 const ORTHOGRAPHIC_FRUSTUM_HEIGHT = 11;
-const FOCUS_CAMERA_DISTANCE = 5;
-const FOCUS_PADDING_MULTIPLIER = 3.2;
-const FOCUS_CAMERA_Y_OFFSET = 2;
 const HIERARCHY_ROOT_DROP_TARGET = '__root__' as const;
 const MATERIAL_PRESETS: ReadonlyArray<ThirdMaterialPreset> = ['matte', 'gloss', 'glass', 'neon'];
 const MATERIAL_SWATCHES: ReadonlyArray<string> = [
@@ -871,10 +873,10 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     bounds.setFromObject(entry.mesh);
     bounds.getSize(boundsSize);
     const objectRadius = Math.max(0.25, boundsSize.length() * 0.5);
-    const desiredDistance = Math.max(
-      FOCUS_CAMERA_DISTANCE,
-      withClampedDistance(objectRadius * FOCUS_PADDING_MULTIPLIER)
-    );
+    const desiredDistance = resolveFocusCameraDistance({
+      objectRadius,
+      minDistance: MIN_CAMERA_DISTANCE,
+    });
 
     const cameraDirection = engine.camera.position.clone().sub(engine.orbit.target);
     if (cameraDirection.lengthSq() < 0.000001) {
@@ -884,7 +886,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
     engine.orbit.target.copy(worldPosition);
     engine.camera.position.copy(worldPosition).addScaledVector(cameraDirection, desiredDistance);
-    engine.camera.position.y += FOCUS_CAMERA_Y_OFFSET;
+    engine.camera.position.y += THIRD_FOCUS_CAMERA_Y_OFFSET;
 
     if (engine.projectionMode === 'orthographic') {
       const framedHeight = Math.max(0.5, objectRadius * 4);
@@ -2269,44 +2271,47 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if ((event.target as HTMLElement | null)?.closest?.('input, textarea, button, select')) return;
-      if (event.altKey || event.ctrlKey || event.metaKey) return;
+      const target = event.target as HTMLElement | null;
+      const actionId = resolveThirdCameraHotkey({
+        code: event.code,
+        key: event.key,
+        altKey: event.altKey,
+        ctrlKey: event.ctrlKey,
+        metaKey: event.metaKey,
+        hasSelection: selectionIdRef.current != null,
+        targetTagName: target?.tagName,
+        targetIsContentEditable: target?.isContentEditable,
+      });
+      if (!actionId) return;
 
-      if (event.key.toLowerCase() === 'f') {
-        const selectedId = selectionIdRef.current;
-        if (!selectedId) return;
-        event.preventDefault();
-        focusObjectInCamera(selectedId);
-        return;
-      }
-
-      const isFrontView = event.code === 'Digit1' || event.code === 'Numpad1';
-      const isRightView = event.code === 'Digit3' || event.code === 'Numpad3';
-      const isTopView = event.code === 'Digit7' || event.code === 'Numpad7';
-      const isToggleProjection = event.code === 'Digit5' || event.code === 'Numpad5';
-
-      if (isFrontView) {
-        event.preventDefault();
-        applyCameraPreset('front');
-        return;
-      }
-      if (isRightView) {
-        event.preventDefault();
-        applyCameraPreset('right');
-        return;
-      }
-      if (isTopView) {
-        event.preventDefault();
-        applyCameraPreset('top');
-        return;
-      }
-      if (isToggleProjection) {
-        event.preventDefault();
-        const nextProjectionMode: ThirdProjectionMode = projectionModeRef.current === 'orthographic'
-          ? 'perspective'
-          : 'orthographic';
-        setProjectionMode(nextProjectionMode);
-        saveCameraFromRuntime();
+      event.preventDefault();
+      switch (actionId) {
+        case 'camera_focus_selected': {
+          const selectedId = selectionIdRef.current;
+          if (selectedId) {
+            focusObjectInCamera(selectedId);
+          }
+          break;
+        }
+        case 'camera_view_front':
+          applyCameraPreset('front');
+          break;
+        case 'camera_view_right':
+          applyCameraPreset('right');
+          break;
+        case 'camera_view_top':
+          applyCameraPreset('top');
+          break;
+        case 'camera_toggle_projection': {
+          const nextProjectionMode: ThirdProjectionMode = projectionModeRef.current === 'orthographic'
+            ? 'perspective'
+            : 'orthographic';
+          setProjectionMode(nextProjectionMode);
+          saveCameraFromRuntime();
+          break;
+        }
+        default:
+          break;
       }
     };
     window.addEventListener('keydown', onKeyDown);
