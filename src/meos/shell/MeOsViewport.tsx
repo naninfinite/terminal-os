@@ -310,7 +310,7 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode, onPanelBackgro
           <span className={styles.chromeTitle}>[ME.EXE]</span>
           <div className={styles.chromeActions}>
             <button type="button" className={styles.chromeBtn} onClick={closeFullscreen} aria-label="Close ME.EXE fullscreen">
-              X
+              CLOSE
             </button>
           </div>
         </header>
