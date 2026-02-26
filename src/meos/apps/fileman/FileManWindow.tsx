@@ -12,7 +12,6 @@ import { useMeOsVfs } from '../../vfs/MeOsVfsProvider';
 import type { VfsNode, VfsSnapshot } from '../../vfs/types';
 import { useMeOs } from '../../shell/MeOsProvider';
 import { FILEMAN_COMMAND_EVENT, type FileManCommandDetail } from './commands';
-import { useContextTrigger } from '../../../components/shared/useContextTrigger';
 import styles from './FileManWindow.module.scss';
 
 type NavState = {
@@ -134,7 +133,6 @@ const FileManWindow: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [gridColumns, setGridColumns] = useState(1);
   const listRef = useRef<HTMLDivElement | null>(null);
-  const rowContextNodeIdRef = useRef<string | null>(null);
 
   const currentFolderId = nav.history[nav.index] ?? snapshot.rootId;
   const currentFolder = snapshot.nodes[currentFolderId];
@@ -254,20 +252,6 @@ const FileManWindow: React.FC = () => {
       kind: node.kind ?? 'text',
     });
   };
-
-  const openNodeContextMenu = (nodeId: string, x: number, y: number) => {
-    setSelectedId(nodeId);
-    setMenu({ nodeId, x, y });
-  };
-
-  const rowContextTrigger = useContextTrigger<HTMLButtonElement>({
-    suppressInteractiveTargets: false,
-    onOpen: ({ x, y }) => {
-      const nodeId = rowContextNodeIdRef.current;
-      if (!nodeId) return;
-      openNodeContextMenu(nodeId, x, y);
-    },
-  });
 
   const selectedIndex = entries.findIndex((e) => e.id === selectedId);
 
@@ -502,27 +486,9 @@ const FileManWindow: React.FC = () => {
                   onClick={() => setSelectedId(node.id)}
                   onDoubleClick={() => openNode(node)}
                   onContextMenu={(event) => {
-                    rowContextNodeIdRef.current = node.id;
-                    rowContextTrigger.onContextMenu(event);
-                  }}
-                  onPointerDown={(event) => {
-                    rowContextNodeIdRef.current = node.id;
-                    rowContextTrigger.onPointerDown(event);
-                  }}
-                  onPointerMove={rowContextTrigger.onPointerMove}
-                  onPointerUp={rowContextTrigger.onPointerUp}
-                  onPointerCancel={rowContextTrigger.onPointerCancel}
-                  onTouchStart={(event) => {
-                    rowContextNodeIdRef.current = node.id;
-                    rowContextTrigger.onTouchStart(event);
-                  }}
-                  onTouchMove={rowContextTrigger.onTouchMove}
-                  onTouchEnd={rowContextTrigger.onTouchEnd}
-                  onTouchCancel={rowContextTrigger.onTouchCancel}
-                  onClickCapture={rowContextTrigger.onClickCapture}
-                  onKeyDown={(event) => {
-                    rowContextNodeIdRef.current = node.id;
-                    rowContextTrigger.onKeyDown(event);
+                    event.preventDefault();
+                    setSelectedId(node.id);
+                    setMenu({ nodeId: node.id, x: event.clientX, y: event.clientY });
                   }}
                 >
                   <span className={styles.icon}>

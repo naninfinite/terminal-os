@@ -63,13 +63,6 @@ type PointerLike = {
   target?: EventTarget | null;
 };
 
-type TouchLike = {
-  identifier: number;
-  clientX: number;
-  clientY: number;
-  target?: EventTarget | null;
-};
-
 type KeyboardLike = {
   key: string;
   shiftKey: boolean;
@@ -88,7 +81,12 @@ type ContextTriggerControllerOptions = {
 };
 
 export type ContextTriggerController = {
-  contextMenu: (args: { clientX: number; clientY: number; target?: EventTarget | null }) => boolean;
+  contextMenu: (args: {
+    clientX: number;
+    clientY: number;
+    button?: number;
+    target?: EventTarget | null;
+  }) => boolean;
   pointerDown: (args: PointerLike) => void;
   pointerMove: (args: Pick<PointerLike, 'pointerId' | 'clientX' | 'clientY'>) => void;
   pointerUp: (args: Pick<PointerLike, 'pointerId'>) => void;
@@ -103,18 +101,17 @@ export type ContextTriggerController = {
 };
 
 type PointerPressState = {
-  pointerId: number;
+  pressId: number;
   x: number;
   y: number;
 };
 
-type TouchPressState = {
+type TouchLike = {
   identifier: number;
-  x: number;
-  y: number;
+  clientX: number;
+  clientY: number;
+  target?: EventTarget | null;
 };
-
-const TOUCH_POINTER_DUPLICATE_SUPPRESSION_MS = 80;
 
 export const createContextTriggerController = (
   options: ContextTriggerControllerOptions
@@ -124,121 +121,109 @@ export const createContextTriggerController = (
   const suppressInteractiveTargets = options.suppressInteractiveTargets ?? true;
 
   let pointerPressState: PointerPressState | null = null;
-  let pointerTimerId: ReturnType<typeof setTimeout> | null = null;
-  let touchPressState: TouchPressState | null = null;
-  let touchTimerId: ReturnType<typeof setTimeout> | null = null;
-  let lastTouchPointerDown: { x: number; y: number; at: number } | null = null;
+  let timerId: ReturnType<typeof setTimeout> | null = null;
   let suppressNextClick = false;
 
   const clearPointerState = () => {
-    if (pointerTimerId != null) {
-      clearTimeout(pointerTimerId);
-      pointerTimerId = null;
+    if (timerId != null) {
+      clearTimeout(timerId);
+      timerId = null;
     }
     pointerPressState = null;
   };
 
-  const clearTouchState = () => {
-    if (touchTimerId != null) {
-      clearTimeout(touchTimerId);
-      touchTimerId = null;
-    }
-    touchPressState = null;
-  };
-
-  const shouldSkipTouchFallback = (args: Pick<TouchLike, 'clientX' | 'clientY'>): boolean => {
-    if (!lastTouchPointerDown) return false;
-    const elapsedMs = Date.now() - lastTouchPointerDown.at;
-    if (elapsedMs > TOUCH_POINTER_DUPLICATE_SUPPRESSION_MS) return false;
-    return !exceededMoveTolerance(
-      { x: lastTouchPointerDown.x, y: lastTouchPointerDown.y },
-      { x: args.clientX, y: args.clientY },
-      moveTolerancePx
-    );
-  };
-
   const openAt = (detail: ContextTriggerOpenDetail) => {
     if (options.disabled) return;
-    clearPointerState();
-    clearTouchState();
     options.onOpen(detail);
-    suppressNextClick = detail.source === 'longpress';
+    if (detail.source === 'longpress') suppressNextClick = true;
+  };
+
+  const beginPress = (args: {
+    pressId: number;
+    clientX: number;
+    clientY: number;
+    target?: EventTarget | null;
+  }) => {
+    if (options.disabled) return;
+    if (suppressInteractiveTargets && isInteractiveContextTarget(args.target ?? null)) return;
+
+    clearPointerState();
+    pointerPressState = { pressId: args.pressId, x: args.clientX, y: args.clientY };
+    timerId = setTimeout(() => {
+      if (!pointerPressState || pointerPressState.pressId !== args.pressId) return;
+      openAt({ x: pointerPressState.x, y: pointerPressState.y, source: 'longpress' });
+      clearPointerState();
+    }, longPressMs);
+  };
+
+  const movePress = (args: { pressId: number; clientX: number; clientY: number }) => {
+    if (!pointerPressState || pointerPressState.pressId !== args.pressId) return;
+    if (
+      exceededMoveTolerance(
+        { x: pointerPressState.x, y: pointerPressState.y },
+        { x: args.clientX, y: args.clientY },
+        moveTolerancePx
+      )
+    ) {
+      clearPointerState();
+    }
+  };
+
+  const endPress = (pressId?: number) => {
+    if (!pointerPressState) return;
+    if (typeof pressId === 'number' && pointerPressState.pressId !== pressId) return;
+    clearPointerState();
   };
 
   return {
-    contextMenu: ({ clientX, clientY, target }) => {
+    contextMenu: ({ clientX, clientY, button, target }) => {
       if (options.disabled) return false;
       if (suppressInteractiveTargets && isInteractiveContextTarget(target ?? null)) return false;
       openAt({ x: clientX, y: clientY, source: 'contextmenu' });
+      // Long-press contextmenu on touch UAs frequently emits `button === 0` then a click.
+      if (button === 0) suppressNextClick = true;
       return true;
     },
     pointerDown: ({ pointerId, pointerType, clientX, clientY, button, target }) => {
-      if (options.disabled) return;
-      if (pointerType !== 'touch' && pointerType !== 'pen') return;
+      // Accept touch/pen and unknown pointer types; skip true mouse interactions.
+      if (pointerType === 'mouse') return;
       if (typeof button === 'number' && button !== 0) return;
-      if (suppressInteractiveTargets && isInteractiveContextTarget(target ?? null)) return;
-
-      clearPointerState();
-      pointerPressState = { pointerId, x: clientX, y: clientY };
-      if (pointerType === 'touch') {
-        lastTouchPointerDown = { x: clientX, y: clientY, at: Date.now() };
-      }
-      pointerTimerId = setTimeout(() => {
-        if (!pointerPressState || pointerPressState.pointerId !== pointerId) return;
-        openAt({ x: pointerPressState.x, y: pointerPressState.y, source: 'longpress' });
-      }, longPressMs);
+      beginPress({
+        pressId: pointerId,
+        clientX,
+        clientY,
+        target,
+      });
     },
     pointerMove: ({ pointerId, clientX, clientY }) => {
-      if (!pointerPressState || pointerPressState.pointerId !== pointerId) return;
-      if (
-        exceededMoveTolerance(
-          { x: pointerPressState.x, y: pointerPressState.y },
-          { x: clientX, y: clientY },
-          moveTolerancePx
-        )
-      ) {
-        clearPointerState();
-      }
+      movePress({ pressId: pointerId, clientX, clientY });
     },
     pointerUp: ({ pointerId }) => {
-      if (!pointerPressState || pointerPressState.pointerId !== pointerId) return;
-      clearPointerState();
+      endPress(pointerId);
     },
     pointerCancel: (args) => {
-      if (!pointerPressState) return;
-      if (!args || pointerPressState.pointerId === args.pointerId) clearPointerState();
+      endPress(args?.pointerId);
     },
     touchStart: ({ identifier, clientX, clientY, target }) => {
-      if (options.disabled) return;
-      if (suppressInteractiveTargets && isInteractiveContextTarget(target ?? null)) return;
-      if (shouldSkipTouchFallback({ clientX, clientY })) return;
-
-      clearTouchState();
-      touchPressState = { identifier, x: clientX, y: clientY };
-      touchTimerId = setTimeout(() => {
-        if (!touchPressState || touchPressState.identifier !== identifier) return;
-        openAt({ x: touchPressState.x, y: touchPressState.y, source: 'longpress' });
-      }, longPressMs);
+      beginPress({
+        pressId: identifier,
+        clientX,
+        clientY,
+        target,
+      });
     },
     touchMove: ({ identifier, clientX, clientY }) => {
-      if (!touchPressState || touchPressState.identifier !== identifier) return;
-      if (
-        exceededMoveTolerance(
-          { x: touchPressState.x, y: touchPressState.y },
-          { x: clientX, y: clientY },
-          moveTolerancePx
-        )
-      ) {
-        clearTouchState();
-      }
+      movePress({
+        pressId: identifier,
+        clientX,
+        clientY,
+      });
     },
     touchEnd: ({ identifier }) => {
-      if (!touchPressState || touchPressState.identifier !== identifier) return;
-      clearTouchState();
+      endPress(identifier);
     },
     touchCancel: (args) => {
-      if (!touchPressState) return;
-      if (!args || touchPressState.identifier === args.identifier) clearTouchState();
+      endPress(args?.identifier);
     },
     keyboard: ({ key, shiftKey, rect }) => {
       if (options.disabled) return false;
@@ -253,8 +238,6 @@ export const createContextTriggerController = (
     },
     dispose: () => {
       clearPointerState();
-      clearTouchState();
-      lastTouchPointerDown = null;
       suppressNextClick = false;
     },
   };
@@ -303,6 +286,7 @@ export const useContextTrigger = <T extends HTMLElement = HTMLElement>(
       const handled = controller.contextMenu({
         clientX: event.clientX,
         clientY: event.clientY,
+        button: event.button,
         target: event.target,
       });
       if (!handled) return;
@@ -333,8 +317,8 @@ export const useContextTrigger = <T extends HTMLElement = HTMLElement>(
       controller.pointerCancel({ pointerId: event.pointerId });
     },
     onTouchStart: (event) => {
-      if (event.changedTouches.length === 0) return;
-      const touch = event.changedTouches[0];
+      const touch = event.changedTouches.item(0) ?? event.touches.item(0);
+      if (!touch) return;
       controller.touchStart({
         identifier: touch.identifier,
         clientX: touch.clientX,
@@ -343,24 +327,26 @@ export const useContextTrigger = <T extends HTMLElement = HTMLElement>(
       });
     },
     onTouchMove: (event) => {
-      for (let i = 0; i < event.changedTouches.length; i += 1) {
-        const touch = event.changedTouches[i];
-        controller.touchMove({
-          identifier: touch.identifier,
-          clientX: touch.clientX,
-          clientY: touch.clientY,
-        });
-      }
+      const touch = event.changedTouches.item(0) ?? event.touches.item(0);
+      if (!touch) return;
+      controller.touchMove({
+        identifier: touch.identifier,
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+      });
     },
     onTouchEnd: (event) => {
-      for (let i = 0; i < event.changedTouches.length; i += 1) {
-        controller.touchEnd({ identifier: event.changedTouches[i].identifier });
-      }
+      const touch = event.changedTouches.item(0);
+      if (!touch) return;
+      controller.touchEnd({ identifier: touch.identifier });
     },
     onTouchCancel: (event) => {
-      for (let i = 0; i < event.changedTouches.length; i += 1) {
-        controller.touchCancel({ identifier: event.changedTouches[i].identifier });
+      const touch = event.changedTouches.item(0);
+      if (!touch) {
+        controller.touchCancel();
+        return;
       }
+      controller.touchCancel({ identifier: touch.identifier });
     },
     onClickCapture: (event) => {
       if (!controller.consumeClickSuppression()) return;
