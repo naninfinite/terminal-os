@@ -2777,13 +2777,16 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
             selectedObject ? (
               <div className={styles.inspectorSectionBody}>
                 <div className={styles.toolRow}>
-                  <button
-                    type="button"
-                    className={`${styles.toolBtn} ${selectedObjectLocked ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={() => setObjectLocked(selectedObject.id, !selectedObjectLocked)}
-                  >
-                    {selectedObjectLocked ? 'UNLOCK OBJECT' : 'LOCK OBJECT'}
-                  </button>
+                  <label className={styles.lockToggleLabel}>
+                    <input
+                      type="checkbox"
+                      className={styles.lockToggleCheckbox}
+                      checked={selectedObjectLocked}
+                      onChange={(event) => setObjectLocked(selectedObject.id, event.target.checked)}
+                      aria-label="Lock selected object"
+                    />
+                    LOCK OBJECT
+                  </label>
                 </div>
                 {selectedObjectLocked ? (
                   <p className={styles.inspectorEmpty}>OBJECT IS LOCKED. UNLOCK TO EDIT TRANSFORM.</p>

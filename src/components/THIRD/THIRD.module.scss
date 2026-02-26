@@ -433,6 +433,28 @@
   box-shadow: var(--ui-shadow-focus);
 }
 
+.lockToggleLabel {
+  border: $border-thin solid var(--third-border);
+  background: var(--third-surface-bg);
+  color: var(--third-text);
+  padding: 3px 6px;
+  font-size: $font-xs;
+  letter-spacing: 0.04em;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.lockToggleCheckbox {
+  width: 12px;
+  height: 12px;
+  margin: 0;
+  accent-color: var(--third-accent);
+}
+
 .objectList {
   max-height: min(170px, 32vh);
   overflow: auto;
@@ -833,6 +855,7 @@
   }
 
   .toolBtn,
+  .lockToggleLabel,
   .objectItem,
   .materialColorLabel,
   .inspectorInput,
@@ -848,6 +871,7 @@
   }
 
   .toolBtn,
+  .lockToggleLabel,
   .objectPhysicsBtn,
   .materialColorLabel {
     min-height: 20px;
