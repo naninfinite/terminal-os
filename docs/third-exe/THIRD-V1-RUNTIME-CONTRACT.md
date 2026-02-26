@@ -16,6 +16,7 @@ V1 includes:
   - left `SCENE` object-list window,
   - right `INSPECTOR` editing window,
 - top-left scene toolbar for mode/gizmo/snap/grid/axes actions,
+- top-left scene toolbar for mode/gizmo/snap/grid/axes plus camera quick actions,
 - object hierarchy tree with drag/drop parenting, inline rename, and explicit unparent,
 - right-click viewport menu with grouped quick actions,
 - play-mode physics grab/drag,
@@ -103,7 +104,10 @@ On first load / destructive reset:
   - gizmo mode (`MOVE`/`ROTATE`/`SCALE`),
   - snap toggle,
   - grid toggle,
-  - axes toggle.
+  - axes toggle,
+  - camera projection toggle,
+  - camera preset views (`TOP`/`FRONT`/`RIGHT`),
+  - camera reset.
 - `INSPECTOR` window includes sections:
   - `TRANSFORM`, `CAMERA`, `ANIMATION`, `PHYSICS`, `MATERIAL`.
 - Default inspector expansion starts fully collapsed (all sections closed).

@@ -1570,3 +1570,26 @@ Why it matters:
 Risks / Notes:
 - Utility window visibility and mobile tab state are runtime-local only (not persisted).
 - Camera controls remain in inspector + viewport menu in this pass.
+
+---
+
+## Entry 75 - THIRD Camera Toolbar Quick Actions (Projection + Presets + Reset)
+
+Summary:
+- Expanded top-left scene toolbar to include camera quick controls:
+  - projection toggle,
+  - `TOP`/`FRONT`/`RIGHT` preset views,
+  - camera reset.
+- Kept existing camera control paths in place:
+  - inspector camera section,
+  - viewport right-click camera menu.
+- Updated scene-toolbar model/tests to cover new action set and disabled/active behavior.
+
+Why it matters:
+- Moves common camera navigation closer to viewport interaction without opening menus or inspector sections.
+- Aligns toolbar direction with external-controls-first workflow.
+- Preserves discoverability by keeping redundant fallback paths.
+
+Risks / Notes:
+- Toolbar density is higher with added camera buttons; future icon sizing/compaction may still be needed.
+- No runtime/persistence contract changes required.
