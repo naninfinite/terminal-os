@@ -1,5 +1,6 @@
 import type {
   ThirdEditorMode,
+  ThirdProjectionMode,
   ThirdTransformMode,
 } from '../../third/types';
 
@@ -10,7 +11,12 @@ export type ThirdSceneToolbarActionId =
   | 'transform_scale'
   | 'scene_toggle_snap'
   | 'scene_toggle_grid'
-  | 'scene_toggle_axes';
+  | 'scene_toggle_axes'
+  | 'camera_toggle_projection'
+  | 'camera_view_top'
+  | 'camera_view_front'
+  | 'camera_view_right'
+  | 'camera_reset';
 
 export type ThirdSceneToolbarItem = {
   id: ThirdSceneToolbarActionId;
@@ -24,6 +30,7 @@ export type ThirdSceneToolbarItem = {
 export type BuildThirdSceneToolbarArgs = {
   mode: ThirdEditorMode;
   transformMode: ThirdTransformMode;
+  projectionMode: ThirdProjectionMode;
   snapEnabled: boolean;
   showGrid: boolean;
   showAxes: boolean;
@@ -34,6 +41,7 @@ export const buildThirdSceneToolbar = (
 ): ThirdSceneToolbarItem[] => {
   const isEditMode = args.mode === 'edit';
 
+  // TODO(THIRD toolbar): Replace two-letter placeholder glyphs with real SVG icons.
   return [
     {
       id: 'scene_toggle_mode',
@@ -89,6 +97,46 @@ export const buildThirdSceneToolbar = (
       label: 'AXES',
       title: `AXES: ${args.showAxes ? 'ON' : 'OFF'}`,
       active: args.showAxes,
+      disabled: false,
+    },
+    {
+      id: 'camera_toggle_projection',
+      icon: 'PJ',
+      label: 'PROJ',
+      title: `PROJECTION: ${args.projectionMode === 'orthographic' ? 'ORTHOGRAPHIC' : 'PERSPECTIVE'}`,
+      active: args.projectionMode === 'orthographic',
+      disabled: false,
+    },
+    {
+      id: 'camera_view_top',
+      icon: 'TP',
+      label: 'TOP',
+      title: 'CAMERA VIEW TOP',
+      active: false,
+      disabled: false,
+    },
+    {
+      id: 'camera_view_front',
+      icon: 'FR',
+      label: 'FRONT',
+      title: 'CAMERA VIEW FRONT',
+      active: false,
+      disabled: false,
+    },
+    {
+      id: 'camera_view_right',
+      icon: 'RG',
+      label: 'RIGHT',
+      title: 'CAMERA VIEW RIGHT',
+      active: false,
+      disabled: false,
+    },
+    {
+      id: 'camera_reset',
+      icon: 'RS',
+      label: 'RESET',
+      title: 'CAMERA RESET VIEW',
+      active: false,
       disabled: false,
     },
   ];

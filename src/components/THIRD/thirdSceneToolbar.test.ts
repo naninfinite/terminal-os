@@ -6,6 +6,7 @@ describe('thirdSceneToolbar model', () => {
     const items = buildThirdSceneToolbar({
       mode: 'edit',
       transformMode: 'translate',
+      projectionMode: 'perspective',
       snapEnabled: false,
       showGrid: false,
       showAxes: false,
@@ -19,13 +20,19 @@ describe('thirdSceneToolbar model', () => {
       'scene_toggle_snap',
       'scene_toggle_grid',
       'scene_toggle_axes',
+      'camera_toggle_projection',
+      'camera_view_top',
+      'camera_view_front',
+      'camera_view_right',
+      'camera_reset',
     ]);
   });
 
-  it('disables transform and snap in play mode while keeping mode/grid/axes enabled', () => {
+  it('disables transform and snap in play mode while keeping mode/grid/axes/camera enabled', () => {
     const items = buildThirdSceneToolbar({
       mode: 'play',
       transformMode: 'rotate',
+      projectionMode: 'perspective',
       snapEnabled: true,
       showGrid: true,
       showAxes: true,
@@ -38,6 +45,11 @@ describe('thirdSceneToolbar model', () => {
     const snap = items.find((item) => item.id === 'scene_toggle_snap');
     const grid = items.find((item) => item.id === 'scene_toggle_grid');
     const axes = items.find((item) => item.id === 'scene_toggle_axes');
+    const projection = items.find((item) => item.id === 'camera_toggle_projection');
+    const top = items.find((item) => item.id === 'camera_view_top');
+    const front = items.find((item) => item.id === 'camera_view_front');
+    const right = items.find((item) => item.id === 'camera_view_right');
+    const reset = items.find((item) => item.id === 'camera_reset');
 
     expect(mode?.disabled).toBe(false);
     expect(translate?.disabled).toBe(true);
@@ -46,12 +58,18 @@ describe('thirdSceneToolbar model', () => {
     expect(snap?.disabled).toBe(true);
     expect(grid?.disabled).toBe(false);
     expect(axes?.disabled).toBe(false);
+    expect(projection?.disabled).toBe(false);
+    expect(top?.disabled).toBe(false);
+    expect(front?.disabled).toBe(false);
+    expect(right?.disabled).toBe(false);
+    expect(reset?.disabled).toBe(false);
   });
 
   it('maps active states deterministically', () => {
     const items = buildThirdSceneToolbar({
       mode: 'edit',
       transformMode: 'scale',
+      projectionMode: 'orthographic',
       snapEnabled: true,
       showGrid: true,
       showAxes: false,
@@ -64,5 +82,10 @@ describe('thirdSceneToolbar model', () => {
     expect(items.find((item) => item.id === 'scene_toggle_snap')?.active).toBe(true);
     expect(items.find((item) => item.id === 'scene_toggle_grid')?.active).toBe(true);
     expect(items.find((item) => item.id === 'scene_toggle_axes')?.active).toBe(false);
+    expect(items.find((item) => item.id === 'camera_toggle_projection')?.active).toBe(true);
+    expect(items.find((item) => item.id === 'camera_view_top')?.active).toBe(false);
+    expect(items.find((item) => item.id === 'camera_view_front')?.active).toBe(false);
+    expect(items.find((item) => item.id === 'camera_view_right')?.active).toBe(false);
+    expect(items.find((item) => item.id === 'camera_reset')?.active).toBe(false);
   });
 });
