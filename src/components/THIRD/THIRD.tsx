@@ -2268,6 +2268,52 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   }, [editorMode, setTransformMode, startRenameObject, toggleSnap]);
 
   useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.target as HTMLElement | null)?.closest?.('input, textarea, button, select')) return;
+      if (event.altKey || event.ctrlKey || event.metaKey) return;
+
+      if (event.key.toLowerCase() === 'f') {
+        const selectedId = selectionIdRef.current;
+        if (!selectedId) return;
+        event.preventDefault();
+        focusObjectInCamera(selectedId);
+        return;
+      }
+
+      const isFrontView = event.code === 'Digit1' || event.code === 'Numpad1';
+      const isRightView = event.code === 'Digit3' || event.code === 'Numpad3';
+      const isTopView = event.code === 'Digit7' || event.code === 'Numpad7';
+      const isToggleProjection = event.code === 'Digit5' || event.code === 'Numpad5';
+
+      if (isFrontView) {
+        event.preventDefault();
+        applyCameraPreset('front');
+        return;
+      }
+      if (isRightView) {
+        event.preventDefault();
+        applyCameraPreset('right');
+        return;
+      }
+      if (isTopView) {
+        event.preventDefault();
+        applyCameraPreset('top');
+        return;
+      }
+      if (isToggleProjection) {
+        event.preventDefault();
+        const nextProjectionMode: ThirdProjectionMode = projectionModeRef.current === 'orthographic'
+          ? 'perspective'
+          : 'orthographic';
+        setProjectionMode(nextProjectionMode);
+        saveCameraFromRuntime();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [applyCameraPreset, focusObjectInCamera, saveCameraFromRuntime, setProjectionMode]);
+
+  useEffect(() => {
     if (!viewportMenu) return;
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
