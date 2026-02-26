@@ -1466,6 +1466,31 @@ Risks / Notes:
 
 ---
 
+## Entry 73 - THIRD Hierarchy Context Menu (Right-Click + Keyboard Context Key)
+
+Summary:
+- Added hierarchy-row context menu actions directly inside inspector `OBJECTS` hierarchy.
+- Menu actions:
+  - `RENAME`,
+  - `DUPLICATE`,
+  - `DELETE`,
+  - `UNPARENT`.
+- Added keyboard-accessible context-open path for focused hierarchy row:
+  - `ContextMenu` key,
+  - `Shift + F10`.
+- Added deterministic menu-model helper/tests (`thirdHierarchyMenu.ts` + `thirdHierarchyMenu.test.ts`).
+
+Why it matters:
+- Delivers the requested Blender-style right-click object actions in hierarchy without adding viewport clutter.
+- Keeps interactions accessible beyond pointer-only usage.
+- Makes hierarchy operations faster by reducing travel to separate inspector buttons.
+
+Risks / Notes:
+- Current menu is object-row scoped; root-level hierarchy context actions remain future work.
+- Duplicate/delete actions intentionally mirror existing selection-based behavior.
+
+---
+
 ## Entry 73 - Consolidated Open TODO Snapshot (By Subsystem) + New THIRD Animation TODO
 
 Summary:

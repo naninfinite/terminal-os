@@ -95,7 +95,8 @@ On first load / destructive reset:
   - drag/drop reparenting,
   - root drop target for unparent-to-scene,
   - explicit `UNPARENT` action for selected child,
-  - inline rename (`double-click` or `F2`).
+  - inline rename (`double-click` or `F2`),
+  - hierarchy row context menu (`right-click` / `ContextMenu` key / `Shift+F10`) for `RENAME`, `DUPLICATE`, `DELETE`, `UNPARENT`.
 - `SCENE` section includes explicit `GRID` and `AXES` visibility toggles.
 - Default inspector expansion starts fully collapsed (all sections closed).
 - Rotation fields display degrees and convert to radians in runtime state.
@@ -221,8 +222,6 @@ Validation baseline:
 - Primitive catalog expansion follow-up:
   - evaluate adding additional primitives after inspector polish baseline is stable
   - initial candidates: `cone`, `torus`, `capsule`, `pyramid`, `icosphere`.
-- Hierarchy context action follow-up:
-  - add object-level right-click options inside the hierarchy tree after menu behavior is finalized.
 - Inspector ordering follow-up:
   - revisit section ordering after hierarchy/material/camera controls settle.
 - Scene toolbar follow-up:
