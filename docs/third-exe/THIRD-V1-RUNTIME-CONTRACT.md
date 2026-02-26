@@ -198,3 +198,14 @@ Added/updated tests:
 Validation baseline:
 - `npm run build`
 - `npm test`
+
+## 10) Deferred TODOs / Future Notes
+
+- Light-theme grid tone follow-up:
+  - target future behavior: THIRD grid in `light` theme uses near-black `#101010` instead of accent green,
+  - dark-theme grid behavior remains unchanged (accent-driven),
+  - implementation must preserve existing runtime stability during theme switching (no remount/reset).
+- Spawn material policy follow-up:
+  - default spawn material color direction is intentionally unresolved in V1.x docs-only capture,
+  - current default spawn color remains unchanged until dedicated material-direction work,
+  - candidate directions to evaluate later: neutral monochrome default, theme-derived default, or preset-derived defaults.

@@ -6,7 +6,7 @@ export default defineConfig({
   server: { 
     host: true, 
     allowedHosts: [
-      "hansen-reaction-mug-brings.trycloudflare.com",
+      "pair-buses-finest-demands.trycloudflare.com",
     ],
     port: 5173,
     strictPort: true

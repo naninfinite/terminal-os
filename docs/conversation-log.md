@@ -1256,3 +1256,47 @@ Why it matters:
 
 Risks / Notes:
 - Inspector expansion state remains runtime-local and resets on reload by design.
+
+---
+
+## Entry 64 - Deferred TODO: THIRD Light-Theme Grid Tone + Spawn Material Follow-Up
+
+Summary:
+- Captured a deferred THIRD visual follow-up with no runtime/code changes in this pass.
+- Locked a future implementation target: in light theme, THIRD grid color should move from accent green to near-black `#101010`.
+- Recorded that default spawn material color direction is unresolved and intentionally postponed.
+- Confirmed current default spawn behavior remains unchanged until a dedicated material-direction pass.
+
+Why it matters:
+- Aligns light-theme THIRD scene styling with the monochrome/low-emissive light-theme direction.
+- Prevents premature color-direction churn while higher-priority subsystem work continues.
+- Creates an explicit acceptance target so the later implementation pass is deterministic.
+
+Risks / Notes:
+- Deferred item only; no behavior changed in this entry.
+- Later implementation acceptance target:
+  - dark theme grid behavior stays as-is (accent-driven),
+  - light theme grid renders near-black `#101010`,
+  - existing object material colors remain intact,
+  - default spawn color remains current value in that pass,
+  - theme switches must not remount/reset THIRD runtime state.
+- Spawn material default policy remains open for a separate follow-up (candidates: neutral monochrome default, theme-derived default, or preset-derived defaults).
+
+---
+
+## Entry 65 - THIRD Viewport Right-Click Isolation (Panel Context Suppression)
+
+Summary:
+- Fixed a context-routing conflict where right-clicking inside the THIRD viewport could trigger both:
+  - the THIRD viewport object menu flow, and
+  - parent panel context handling.
+- Updated THIRD canvas context-menu handling to stop propagation after preventing default browser context menus.
+- Marked THIRD root as a context-ignore subtree so panel-level context triggers do not activate from interactions inside THIRD content.
+
+Why it matters:
+- Keeps THIRD right-click behavior deterministic for object/viewport actions.
+- Prevents accidental subsystem panel context/menu openings while editing scene objects.
+
+Risks / Notes:
+- Scope is intentionally narrow to THIRD interaction routing only.
+- Dock/context behavior outside THIRD remains unchanged.

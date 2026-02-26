@@ -1502,6 +1502,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
     const onContextMenu = (event: MouseEvent) => {
       event.preventDefault();
+      event.stopPropagation();
     };
 
     const resize = () => {
@@ -2103,6 +2104,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     <div
       ref={rootRef}
       className={`${styles.root} ${mode === 'fullscreen' ? styles.rootFullscreen : ''}`.trim()}
+      data-context-ignore="true"
     >
       <div ref={canvasHostRef} className={styles.canvasHost} />
 
