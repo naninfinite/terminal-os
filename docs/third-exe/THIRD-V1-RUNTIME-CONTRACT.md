@@ -227,3 +227,10 @@ Validation baseline:
   - revisit section ordering after hierarchy/material/camera controls settle.
 - Scene toolbar follow-up:
   - evaluate an icon-based top-left scene toolbar row (Unity/Blender style) as an alternative quick-action surface.
+- Mobile long-press context follow-up:
+  - reduce tap/selection highlight interference on THIRD interactive surfaces so long-press can act as right-click more reliably,
+  - evaluate broader site-wide highlight behavior as a separate pass to avoid accidental text-selection regressions.
+- Animation mode parity follow-up:
+  - current contract evaluates presets in `EDIT` only,
+  - target behavior: allow preset animations in both `EDIT` and `PLAY`,
+  - keep physics simulation strictly `PLAY`-only while validating animation/physics coexistence rules.

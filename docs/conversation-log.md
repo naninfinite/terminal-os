@@ -1446,3 +1446,72 @@ Why it matters:
 
 Risks / Notes:
 - Deferred only; no behavior change in this log-only entry.
+
+---
+
+## Entry 72 - Deferred TODO: Mobile Long-Press Highlight Suppression (THIRD Priority)
+
+Summary:
+- Captured mobile interaction follow-up for long-press context behavior.
+- User requested reducing/removing highlight/selection artifacts that interfere with long-press acting as right-click, prioritized for `THIRD` first.
+- Kept broader site-wide highlight policy as a separate follow-up after THIRD validation.
+
+Why it matters:
+- Mobile text/tap highlight behavior can conflict with reliable long-press context triggers.
+- Improving this in THIRD first should make object/context workflows more consistent on touch devices.
+
+Risks / Notes:
+- Deferred only in this pass; no runtime behavior changes yet.
+- Scope should start on interactive THIRD surfaces to avoid unintentionally disabling useful text selection elsewhere.
+
+---
+
+## Entry 73 - Consolidated Open TODO Snapshot (By Subsystem) + New THIRD Animation TODO
+
+Summary:
+- Ran a full unresolved TODO/deferred sweep across:
+  - `docs/conversation-log.md`,
+  - `docs/third-exe/THIRD-V1-RUNTIME-CONTRACT.md`,
+  - `docs/fileman-v2-build-spec.md`,
+  - active placeholder TODO markers in source.
+- Consolidated current open backlog by subsystem so older deferred items are not lost.
+- Added a new `THIRD` deferred TODO:
+  - animation presets should evaluate in both `EDIT` and `PLAY`,
+  - physics simulation remains strictly `PLAY`-only.
+
+Why it matters:
+- Restores a single actionable view of unresolved work after many incremental passes.
+- Reduces risk of regressions or duplicate discussions by keeping pending decisions explicit.
+
+Open TODOs - ME.EXE / Shell:
+- Lowercase location token styling remains deferred (`Entry 39`).
+- Alternative maximize lower-bound strategy remains deferred (`Entry 41`).
+- Mobile/tablet dock compaction hardening remains open (`Entry 55` / `Entry 56`).
+- Launcher shelf placement polish remains an optional follow-up (`fileman-v2-build-spec` section 8.3).
+- Deep app-interior light-theme parity remains deferred (`fileman-v2-build-spec` section 8.4).
+
+Open TODOs - YOU.EXE:
+- Moderation tooling and edit/delete flows remain deferred to post-baseline passes (`Entry 50`).
+
+Open TODOs - THIRD.EXE:
+- Spawn material palette/default policy follow-up remains open (`Entry 64`, runtime contract deferred notes).
+- Inspector camera-row sizing normalization remains open (`Entry 69`).
+- Drag-box multi-object selection remains explicitly out of current scope (`Entry 69`).
+- Broader inspector UI/UX cleanup remains deferred (`Entry 69`).
+- Primitive catalog expansion remains open (`Entry 69`).
+- Hierarchy row context actions remain deferred (`Entry 71`).
+- Inspector section ordering revisit remains deferred (`Entry 71`).
+- Scene quick-toolbar concept remains deferred (`Entry 71`).
+- Mobile long-press highlight suppression remains deferred (`Entry 72`).
+- Transform-editing undo/redo remains deferred (`Entry 61`).
+- New deferred item:
+  - allow animation presets to run in both `EDIT` and `PLAY`,
+  - keep physics behavior as `PLAY`-only.
+
+Open TODOs - CONNECT.EXE:
+- Replace disabled context action `TODO: NOTIFICATION ACTIONS` with real notification actions (`src/components/StatusBar/subsystemContextMenu.ts`).
+- Deterministic gameplay parity roadmap remains open (local `Pong` baseline, `Tron` target, staged multiplayer path in subsystem roadmap).
+
+Risks / Notes:
+- Backlog capture only; no runtime behavior changes were made in this pass.
+- This snapshot is intentionally explicit about both short-term polish TODOs and larger subsystem-depth follow-ups.
