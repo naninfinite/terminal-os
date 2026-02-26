@@ -6,7 +6,7 @@ export default defineConfig({
   server: { 
     host: true, 
     allowedHosts: [
-      "pair-buses-finest-demands.trycloudflare.com",
+      "excluded-nutrition-clothing-scroll.trycloudflare.com",
     ],
     port: 5173,
     strictPort: true
