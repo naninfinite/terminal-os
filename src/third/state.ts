@@ -225,6 +225,22 @@ export const createDefaultThirdRuntimeState = (): ThirdRuntimeState => {
   };
 };
 
+export const cloneRuntimeState = (state: ThirdRuntimeState): ThirdRuntimeState => ({
+  objects: state.objects.map(cloneObject),
+  selectionId: state.selectionId,
+  mode: state.mode,
+  showGrid: state.showGrid === true,
+  showAxes: state.showAxes === true,
+  snapEnabled: state.snapEnabled === true,
+  skyboxId: state.skyboxId || THIRD_DEFAULT_SKYBOX_ID,
+  cameraState: {
+    position: cloneVec3(state.cameraState.position),
+    target: cloneVec3(state.cameraState.target),
+    projectionMode: normalizeProjectionMode(state.cameraState.projectionMode),
+  },
+  transformMode: state.transformMode,
+});
+
 export const setEditorMode = (state: ThirdRuntimeState, mode: ThirdEditorMode): ThirdRuntimeState => ({
   ...state,
   mode,

@@ -29,6 +29,14 @@ import {
   updateObjectTransform,
 } from './state';
 import {
+  applyThirdHistoryMutation,
+  createThirdHistoryStore,
+  redoThirdHistory,
+  replaceThirdHistoryState,
+  THIRD_TRANSFORM_COALESCE_MS,
+  undoThirdHistory,
+} from './history';
+import {
   clearPersistedThirdScene,
   readPersistedThirdScene,
   writePersistedThirdScene,
@@ -40,15 +48,17 @@ import type {
   ThirdEditorMode,
   ThirdMaterialPreset,
   ThirdPrimitiveType,
+  ThirdRuntimeState,
   ThirdTransformMode,
   ThirdTransformPatch,
 } from './types';
 
 const AUTOSAVE_DELAY_MS = 300;
+const TRANSFORM_HISTORY_KEY = 'transform';
 
 type ThirdContextValue = {
   displayMode: ThirdDisplayMode;
-  objects: ReturnType<typeof createDefaultThirdRuntimeState>['objects'];
+  objects: ThirdRuntimeState['objects'];
   selectionId: string | null;
   mode: ThirdEditorMode;
   showGrid: boolean;
@@ -57,6 +67,8 @@ type ThirdContextValue = {
   skyboxId: string;
   cameraState: ThirdCameraState;
   transformMode: ThirdTransformMode;
+  canUndo: boolean;
+  canRedo: boolean;
   openFullscreen: () => void;
   closeFullscreen: () => void;
   setMode: (mode: ThirdEditorMode) => void;
@@ -83,6 +95,8 @@ type ThirdContextValue = {
   setObjectAnimationPreset: (id: string, preset: ThirdAnimationPreset) => void;
   setCameraState: (cameraState: ThirdCameraState) => void;
   setSkyboxId: (skyboxId: string) => void;
+  undo: () => void;
+  redo: () => void;
   resetScene: () => void;
   resetToSaved: () => void;
   forceSave: () => void;
@@ -92,12 +106,15 @@ const ThirdContext = createContext<ThirdContextValue | null>(null);
 
 export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [displayMode, setDisplayMode] = useState<ThirdDisplayMode>('panel');
-  const [state, setState] = useState(() => hydrateStateFromPersistence(readPersistedThirdScene()));
+  const [store, setStore] = useState(() => createThirdHistoryStore(
+    hydrateStateFromPersistence(readPersistedThirdScene())
+  ));
+  const state = store.present;
   const sceneRef = useRef(state);
-  const lastPersistedRef = useRef(serializeStateForPersistence(state));
+  const lastPersistedRef = useRef(serializeStateForPersistence(store.present));
   const autosaveTimerRef = useRef<number | null>(null);
 
-  const persistState = useCallback((nextState: typeof state) => {
+  const persistState = useCallback((nextState: ThirdRuntimeState) => {
     const payload = serializeStateForPersistence(nextState);
     writePersistedThirdScene(payload);
     lastPersistedRef.current = payload;
@@ -137,88 +154,192 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const openFullscreen = useCallback(() => setDisplayMode('fullscreen'), []);
   const closeFullscreen = useCallback(() => setDisplayMode('panel'), []);
+  const mutateStore = useCallback((args: {
+    mutate: (state: ThirdRuntimeState) => ThirdRuntimeState;
+    track?: boolean;
+    coalesceKey?: string;
+    coalesceWindowMs?: number;
+  }) => {
+    setStore((prev) => applyThirdHistoryMutation(prev, {
+      mutate: args.mutate,
+      track: args.track,
+      coalesceKey: args.coalesceKey,
+      coalesceWindowMs: args.coalesceWindowMs,
+      nowMs: args.coalesceKey ? Date.now() : undefined,
+    }));
+  }, []);
+
   const setMode = useCallback((mode: ThirdEditorMode) => {
-    setState((prev) => setEditorMode(prev, mode));
-  }, []);
+    mutateStore({
+      mutate: (prev) => setEditorMode(prev, mode),
+      track: false,
+    });
+  }, [mutateStore]);
   const toggleMode = useCallback(() => {
-    setState((prev) => toggleEditorMode(prev));
-  }, []);
+    mutateStore({
+      mutate: (prev) => toggleEditorMode(prev),
+      track: false,
+    });
+  }, [mutateStore]);
   const setShowGridAction = useCallback((enabled: boolean) => {
-    setState((prev) => setShowGrid(prev, enabled));
-  }, []);
+    mutateStore({
+      mutate: (prev) => setShowGrid(prev, enabled),
+      track: false,
+    });
+  }, [mutateStore]);
   const toggleShowGridAction = useCallback(() => {
-    setState((prev) => toggleShowGrid(prev));
-  }, []);
+    mutateStore({
+      mutate: (prev) => toggleShowGrid(prev),
+      track: false,
+    });
+  }, [mutateStore]);
   const setShowAxesAction = useCallback((enabled: boolean) => {
-    setState((prev) => setShowAxes(prev, enabled));
-  }, []);
+    mutateStore({
+      mutate: (prev) => setShowAxes(prev, enabled),
+      track: false,
+    });
+  }, [mutateStore]);
   const toggleShowAxesAction = useCallback(() => {
-    setState((prev) => toggleShowAxes(prev));
-  }, []);
+    mutateStore({
+      mutate: (prev) => toggleShowAxes(prev),
+      track: false,
+    });
+  }, [mutateStore]);
   const setObjectPhysicsEnabledAction = useCallback((id: string, enabled: boolean) => {
-    setState((prev) => setObjectPhysicsEnabled(prev, id, enabled));
-  }, []);
+    mutateStore({
+      mutate: (prev) => setObjectPhysicsEnabled(prev, id, enabled),
+      track: true,
+    });
+  }, [mutateStore]);
   const setObjectParentAction = useCallback((id: string, parentId: string | null) => {
-    setState((prev) => setObjectParent(prev, id, parentId));
-  }, []);
+    mutateStore({
+      mutate: (prev) => setObjectParent(prev, id, parentId),
+      track: true,
+    });
+  }, [mutateStore]);
   const setObjectNameAction = useCallback((id: string, name: string) => {
-    setState((prev) => setObjectName(prev, id, name));
-  }, []);
+    mutateStore({
+      mutate: (prev) => setObjectName(prev, id, name),
+      track: true,
+    });
+  }, [mutateStore]);
   const setObjectMaterialPresetAction = useCallback((id: string, preset: ThirdMaterialPreset) => {
-    setState((prev) => setObjectMaterialPreset(prev, id, preset));
-  }, []);
+    mutateStore({
+      mutate: (prev) => setObjectMaterialPreset(prev, id, preset),
+      track: true,
+    });
+  }, [mutateStore]);
   const setObjectMaterialColorAction = useCallback((id: string, color: string) => {
-    setState((prev) => setObjectMaterialColor(prev, id, color));
-  }, []);
+    mutateStore({
+      mutate: (prev) => setObjectMaterialColor(prev, id, color),
+      track: true,
+    });
+  }, [mutateStore]);
   const setObjectMaterialWireframeAction = useCallback((id: string, enabled: boolean) => {
-    setState((prev) => setObjectMaterialWireframe(prev, id, enabled));
-  }, []);
+    mutateStore({
+      mutate: (prev) => setObjectMaterialWireframe(prev, id, enabled),
+      track: true,
+    });
+  }, [mutateStore]);
   const setTransformModeAction = useCallback((mode: ThirdTransformMode) => {
-    setState((prev) => setTransformMode(prev, mode));
-  }, []);
+    mutateStore({
+      mutate: (prev) => setTransformMode(prev, mode),
+      track: false,
+    });
+  }, [mutateStore]);
   const setSnapEnabledAction = useCallback((enabled: boolean) => {
-    setState((prev) => setSnapEnabled(prev, enabled));
-  }, []);
+    mutateStore({
+      mutate: (prev) => setSnapEnabled(prev, enabled),
+      track: false,
+    });
+  }, [mutateStore]);
   const toggleSnapAction = useCallback(() => {
-    setState((prev) => toggleSnap(prev));
-  }, []);
+    mutateStore({
+      mutate: (prev) => toggleSnap(prev),
+      track: false,
+    });
+  }, [mutateStore]);
   const selectObject = useCallback((id: string | null) => {
-    setState((prev) => setSelection(prev, id));
-  }, []);
+    mutateStore({
+      mutate: (prev) => setSelection(prev, id),
+      track: false,
+    });
+  }, [mutateStore]);
   const addPrimitiveAction = useCallback((type: ThirdPrimitiveType) => {
-    setState((prev) => addPrimitive(prev, type));
-  }, []);
+    mutateStore({
+      mutate: (prev) => addPrimitive(prev, type),
+      track: true,
+    });
+  }, [mutateStore]);
   const deleteSelectedAction = useCallback(() => {
-    setState((prev) => deleteSelected(prev));
-  }, []);
+    mutateStore({
+      mutate: (prev) => deleteSelected(prev),
+      track: true,
+    });
+  }, [mutateStore]);
   const duplicateSelectedAction = useCallback(() => {
-    setState((prev) => duplicateSelected(prev));
-  }, []);
+    mutateStore({
+      mutate: (prev) => duplicateSelected(prev),
+      track: true,
+    });
+  }, [mutateStore]);
   const updateObjectTransformAction = useCallback((patch: ThirdTransformPatch) => {
-    setState((prev) => updateObjectTransform(prev, patch));
-  }, []);
+    mutateStore({
+      mutate: (prev) => updateObjectTransform(prev, patch),
+      track: true,
+      coalesceKey: TRANSFORM_HISTORY_KEY,
+      coalesceWindowMs: THIRD_TRANSFORM_COALESCE_MS,
+    });
+  }, [mutateStore]);
   const applyObjectTransformsAction = useCallback((patches: ThirdTransformPatch[]) => {
-    setState((prev) => applyObjectTransforms(prev, patches));
-  }, []);
+    mutateStore({
+      mutate: (prev) => applyObjectTransforms(prev, patches),
+      track: false,
+    });
+  }, [mutateStore]);
   const setObjectAnimationPreset = useCallback((id: string, preset: ThirdAnimationPreset) => {
-    setState((prev) => setAnimationPreset(prev, id, preset));
-  }, []);
+    mutateStore({
+      mutate: (prev) => setAnimationPreset(prev, id, preset),
+      track: true,
+    });
+  }, [mutateStore]);
   const setCameraStateAction = useCallback((cameraState: ThirdCameraState) => {
-    setState((prev) => setCameraState(prev, cameraState));
-  }, []);
+    mutateStore({
+      mutate: (prev) => setCameraState(prev, cameraState),
+      track: false,
+    });
+  }, [mutateStore]);
   const setSkyboxIdAction = useCallback((skyboxId: string) => {
-    setState((prev) => setSkyboxId(prev, skyboxId));
+    mutateStore({
+      mutate: (prev) => setSkyboxId(prev, skyboxId),
+      track: true,
+    });
+  }, [mutateStore]);
+
+  const undo = useCallback(() => {
+    setStore((prev) => undoThirdHistory(prev));
+  }, []);
+
+  const redo = useCallback(() => {
+    setStore((prev) => redoThirdHistory(prev));
   }, []);
 
   const resetScene = useCallback(() => {
     clearPersistedThirdScene();
     const next = createDefaultThirdRuntimeState();
     lastPersistedRef.current = serializeStateForPersistence(next);
-    setState(next);
+    setStore((prev) => replaceThirdHistoryState(prev, {
+      next,
+      clearHistory: true,
+    }));
   }, []);
 
   const resetToSaved = useCallback(() => {
-    setState(hydrateStateFromPersistence(lastPersistedRef.current));
+    const next = hydrateStateFromPersistence(lastPersistedRef.current);
+    setStore((prev) => replaceThirdHistoryState(prev, {
+      next,
+      clearHistory: true,
+    }));
   }, []);
 
   const forceSave = useCallback(() => {
@@ -258,6 +379,8 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     skyboxId: state.skyboxId,
     cameraState: state.cameraState,
     transformMode: state.transformMode,
+    canUndo: store.undoStack.length > 0,
+    canRedo: store.redoStack.length > 0,
     openFullscreen,
     closeFullscreen,
     setMode,
@@ -284,6 +407,8 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setObjectAnimationPreset,
     setCameraState: setCameraStateAction,
     setSkyboxId: setSkyboxIdAction,
+    undo,
+    redo,
     resetScene,
     resetToSaved,
     forceSave,
@@ -298,6 +423,7 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     openFullscreen,
     resetScene,
     resetToSaved,
+    redo,
     selectObject,
     setCameraStateAction,
     setMode,
@@ -322,10 +448,13 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     state.skyboxId,
     state.snapEnabled,
     state.transformMode,
+    store.redoStack.length,
+    store.undoStack.length,
     toggleMode,
     toggleShowAxesAction,
     toggleShowGridAction,
     toggleSnapAction,
+    undo,
     updateObjectTransformAction,
   ]);
 

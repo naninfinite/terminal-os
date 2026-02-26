@@ -464,6 +464,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     snapEnabled,
     transformMode,
     cameraState,
+    canUndo,
+    canRedo,
     addPrimitive,
     selectObject,
     duplicateSelected,
@@ -483,6 +485,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     updateObjectTransform,
     applyObjectTransforms,
     setCameraState,
+    undo,
+    redo,
     forceSave,
     resetToSaved,
   } = useThirdRuntime();
@@ -2272,6 +2276,32 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
+      if (target?.closest('input, textarea, button, select')) return;
+
+      const modifierPressed = event.metaKey || event.ctrlKey;
+      if (!modifierPressed || event.altKey) return;
+      const key = event.key.toLowerCase();
+      if (key === 'z') {
+        event.preventDefault();
+        if (event.shiftKey) {
+          if (canRedo) redo();
+          return;
+        }
+        if (canUndo) undo();
+        return;
+      }
+      if (key === 'y') {
+        event.preventDefault();
+        if (canRedo) redo();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [canRedo, canUndo, redo, undo]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
       const actionId = resolveThirdCameraHotkey({
         code: event.code,
         key: event.key,
@@ -2660,6 +2690,12 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
           <span className={styles.inspectorObjectName}>{selectedObject?.name ?? 'NO SELECTION'}</span>
         </div>
         <div className={styles.utilityHeaderActions}>
+          <button type="button" className={styles.toolBtn} onClick={undo} disabled={!canUndo}>
+            UNDO
+          </button>
+          <button type="button" className={styles.toolBtn} onClick={redo} disabled={!canRedo}>
+            REDO
+          </button>
           <button type="button" className={styles.toolBtn} onClick={() => setAllInspectorSections(false)}>
             COLLAPSE
           </button>
