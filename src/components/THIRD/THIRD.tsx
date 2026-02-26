@@ -14,8 +14,13 @@ import {
 } from './thirdViewportMenu';
 import {
   buildThirdHierarchyMenu,
+  type ThirdHierarchyMenuContext,
   type ThirdHierarchyMenuActionId,
 } from './thirdHierarchyMenu';
+import {
+  buildThirdSceneToolbar,
+  type ThirdSceneToolbarActionId,
+} from './thirdSceneToolbar';
 import {
   clampInspectorScale,
   degToRad,
@@ -52,12 +57,6 @@ const MIN_CAMERA_DISTANCE = 1.2;
 const ORTHOGRAPHIC_FRUSTUM_HEIGHT = 11;
 const HIERARCHY_ROOT_DROP_TARGET = '__root__' as const;
 const MATERIAL_PRESETS: ReadonlyArray<ThirdMaterialPreset> = ['matte', 'gloss', 'glass', 'neon'];
-const PRIMITIVE_MENU_OPTIONS: ReadonlyArray<{ type: ThirdPrimitiveType; label: string }> = [
-  { type: 'cube', label: 'CUBE' },
-  { type: 'sphere', label: 'SPHERE' },
-  { type: 'cylinder', label: 'CYLINDER' },
-  { type: 'plane', label: 'PLANE' },
-];
 const MATERIAL_SWATCHES: ReadonlyArray<string> = [
   '#00ff66',
   '#0f8f63',
@@ -68,7 +67,7 @@ const MATERIAL_SWATCHES: ReadonlyArray<string> = [
 ];
 const INSPECTOR_GROUPS = ['position', 'rotation', 'scale'] as const;
 const INSPECTOR_AXES = ['x', 'y', 'z'] as const;
-const INSPECTOR_SECTION_IDS = ['scene', 'camera', 'objects', 'transform', 'animation', 'physics', 'material'] as const;
+const INSPECTOR_SECTION_IDS = ['camera', 'transform', 'animation', 'physics', 'material'] as const;
 
 type InspectorGroup = typeof INSPECTOR_GROUPS[number];
 type InspectorAxis = typeof INSPECTOR_AXES[number];
@@ -86,7 +85,8 @@ type ViewportMenuState = {
 type HierarchyMenuState = {
   x: number;
   y: number;
-  objectId: string;
+  context: ThirdHierarchyMenuContext;
+  objectId: string | null;
 };
 
 type RightClickCandidate = {
@@ -102,6 +102,7 @@ type HierarchyTreeNode = {
 };
 
 type HierarchyDropTarget = string | typeof HIERARCHY_ROOT_DROP_TARGET | null;
+type MobileUtilityPanel = 'scene' | 'inspector';
 
 const applyMaterialParams = (
   material: THREE.MeshPhongMaterial,
@@ -502,7 +503,6 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const rightClickCandidateRef = useRef<RightClickCandidate | null>(null);
   const viewportMenuRef = useRef<HTMLDivElement | null>(null);
   const hierarchyMenuRef = useRef<HTMLDivElement | null>(null);
-  const addObjectMenuRef = useRef<HTMLDivElement | null>(null);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
   const projectionModeRef = useRef<ThirdProjectionMode>(cameraState.projectionMode);
 
@@ -511,51 +511,68 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     [objects, selectionId]
   );
   const [inspectorDraft, setInspectorDraft] = useState<InspectorDraft>(() => createInspectorDraft(selectedObject));
-  const [inspectorVisible, setInspectorVisible] = useState(false);
   const [inspectorSections, setInspectorSections] = useState<InspectorSectionState>(
     () => createInitialInspectorSectionState()
   );
+  const [sceneWindowVisible, setSceneWindowVisible] = useState(true);
+  const [inspectorWindowVisible, setInspectorWindowVisible] = useState(true);
+  const [mobileUtilityPanel, setMobileUtilityPanel] = useState<MobileUtilityPanel>('scene');
   const [viewportMenu, setViewportMenu] = useState<ViewportMenuState | null>(null);
   const [hierarchyMenu, setHierarchyMenu] = useState<HierarchyMenuState | null>(null);
   const [hierarchyExpanded, setHierarchyExpanded] = useState(true);
   const [hierarchyCollapsedIds, setHierarchyCollapsedIds] = useState<Set<string>>(() => new Set());
   const [hierarchyDragObjectId, setHierarchyDragObjectId] = useState<string | null>(null);
   const [hierarchyDropTargetId, setHierarchyDropTargetId] = useState<HierarchyDropTarget>(null);
-  const [addObjectMenuOpen, setAddObjectMenuOpen] = useState(false);
   const [renamingObjectId, setRenamingObjectId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
   const hierarchyTree = useMemo(() => buildHierarchyTree(objects), [objects]);
   const isEditMode = editorMode === 'edit';
-  const selectedParent = useMemo(() => (
-    selectedObject?.parentId
-      ? objects.find((object) => object.id === selectedObject.parentId) ?? null
-      : null
-  ), [objects, selectedObject]);
   const viewportMenuGroups = useMemo(() => buildThirdViewportMenu({
     mode: editorMode,
     snapEnabled,
     projectionMode: cameraState.projectionMode,
-    inspectorVisible,
+    inspectorVisible: inspectorWindowVisible,
     hasSelection: selectedObject != null,
     selectedObjectPhysicsEnabled: selectedObject?.physicsEnabled ?? false,
   }), [
     cameraState.projectionMode,
     editorMode,
-    inspectorVisible,
+    inspectorWindowVisible,
     selectedObject,
     snapEnabled,
   ]);
-  const hierarchyMenuObject = useMemo(() => (
-    hierarchyMenu
-      ? objects.find((object) => object.id === hierarchyMenu.objectId) ?? null
-      : null
-  ), [hierarchyMenu, objects]);
-  const hierarchyMenuItems = useMemo(() => buildThirdHierarchyMenu({
+  const sceneToolbarItems = useMemo(() => buildThirdSceneToolbar({
     mode: editorMode,
-    hasSelection: hierarchyMenuObject != null,
-    selectedObjectHasParent: hierarchyMenuObject?.parentId != null,
-    isRenaming: hierarchyMenuObject != null && renamingObjectId === hierarchyMenuObject.id,
-  }), [editorMode, hierarchyMenuObject, renamingObjectId]);
+    transformMode,
+    projectionMode: cameraState.projectionMode,
+    snapEnabled,
+    showGrid,
+    showAxes,
+  }), [
+    cameraState.projectionMode,
+    editorMode,
+    showAxes,
+    showGrid,
+    snapEnabled,
+    transformMode,
+  ]);
+  const hierarchyMenuObject = useMemo(() => {
+    if (!hierarchyMenu || hierarchyMenu.context !== 'object' || !hierarchyMenu.objectId) {
+      return null;
+    }
+    return objects.find((object) => object.id === hierarchyMenu.objectId) ?? null;
+  }, [hierarchyMenu, objects]);
+  const hierarchyMenuItems = useMemo(() => {
+    const context: ThirdHierarchyMenuContext = hierarchyMenu?.context ?? 'object';
+    const hasSelection = context === 'object' && hierarchyMenuObject != null;
+    return buildThirdHierarchyMenu({
+      context,
+      mode: editorMode,
+      hasSelection,
+      selectedObjectHasParent: hierarchyMenuObject?.parentId != null,
+      isRenaming: hasSelection && renamingObjectId === hierarchyMenuObject?.id,
+    });
+  }, [editorMode, hierarchyMenu, hierarchyMenuObject, renamingObjectId]);
 
   const setInspectorFieldDraft = useCallback((key: InspectorFieldKey, value: string) => {
     setInspectorDraft((prev) => (prev[key] === value ? prev : { ...prev, [key]: value }));
@@ -715,9 +732,30 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     setHierarchyMenu({
       x: clampedX,
       y: clampedY,
+      context: 'object',
       objectId: args.objectId,
     });
   }, [selectObject]);
+
+  const openHierarchyMenuForScene = useCallback((args: {
+    clientX: number;
+    clientY: number;
+  }) => {
+    const root = rootRef.current;
+    if (!root) return;
+    const rect = root.getBoundingClientRect();
+    const localX = args.clientX - rect.left;
+    const localY = args.clientY - rect.top;
+    const clampedX = Math.max(6, Math.min(rect.width - 6, localX));
+    const clampedY = Math.max(6, Math.min(rect.height - 6, localY));
+
+    setHierarchyMenu({
+      x: clampedX,
+      y: clampedY,
+      context: 'scene',
+      objectId: null,
+    });
+  }, []);
 
   const startRenameObject = useCallback((id: string) => {
     const target = objects.find((object) => object.id === id);
@@ -746,63 +784,6 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     }
     cancelRenameObject();
   }, [cancelRenameObject, objects, renameDraft, renamingObjectId, setObjectName]);
-
-  const unparentSelectedObject = useCallback(() => {
-    if (!selectedObject?.parentId) return;
-    setObjectParent(selectedObject.id, null);
-    selectObject(selectedObject.id);
-  }, [selectObject, selectedObject, setObjectParent]);
-
-  const runHierarchyMenuAction = useCallback((actionId: ThirdHierarchyMenuActionId) => {
-    const targetObject = hierarchyMenuObject;
-    if (!targetObject) {
-      closeHierarchyMenu();
-      return;
-    }
-
-    const runOnSelectedObject = (fn: () => void) => {
-      if (selectionId === targetObject.id) {
-        fn();
-        return;
-      }
-      selectObject(targetObject.id);
-      window.requestAnimationFrame(fn);
-    };
-
-    switch (actionId) {
-      case 'hierarchy_rename':
-        if (editorMode === 'edit') {
-          startRenameObject(targetObject.id);
-        }
-        break;
-      case 'hierarchy_duplicate':
-        runOnSelectedObject(() => duplicateSelected());
-        break;
-      case 'hierarchy_delete':
-        runOnSelectedObject(() => deleteSelected());
-        break;
-      case 'hierarchy_unparent':
-        if (editorMode === 'edit' && targetObject.parentId) {
-          setObjectParent(targetObject.id, null);
-          selectObject(targetObject.id);
-        }
-        break;
-      default:
-        break;
-    }
-
-    closeHierarchyMenu();
-  }, [
-    closeHierarchyMenu,
-    deleteSelected,
-    duplicateSelected,
-    editorMode,
-    hierarchyMenuObject,
-    selectionId,
-    selectObject,
-    setObjectParent,
-    startRenameObject,
-  ]);
 
   const closeViewportMenu = useCallback(() => {
     setViewportMenu(null);
@@ -873,6 +854,32 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     });
   }, [setCameraState]);
 
+  const focusObjectInCamera = useCallback((objectId: string) => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    const entry = engine.entries.get(objectId);
+    if (!entry) return;
+
+    const worldPosition = new THREE.Vector3();
+    entry.mesh.updateMatrixWorld(true);
+    entry.mesh.getWorldPosition(worldPosition);
+
+    const cameraOffset = engine.camera.position.clone().sub(engine.orbit.target);
+    const currentDistance = cameraOffset.length();
+    const distance = withClampedDistance(currentDistance);
+    if (currentDistance < 0.0001) {
+      cameraOffset.set(0, distance * 0.6, distance);
+    } else if (Math.abs(currentDistance - distance) > 0.0001) {
+      cameraOffset.setLength(distance);
+    }
+
+    engine.orbit.target.copy(worldPosition);
+    engine.camera.position.copy(worldPosition).add(cameraOffset);
+    engine.camera.lookAt(engine.orbit.target);
+    engine.orbit.update();
+    saveCameraFromRuntime();
+  }, [saveCameraFromRuntime]);
+
   const applyCameraPreset = useCallback((preset: ThirdCameraPresetId) => {
     const engine = engineRef.current;
     if (!engine) return;
@@ -914,6 +921,141 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     engine.orbit.update();
     saveCameraFromRuntime();
   }, [saveCameraFromRuntime]);
+
+  const runHierarchyMenuAction = useCallback((actionId: ThirdHierarchyMenuActionId) => {
+    if (
+      actionId === 'hierarchy_add_cube'
+      || actionId === 'hierarchy_add_sphere'
+      || actionId === 'hierarchy_add_cylinder'
+      || actionId === 'hierarchy_add_plane'
+    ) {
+      const primitiveType = actionId.replace('hierarchy_add_', '') as ThirdPrimitiveType;
+      addPrimitive(primitiveType);
+      closeHierarchyMenu();
+      return;
+    }
+
+    const targetObject = hierarchyMenuObject;
+    if (!targetObject) {
+      closeHierarchyMenu();
+      return;
+    }
+
+    const runOnTargetObject = (fn: () => void) => {
+      if (selectionId === targetObject.id) {
+        fn();
+        return;
+      }
+      selectObject(targetObject.id);
+      window.requestAnimationFrame(fn);
+    };
+
+    switch (actionId) {
+      case 'hierarchy_focus':
+        runOnTargetObject(() => focusObjectInCamera(targetObject.id));
+        break;
+      case 'hierarchy_rename':
+        if (editorMode === 'edit') {
+          startRenameObject(targetObject.id);
+        }
+        break;
+      case 'hierarchy_duplicate':
+        runOnTargetObject(() => duplicateSelected());
+        break;
+      case 'hierarchy_delete':
+        runOnTargetObject(() => deleteSelected());
+        break;
+      case 'hierarchy_unparent':
+        if (editorMode === 'edit' && targetObject.parentId) {
+          setObjectParent(targetObject.id, null);
+          selectObject(targetObject.id);
+        }
+        break;
+      default:
+        break;
+    }
+
+    closeHierarchyMenu();
+  }, [
+    addPrimitive,
+    closeHierarchyMenu,
+    deleteSelected,
+    duplicateSelected,
+    editorMode,
+    focusObjectInCamera,
+    hierarchyMenuObject,
+    selectionId,
+    selectObject,
+    setObjectParent,
+    startRenameObject,
+  ]);
+
+  const runSceneToolbarAction = useCallback((actionId: ThirdSceneToolbarActionId) => {
+    switch (actionId) {
+      case 'scene_toggle_mode':
+        toggleMode();
+        break;
+      case 'transform_translate':
+        if (editorMode === 'edit') {
+          setTransformMode('translate');
+        }
+        break;
+      case 'transform_rotate':
+        if (editorMode === 'edit') {
+          setTransformMode('rotate');
+        }
+        break;
+      case 'transform_scale':
+        if (editorMode === 'edit') {
+          setTransformMode('scale');
+        }
+        break;
+      case 'scene_toggle_snap':
+        if (editorMode === 'edit') {
+          toggleSnap();
+        }
+        break;
+      case 'scene_toggle_grid':
+        toggleShowGrid();
+        break;
+      case 'scene_toggle_axes':
+        toggleShowAxes();
+        break;
+      case 'camera_toggle_projection': {
+        const nextProjection = projectionModeRef.current === 'orthographic'
+          ? 'perspective'
+          : 'orthographic';
+        setProjectionMode(nextProjection);
+        saveCameraFromRuntime();
+        break;
+      }
+      case 'camera_view_top':
+        applyCameraPreset('top');
+        break;
+      case 'camera_view_front':
+        applyCameraPreset('front');
+        break;
+      case 'camera_view_right':
+        applyCameraPreset('right');
+        break;
+      case 'camera_reset':
+        resetCameraView();
+        break;
+      default:
+        break;
+    }
+  }, [
+    applyCameraPreset,
+    editorMode,
+    resetCameraView,
+    saveCameraFromRuntime,
+    setProjectionMode,
+    setTransformMode,
+    toggleMode,
+    toggleShowAxes,
+    toggleShowGrid,
+    toggleSnap,
+  ]);
 
   const runViewportMenuAction = useCallback((actionId: ThirdViewportMenuActionId) => {
     switch (actionId) {
@@ -967,7 +1109,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         }
         break;
       case 'inspector_toggle_visibility':
-        setInspectorVisible((prev) => !prev);
+        setInspectorWindowVisible((prev) => !prev);
         break;
       case 'inspector_collapse_all':
         setAllInspectorSections(false);
@@ -2145,39 +2287,15 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   }, [closeHierarchyMenu, hierarchyMenu]);
 
   useEffect(() => {
-    if (!addObjectMenuOpen) return;
-    const onPointerDown = (event: PointerEvent) => {
-      const target = event.target as Node | null;
-      if (target && addObjectMenuRef.current?.contains(target)) return;
-      setAddObjectMenuOpen(false);
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setAddObjectMenuOpen(false);
-      }
-    };
-    window.addEventListener('pointerdown', onPointerDown);
-    window.addEventListener('keydown', onKeyDown);
-    return () => {
-      window.removeEventListener('pointerdown', onPointerDown);
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, [addObjectMenuOpen]);
-
-  useEffect(() => {
-    if (inspectorVisible && inspectorSections.objects) return;
-    setAddObjectMenuOpen(false);
-  }, [inspectorSections.objects, inspectorVisible]);
-
-  useEffect(() => {
     if (!hierarchyMenu) return;
-    if (inspectorVisible && inspectorSections.objects) return;
+    if (sceneWindowVisible) return;
     closeHierarchyMenu();
-  }, [closeHierarchyMenu, hierarchyMenu, inspectorSections.objects, inspectorVisible]);
+  }, [closeHierarchyMenu, hierarchyMenu, sceneWindowVisible]);
 
   useEffect(() => {
     if (!hierarchyMenu) return;
-    if (objects.some((object) => object.id === hierarchyMenu.objectId)) return;
+    if (hierarchyMenu.context !== 'object') return;
+    if (hierarchyMenu.objectId && objects.some((object) => object.id === hierarchyMenu.objectId)) return;
     closeHierarchyMenu();
   }, [closeHierarchyMenu, hierarchyMenu, objects]);
 
@@ -2195,9 +2313,19 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
   useEffect(() => {
     if (!renamingObjectId) return;
-    if (inspectorVisible && inspectorSections.objects) return;
+    if (sceneWindowVisible) return;
     cancelRenameObject();
-  }, [cancelRenameObject, inspectorSections.objects, inspectorVisible, renamingObjectId]);
+  }, [cancelRenameObject, renamingObjectId, sceneWindowVisible]);
+
+  useEffect(() => {
+    if (mobileUtilityPanel === 'scene' && !sceneWindowVisible && inspectorWindowVisible) {
+      setMobileUtilityPanel('inspector');
+      return;
+    }
+    if (mobileUtilityPanel === 'inspector' && !inspectorWindowVisible && sceneWindowVisible) {
+      setMobileUtilityPanel('scene');
+    }
+  }, [inspectorWindowVisible, mobileUtilityPanel, sceneWindowVisible]);
 
   useEffect(() => {
     if (!renamingObjectId) return;
@@ -2229,6 +2357,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
               canDropHere ? styles.objectRowDropHint : '',
               isDropTarget ? styles.objectRowDropTarget : '',
             ].join(' ').trim()}
+            data-hierarchy-node="true"
             style={{ paddingLeft: `${depth * 12}px` }}
             onDragOver={(event) => {
               if (!isEditMode || !hierarchyDragObjectId || !canSetHierarchyParent(hierarchyDragObjectId, node.object.id)) {
@@ -2296,8 +2425,9 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                   closeHierarchyMenu();
                 }}
                 onDoubleClick={() => {
-                  if (!isEditMode) return;
-                  startRenameObject(node.object.id);
+                  selectObject(node.object.id);
+                  closeHierarchyMenu();
+                  focusObjectInCamera(node.object.id);
                 }}
                 onContextMenu={(event) => {
                   event.preventDefault();
@@ -2340,6 +2470,375 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       );
     })
   );
+
+  const renderScenePanel = (options: { mobile?: boolean } = {}): React.ReactNode => (
+    <section className={`${styles.utilityPanel} ${options.mobile ? styles.mobilePanel : ''}`.trim()}>
+      <header className={styles.utilityHeader}>
+        <div className={styles.utilityHeaderMeta}>
+          <p className={styles.utilityTitle}>SCENE</p>
+          <span className={styles.utilitySubtle}>{`${objects.length} OBJECTS`}</span>
+        </div>
+        <button
+          type="button"
+          className={styles.toolBtn}
+          onClick={() => setSceneWindowVisible(false)}
+        >
+          HIDE
+        </button>
+      </header>
+      <div className={styles.utilityBody}>
+        <span className={styles.inlineStatus}>OBJECT ACTIONS VIA HIERARCHY CONTEXT MENU.</span>
+        <div
+          className={styles.objectList}
+          aria-label="THIRD object hierarchy"
+          tabIndex={0}
+          onContextMenu={(event) => {
+            const target = event.target as HTMLElement | null;
+            if (target?.closest('[data-hierarchy-node="true"]')) return;
+            event.preventDefault();
+            event.stopPropagation();
+            openHierarchyMenuForScene({
+              clientX: event.clientX,
+              clientY: event.clientY,
+            });
+          }}
+          onKeyDown={(event) => {
+            if (event.defaultPrevented) return;
+            if (event.target !== event.currentTarget) return;
+            if (event.key !== 'ContextMenu' && !(event.shiftKey && event.key === 'F10')) return;
+            event.preventDefault();
+            const rect = event.currentTarget.getBoundingClientRect();
+            openHierarchyMenuForScene({
+              clientX: rect.left + rect.width * 0.25,
+              clientY: rect.top + 28,
+            });
+          }}
+        >
+          <button
+            type="button"
+            className={[
+              styles.hierarchyRoot,
+              (isEditMode && hierarchyDragObjectId && canSetHierarchyParent(hierarchyDragObjectId, null))
+                ? styles.hierarchyRootDropHint
+                : '',
+              hierarchyDropTargetId === HIERARCHY_ROOT_DROP_TARGET ? styles.objectRowDropTarget : '',
+            ].join(' ').trim()}
+            aria-expanded={hierarchyExpanded}
+            onClick={() => setHierarchyExpanded((prev) => !prev)}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              openHierarchyMenuForScene({
+                clientX: event.clientX,
+                clientY: event.clientY,
+              });
+            }}
+            onKeyDown={(event) => {
+              if (event.key !== 'ContextMenu' && !(event.shiftKey && event.key === 'F10')) return;
+              event.preventDefault();
+              const rect = event.currentTarget.getBoundingClientRect();
+              openHierarchyMenuForScene({
+                clientX: rect.left + rect.width / 2,
+                clientY: rect.top + rect.height / 2,
+              });
+            }}
+            onDragOver={(event) => {
+              if (!isEditMode || !hierarchyDragObjectId || !canSetHierarchyParent(hierarchyDragObjectId, null)) {
+                if (hierarchyDropTargetId === HIERARCHY_ROOT_DROP_TARGET) {
+                  setHierarchyDropTargetId(null);
+                }
+                return;
+              }
+              event.preventDefault();
+              event.dataTransfer.dropEffect = 'move';
+              setHierarchyDropTargetId(HIERARCHY_ROOT_DROP_TARGET);
+            }}
+            onDragLeave={() => {
+              if (hierarchyDropTargetId === HIERARCHY_ROOT_DROP_TARGET) {
+                setHierarchyDropTargetId(null);
+              }
+            }}
+            onDrop={(event) => {
+              if (!isEditMode || !hierarchyDragObjectId || !canSetHierarchyParent(hierarchyDragObjectId, null)) return;
+              event.preventDefault();
+              dropHierarchyParent(null);
+              clearHierarchyDragState();
+            }}
+          >
+            SCENE ({objects.length})
+          </button>
+          {hierarchyExpanded ? (
+            <div className={styles.hierarchyChildren}>
+              {renderHierarchyNodes(hierarchyTree, 0)}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+
+  const renderInspectorPanel = (options: { mobile?: boolean } = {}): React.ReactNode => (
+    <section className={`${styles.utilityPanel} ${options.mobile ? styles.mobilePanel : ''}`.trim()}>
+      <header className={styles.utilityHeader}>
+        <div className={styles.utilityHeaderMeta}>
+          <p className={styles.utilityTitle}>INSPECTOR</p>
+          <span className={`${styles.editTag} ${isEditMode ? styles.editTagActive : ''}`.trim()}>
+            {isEditMode ? 'EDIT' : 'PLAY'}
+          </span>
+          <span className={styles.inspectorObjectName}>{selectedObject?.name ?? 'NO SELECTION'}</span>
+        </div>
+        <div className={styles.utilityHeaderActions}>
+          <button type="button" className={styles.toolBtn} onClick={() => setAllInspectorSections(false)}>
+            COLLAPSE
+          </button>
+          <button type="button" className={styles.toolBtn} onClick={() => setAllInspectorSections(true)}>
+            EXPAND
+          </button>
+          <button
+            type="button"
+            className={styles.toolBtn}
+            onClick={() => setInspectorWindowVisible(false)}
+          >
+            HIDE
+          </button>
+        </div>
+      </header>
+
+      <div className={styles.utilityBody}>
+        <section className={styles.inspectorSection}>
+          <button
+            type="button"
+            className={styles.inspectorSectionToggle}
+            onClick={() => toggleInspectorSection('transform')}
+            aria-expanded={inspectorSections.transform}
+          >
+            TRANSFORM
+          </button>
+          {inspectorSections.transform ? (
+            selectedObject ? (
+              isEditMode ? (
+                <div className={styles.inspectorGrid}>
+                  {INSPECTOR_GROUPS.map((group) => (
+                    <div key={group} className={styles.inspectorVectorRow}>
+                      <span className={styles.inspectorVectorLabel}>{inspectorGroupLabel(group)}</span>
+                      {INSPECTOR_AXES.map((axis) => {
+                        const fieldKey = toInspectorFieldKey(group, axis);
+                        return (
+                          <label key={fieldKey} className={styles.inspectorAxisField}>
+                            <span className={styles.inspectorAxisToken}>{axis.toUpperCase()}</span>
+                            <input
+                              type="number"
+                              className={styles.inspectorInput}
+                              step={inspectorStepByGroup(group)}
+                              value={inspectorDraft[fieldKey] ?? ''}
+                              inputMode="decimal"
+                              onFocus={() => onInspectorFieldFocus(group, axis)}
+                              onChange={(event) => onInspectorFieldChange(group, axis, event.target.value)}
+                              onBlur={() => onInspectorFieldBlur(group, axis)}
+                              aria-label={`${inspectorGroupLabel(group)} ${axis.toUpperCase()}`}
+                            />
+                          </label>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.inspectorEmpty}>TRANSFORM FIELDS ARE READ-ONLY WHILE IN PLAY MODE.</p>
+              )
+            ) : (
+              <p className={styles.inspectorEmpty}>SELECT AN OBJECT TO EDIT TRANSFORM.</p>
+            )
+          ) : null}
+        </section>
+
+        <section className={styles.inspectorSection}>
+          <button
+            type="button"
+            className={styles.inspectorSectionToggle}
+            onClick={() => toggleInspectorSection('camera')}
+            aria-expanded={inspectorSections.camera}
+          >
+            CAMERA
+          </button>
+          {inspectorSections.camera ? (
+            <div className={styles.inspectorSectionBody}>
+              <div className={styles.toolRow}>
+                <button
+                  type="button"
+                  className={styles.toolBtn}
+                  onClick={() => {
+                    const nextMode: ThirdProjectionMode = cameraState.projectionMode === 'orthographic'
+                      ? 'perspective'
+                      : 'orthographic';
+                    setProjectionMode(nextMode);
+                    saveCameraFromRuntime();
+                  }}
+                >
+                  PROJECTION: {projectionLabel(cameraState.projectionMode)}
+                </button>
+                <button type="button" className={styles.toolBtn} onClick={resetCameraView}>
+                  RESET
+                </button>
+              </div>
+              <div className={styles.toolRow}>
+                <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('top')}>
+                  TOP
+                </button>
+                <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('front')}>
+                  FRONT
+                </button>
+                <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('right')}>
+                  RIGHT
+                </button>
+              </div>
+              <span className={styles.inlineStatus}>RMB VIEWPORT MENU HAS THE SAME CAMERA ACTIONS.</span>
+            </div>
+          ) : null}
+        </section>
+
+        <section className={styles.inspectorSection}>
+          <button
+            type="button"
+            className={styles.inspectorSectionToggle}
+            onClick={() => toggleInspectorSection('animation')}
+            aria-expanded={inspectorSections.animation}
+          >
+            ANIMATION
+          </button>
+          {inspectorSections.animation ? (
+            <div className={styles.inspectorSectionBody}>
+              <div className={styles.toolRow}>
+                <button
+                  type="button"
+                  className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'none' ? styles.toolBtnActive : ''}`.trim()}
+                  onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'none')}
+                  disabled={!selectionId || !isEditMode}
+                >
+                  NONE
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'bounce' ? styles.toolBtnActive : ''}`.trim()}
+                  onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'bounce')}
+                  disabled={!selectionId || !isEditMode}
+                >
+                  BOUNCE
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'rotate' ? styles.toolBtnActive : ''}`.trim()}
+                  onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'rotate')}
+                  disabled={!selectionId || !isEditMode}
+                >
+                  ROTATE
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'pulse' ? styles.toolBtnActive : ''}`.trim()}
+                  onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'pulse')}
+                  disabled={!selectionId || !isEditMode}
+                >
+                  PULSE
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </section>
+
+        <section className={styles.inspectorSection}>
+          <button
+            type="button"
+            className={styles.inspectorSectionToggle}
+            onClick={() => toggleInspectorSection('physics')}
+            aria-expanded={inspectorSections.physics}
+          >
+            PHYSICS
+          </button>
+          {inspectorSections.physics ? (
+            <div className={styles.inspectorSectionBody}>
+              <button
+                type="button"
+                className={`${styles.objectPhysicsBtn} ${selectedObject?.physicsEnabled ? styles.objectPhysicsBtnActive : ''}`.trim()}
+                onClick={() => selectedObject && setObjectPhysicsEnabled(selectedObject.id, !selectedObject.physicsEnabled)}
+                disabled={!selectedObject}
+              >
+                {selectedObject?.physicsEnabled ? 'REMOVE PHYSICS' : 'ADD PHYSICS'}
+              </button>
+              <p className={styles.inspectorEmpty}>
+                PLAY GRAB/SIM REQUIRES OBJECT PHYSICS ON.
+              </p>
+            </div>
+          ) : null}
+        </section>
+
+        <section className={styles.inspectorSection}>
+          <button
+            type="button"
+            className={styles.inspectorSectionToggle}
+            onClick={() => toggleInspectorSection('material')}
+            aria-expanded={inspectorSections.material}
+          >
+            MATERIAL
+          </button>
+          {inspectorSections.material ? (
+            <div className={styles.inspectorSectionBody}>
+              <div className={styles.toolRow}>
+                {MATERIAL_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    className={`${styles.toolBtn} ${selectedObject?.material.preset === preset ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={() => selectionId && setObjectMaterialPreset(selectionId, preset)}
+                    disabled={!selectionId || !isEditMode}
+                  >
+                    {preset.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <div className={styles.materialSwatchRow} role="group" aria-label="Material color swatches">
+                {MATERIAL_SWATCHES.map((swatch) => (
+                  <button
+                    key={swatch}
+                    type="button"
+                    className={`${styles.materialSwatch} ${selectedObject?.material.color.toLowerCase() === swatch ? styles.materialSwatchActive : ''}`.trim()}
+                    style={{ backgroundColor: swatch }}
+                    onClick={() => selectionId && setObjectMaterialColor(selectionId, swatch)}
+                    disabled={!selectionId || !isEditMode}
+                    aria-label={`Set material color ${swatch}`}
+                    title={swatch}
+                  />
+                ))}
+              </div>
+              <div className={styles.toolRow}>
+                <label className={styles.materialColorLabel}>
+                  COLOR
+                  <input
+                    type="color"
+                    className={styles.materialColorInput}
+                    value={selectedObject?.material.color ?? '#00ff66'}
+                    onChange={(event) => selectionId && setObjectMaterialColor(selectionId, event.target.value)}
+                    disabled={!selectionId || !isEditMode}
+                    aria-label="Material custom color"
+                  />
+                </label>
+                <button
+                  type="button"
+                  className={`${styles.toolBtn} ${selectedObject?.material.wireframe ? styles.toolBtnActive : ''}`.trim()}
+                  onClick={() => selectedObject && setObjectMaterialWireframe(selectedObject.id, !selectedObject.material.wireframe)}
+                  disabled={!selectedObject || !isEditMode}
+                >
+                  WIREFRAME: {selectedObject?.material.wireframe ? 'ON' : 'OFF'}
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </section>
+      </div>
+    </section>
+  );
+
+  const anyUtilityWindowVisible = sceneWindowVisible || inspectorWindowVisible;
 
   return (
     <div
@@ -2416,456 +2915,103 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         </div>
       ) : null}
 
-      {!inspectorVisible ? (
+      {/* TODO(THIRD mobile): Make top scene toolbar collapsible to recover viewport space on smaller screens. */}
+      <div className={styles.sceneToolbar} role="toolbar" aria-label="THIRD scene toolbar">
+        {sceneToolbarItems.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className={`${styles.sceneToolbarBtn} ${item.active ? styles.sceneToolbarBtnActive : ''}`.trim()}
+            onClick={() => runSceneToolbarAction(item.id)}
+            disabled={item.disabled}
+            title={item.title}
+            aria-label={item.title}
+          >
+            <span className={styles.sceneToolbarIcon}>{item.icon}</span>
+          </button>
+        ))}
+      </div>
+
+      {!sceneWindowVisible ? (
         <button
           type="button"
-          className={styles.inspectorRevealBtn}
-          onClick={() => setInspectorVisible(true)}
+          className={`${styles.utilityRevealBtn} ${styles.sceneRevealBtn}`.trim()}
+          onClick={() => {
+            setSceneWindowVisible(true);
+            setMobileUtilityPanel('scene');
+          }}
+        >
+          SHOW SCENE
+        </button>
+      ) : null}
+
+      {!inspectorWindowVisible ? (
+        <button
+          type="button"
+          className={`${styles.utilityRevealBtn} ${styles.inspectorRevealBtn}`.trim()}
+          onClick={() => {
+            setInspectorWindowVisible(true);
+            setMobileUtilityPanel('inspector');
+          }}
         >
           SHOW INSPECTOR
         </button>
       ) : null}
 
-      {inspectorVisible ? (
-        <aside className={styles.inspector} aria-label="THIRD inspector">
-          <header className={styles.inspectorHeader}>
-            <div className={styles.inspectorHeaderTop}>
-              <p className={styles.inspectorTitle}>INSPECTOR</p>
-              <button
-                type="button"
-                className={styles.toolBtn}
-                onClick={() => setInspectorVisible(false)}
-              >
-                HIDE
-              </button>
-            </div>
-            <div className={styles.inspectorHeaderMeta}>
-              <span className={`${styles.editTag} ${isEditMode ? styles.editTagActive : ''}`.trim()}>
-                {isEditMode ? 'EDIT' : 'PLAY'}
-              </span>
-              <span className={styles.inspectorObjectName}>{selectedObject?.name ?? 'NO SELECTION'}</span>
-            </div>
-            <div className={styles.inspectorHeaderActions}>
-              <button type="button" className={styles.toolBtn} onClick={() => setAllInspectorSections(false)}>
-                COLLAPSE
-              </button>
-              <button type="button" className={styles.toolBtn} onClick={() => setAllInspectorSections(true)}>
-                EXPAND
-              </button>
-            </div>
-          </header>
+      {sceneWindowVisible ? (
+        <aside className={`${styles.sceneWindow} ${styles.desktopUtilityWindow}`.trim()} aria-label="THIRD scene window">
+          {renderScenePanel()}
+        </aside>
+      ) : null}
 
-          <section className={styles.inspectorSection}>
+      {inspectorWindowVisible ? (
+        <aside className={`${styles.inspectorWindow} ${styles.desktopUtilityWindow}`.trim()} aria-label="THIRD inspector window">
+          {renderInspectorPanel()}
+        </aside>
+      ) : null}
+
+      {anyUtilityWindowVisible ? (
+        <section className={styles.mobileUtilityDrawer} aria-label="THIRD mobile utility drawer">
+          <div className={styles.mobileUtilityTabs} role="tablist" aria-label="THIRD utility panels">
             <button
               type="button"
-              className={styles.inspectorSectionToggle}
-              onClick={() => toggleInspectorSection('transform')}
-              aria-expanded={inspectorSections.transform}
-            >
-              TRANSFORM
-            </button>
-            {inspectorSections.transform ? (
-              selectedObject ? (
-                isEditMode ? (
-                  <div className={styles.inspectorGrid}>
-                    {INSPECTOR_GROUPS.map((group) => (
-                      <div key={group} className={styles.inspectorVectorRow}>
-                        <span className={styles.inspectorVectorLabel}>{inspectorGroupLabel(group)}</span>
-                        {INSPECTOR_AXES.map((axis) => {
-                          const fieldKey = toInspectorFieldKey(group, axis);
-                          return (
-                            <label key={fieldKey} className={styles.inspectorAxisField}>
-                              <span className={styles.inspectorAxisToken}>{axis.toUpperCase()}</span>
-                              <input
-                                type="number"
-                                className={styles.inspectorInput}
-                                step={inspectorStepByGroup(group)}
-                                value={inspectorDraft[fieldKey] ?? ''}
-                                inputMode="decimal"
-                                onFocus={() => onInspectorFieldFocus(group, axis)}
-                                onChange={(event) => onInspectorFieldChange(group, axis, event.target.value)}
-                                onBlur={() => onInspectorFieldBlur(group, axis)}
-                                aria-label={`${inspectorGroupLabel(group)} ${axis.toUpperCase()}`}
-                              />
-                            </label>
-                          );
-                        })}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className={styles.inspectorEmpty}>TRANSFORM FIELDS ARE READ-ONLY WHILE IN PLAY MODE.</p>
-                )
-              ) : (
-                <p className={styles.inspectorEmpty}>SELECT AN OBJECT TO EDIT TRANSFORM.</p>
-              )
-            ) : null}
-          </section>
-
-          <section className={styles.inspectorSection}>
-            <button
-              type="button"
-              className={styles.inspectorSectionToggle}
-              onClick={() => toggleInspectorSection('scene')}
-              aria-expanded={inspectorSections.scene}
+              role="tab"
+              aria-selected={mobileUtilityPanel === 'scene'}
+              className={`${styles.mobileUtilityTab} ${mobileUtilityPanel === 'scene' ? styles.mobileUtilityTabActive : ''}`.trim()}
+              onClick={() => setMobileUtilityPanel('scene')}
+              disabled={!sceneWindowVisible}
             >
               SCENE
             </button>
-            {inspectorSections.scene ? (
-              <div className={styles.inspectorSectionBody}>
-                <div className={styles.toolRow}>
-                  <button
-                    type="button"
-                    className={`${styles.toolBtn} ${snapEnabled ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={toggleSnap}
-                    disabled={!isEditMode}
-                  >
-                    SNAP [G]: {snapEnabled ? 'ON' : 'OFF'}
-                  </button>
-                </div>
-                <div className={styles.toolRow}>
-                  <button
-                    type="button"
-                    className={`${styles.toolBtn} ${showGrid ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={toggleShowGrid}
-                  >
-                    GRID: {showGrid ? 'ON' : 'OFF'}
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.toolBtn} ${showAxes ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={toggleShowAxes}
-                  >
-                    AXES: {showAxes ? 'ON' : 'OFF'}
-                  </button>
-                </div>
-                <div className={styles.toolRow}>
-                  <button
-                    type="button"
-                    className={`${styles.toolBtn} ${transformMode === 'translate' ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={() => setTransformMode('translate')}
-                    disabled={!isEditMode}
-                  >
-                    MOVE [W]
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.toolBtn} ${transformMode === 'rotate' ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={() => setTransformMode('rotate')}
-                    disabled={!isEditMode}
-                  >
-                    ROTATE [R]
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.toolBtn} ${transformMode === 'scale' ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={() => setTransformMode('scale')}
-                    disabled={!isEditMode}
-                  >
-                    SCALE [S]
-                  </button>
-                </div>
-              </div>
-            ) : null}
-          </section>
-
-          <section className={styles.inspectorSection}>
             <button
               type="button"
-              className={styles.inspectorSectionToggle}
-              onClick={() => toggleInspectorSection('camera')}
-              aria-expanded={inspectorSections.camera}
+              role="tab"
+              aria-selected={mobileUtilityPanel === 'inspector'}
+              className={`${styles.mobileUtilityTab} ${mobileUtilityPanel === 'inspector' ? styles.mobileUtilityTabActive : ''}`.trim()}
+              onClick={() => setMobileUtilityPanel('inspector')}
+              disabled={!inspectorWindowVisible}
             >
-              CAMERA
+              INSPECTOR
             </button>
-            {inspectorSections.camera ? (
-              <div className={styles.inspectorSectionBody}>
-                <div className={styles.toolRow}>
-                  <button
-                    type="button"
-                    className={styles.toolBtn}
-                    onClick={() => {
-                      const nextMode: ThirdProjectionMode = cameraState.projectionMode === 'orthographic'
-                        ? 'perspective'
-                        : 'orthographic';
-                      setProjectionMode(nextMode);
-                      saveCameraFromRuntime();
-                    }}
-                  >
-                    PROJECTION: {projectionLabel(cameraState.projectionMode)}
-                  </button>
-                  <button type="button" className={styles.toolBtn} onClick={resetCameraView}>
-                    RESET
-                  </button>
-                </div>
-                <div className={styles.toolRow}>
-                  <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('top')}>
-                    TOP
-                  </button>
-                  <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('front')}>
-                    FRONT
-                  </button>
-                  <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('right')}>
-                    RIGHT
-                  </button>
-                </div>
-                <span className={styles.inlineStatus}>RMB VIEWPORT MENU HAS THE SAME CAMERA ACTIONS.</span>
-              </div>
-            ) : null}
-          </section>
-
-          <section className={styles.inspectorSection}>
-            <button
-              type="button"
-              className={styles.inspectorSectionToggle}
-              onClick={() => toggleInspectorSection('objects')}
-              aria-expanded={inspectorSections.objects}
-            >
-              OBJECTS
-            </button>
-            {inspectorSections.objects ? (
-              <div className={styles.inspectorSectionBody}>
-                <div className={styles.toolRow}>
-                  <div ref={addObjectMenuRef} className={styles.addObjectMenu}>
-                    <button
-                      type="button"
-                      className={`${styles.toolBtn} ${addObjectMenuOpen ? styles.toolBtnActive : ''}`.trim()}
-                      onClick={() => setAddObjectMenuOpen((prev) => !prev)}
-                      aria-expanded={addObjectMenuOpen}
-                      aria-haspopup="menu"
-                    >
-                      ADD OBJECT
-                    </button>
-                    {addObjectMenuOpen ? (
-                      <div className={styles.addObjectDropdown} role="menu" aria-label="Add primitive object">
-                        {PRIMITIVE_MENU_OPTIONS.map((option) => (
-                          <button
-                            key={option.type}
-                            type="button"
-                            className={styles.addObjectOption}
-                            onClick={() => {
-                              addPrimitive(option.type);
-                              setAddObjectMenuOpen(false);
-                            }}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
-                  <button type="button" className={styles.toolBtn} onClick={duplicateSelected} disabled={!selectionId}>DUP</button>
-                  <button type="button" className={styles.toolBtn} onClick={deleteSelected} disabled={!selectionId}>DEL</button>
-                </div>
-                <div className={styles.toolRow}>
-                  <button
-                    type="button"
-                    className={`${styles.toolBtn} ${renamingObjectId != null ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={() => selectionId && startRenameObject(selectionId)}
-                    disabled={!selectionId || !isEditMode}
-                  >
-                    RENAME [F2]
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.toolBtn}
-                    onClick={unparentSelectedObject}
-                    disabled={!isEditMode || !selectedObject?.parentId}
-                  >
-                    UNPARENT
-                  </button>
-                </div>
-                <span className={styles.inlineStatus}>
-                  {selectedObject
-                    ? `PARENT: ${selectedParent?.name ?? 'ROOT'}`
-                    : 'PARENT: NO SELECTION'}
-                </span>
-                <div className={styles.objectList} aria-label="THIRD object hierarchy">
-                  <button
-                    type="button"
-                    className={[
-                      styles.hierarchyRoot,
-                      (isEditMode && hierarchyDragObjectId && canSetHierarchyParent(hierarchyDragObjectId, null))
-                        ? styles.hierarchyRootDropHint
-                        : '',
-                      hierarchyDropTargetId === HIERARCHY_ROOT_DROP_TARGET ? styles.objectRowDropTarget : '',
-                    ].join(' ').trim()}
-                    aria-expanded={hierarchyExpanded}
-                    onClick={() => setHierarchyExpanded((prev) => !prev)}
-                    onDragOver={(event) => {
-                      if (!isEditMode || !hierarchyDragObjectId || !canSetHierarchyParent(hierarchyDragObjectId, null)) {
-                        if (hierarchyDropTargetId === HIERARCHY_ROOT_DROP_TARGET) {
-                          setHierarchyDropTargetId(null);
-                        }
-                        return;
-                      }
-                      event.preventDefault();
-                      event.dataTransfer.dropEffect = 'move';
-                      setHierarchyDropTargetId(HIERARCHY_ROOT_DROP_TARGET);
-                    }}
-                    onDragLeave={() => {
-                      if (hierarchyDropTargetId === HIERARCHY_ROOT_DROP_TARGET) {
-                        setHierarchyDropTargetId(null);
-                      }
-                    }}
-                    onDrop={(event) => {
-                      if (!isEditMode || !hierarchyDragObjectId || !canSetHierarchyParent(hierarchyDragObjectId, null)) return;
-                      event.preventDefault();
-                      dropHierarchyParent(null);
-                      clearHierarchyDragState();
-                    }}
-                  >
-                    SCENE ({objects.length})
-                  </button>
-                  {hierarchyExpanded ? (
-                    <div className={styles.hierarchyChildren}>
-                      {renderHierarchyNodes(hierarchyTree, 0)}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
-          </section>
-
-          <section className={styles.inspectorSection}>
-            <button
-              type="button"
-              className={styles.inspectorSectionToggle}
-              onClick={() => toggleInspectorSection('animation')}
-              aria-expanded={inspectorSections.animation}
-            >
-              ANIMATION
-            </button>
-            {inspectorSections.animation ? (
-              <div className={styles.inspectorSectionBody}>
-                <div className={styles.toolRow}>
-                  <button
-                    type="button"
-                    className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'none' ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'none')}
-                    disabled={!selectionId || !isEditMode}
-                  >
-                    NONE
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'bounce' ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'bounce')}
-                    disabled={!selectionId || !isEditMode}
-                  >
-                    BOUNCE
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'rotate' ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'rotate')}
-                    disabled={!selectionId || !isEditMode}
-                  >
-                    ROTATE
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'pulse' ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'pulse')}
-                    disabled={!selectionId || !isEditMode}
-                  >
-                    PULSE
-                  </button>
-                </div>
-              </div>
-            ) : null}
-          </section>
-
-          <section className={styles.inspectorSection}>
-            <button
-              type="button"
-              className={styles.inspectorSectionToggle}
-              onClick={() => toggleInspectorSection('physics')}
-              aria-expanded={inspectorSections.physics}
-            >
-              PHYSICS
-            </button>
-            {inspectorSections.physics ? (
-              <div className={styles.inspectorSectionBody}>
-                <button
-                  type="button"
-                  className={`${styles.objectPhysicsBtn} ${selectedObject?.physicsEnabled ? styles.objectPhysicsBtnActive : ''}`.trim()}
-                  onClick={() => selectedObject && setObjectPhysicsEnabled(selectedObject.id, !selectedObject.physicsEnabled)}
-                  disabled={!selectedObject}
-                >
-                  {selectedObject?.physicsEnabled ? 'REMOVE PHYSICS' : 'ADD PHYSICS'}
-                </button>
-                <p className={styles.inspectorEmpty}>
-                  PLAY GRAB/SIM REQUIRES GLOBAL PHYSICS + OBJECT PHYSICS BOTH ON.
-                </p>
-              </div>
-            ) : null}
-          </section>
-
-          <section className={styles.inspectorSection}>
-            <button
-              type="button"
-              className={styles.inspectorSectionToggle}
-              onClick={() => toggleInspectorSection('material')}
-              aria-expanded={inspectorSections.material}
-            >
-              MATERIAL
-            </button>
-            {inspectorSections.material ? (
-              <div className={styles.inspectorSectionBody}>
-                <div className={styles.toolRow}>
-                  {MATERIAL_PRESETS.map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      className={`${styles.toolBtn} ${selectedObject?.material.preset === preset ? styles.toolBtnActive : ''}`.trim()}
-                      onClick={() => selectionId && setObjectMaterialPreset(selectionId, preset)}
-                      disabled={!selectionId || !isEditMode}
-                    >
-                      {preset.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
-                <div className={styles.materialSwatchRow} role="group" aria-label="Material color swatches">
-                  {MATERIAL_SWATCHES.map((swatch) => (
-                    <button
-                      key={swatch}
-                      type="button"
-                      className={`${styles.materialSwatch} ${selectedObject?.material.color.toLowerCase() === swatch ? styles.materialSwatchActive : ''}`.trim()}
-                      style={{ backgroundColor: swatch }}
-                      onClick={() => selectionId && setObjectMaterialColor(selectionId, swatch)}
-                      disabled={!selectionId || !isEditMode}
-                      aria-label={`Set material color ${swatch}`}
-                      title={swatch}
-                    />
-                  ))}
-                </div>
-                <div className={styles.toolRow}>
-                  <label className={styles.materialColorLabel}>
-                    COLOR
-                    <input
-                      type="color"
-                      className={styles.materialColorInput}
-                      value={selectedObject?.material.color ?? '#00ff66'}
-                      onChange={(event) => selectionId && setObjectMaterialColor(selectionId, event.target.value)}
-                      disabled={!selectionId || !isEditMode}
-                      aria-label="Material custom color"
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    className={`${styles.toolBtn} ${selectedObject?.material.wireframe ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={() => selectedObject && setObjectMaterialWireframe(selectedObject.id, !selectedObject.material.wireframe)}
-                    disabled={!selectedObject || !isEditMode}
-                  >
-                    WIREFRAME: {selectedObject?.material.wireframe ? 'ON' : 'OFF'}
-                  </button>
-                </div>
-              </div>
-            ) : null}
-          </section>
-        </aside>
-      ) : null}
+          </div>
+          <div className={styles.mobileUtilityBody}>
+            {mobileUtilityPanel === 'scene' && sceneWindowVisible ? renderScenePanel({ mobile: true }) : null}
+            {mobileUtilityPanel === 'inspector' && inspectorWindowVisible ? renderInspectorPanel({ mobile: true }) : null}
+          </div>
+        </section>
+      ) : (
+        <button
+          type="button"
+          className={`${styles.utilityRevealBtn} ${styles.mobileRevealBtn}`.trim()}
+          onClick={() => {
+            setSceneWindowVisible(true);
+            setInspectorWindowVisible(true);
+            setMobileUtilityPanel('scene');
+          }}
+        >
+          SHOW WINDOWS
+        </button>
+      )}
     </div>
   );
 };
