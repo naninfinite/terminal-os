@@ -1540,3 +1540,33 @@ Open TODOs - CONNECT.EXE:
 Risks / Notes:
 - Backlog capture only; no runtime behavior changes were made in this pass.
 - This snapshot is intentionally explicit about both short-term polish TODOs and larger subsystem-depth follow-ups.
+
+---
+
+## Entry 74 - THIRD V1.4 Layout Split (Scene Window + External Toolbar + Mobile Drawer)
+
+Summary:
+- Refactored THIRD utility layout into two windows plus one external toolbar:
+  - left `SCENE` window for object hierarchy,
+  - right `INSPECTOR` window for object editing sections,
+  - top-left scene toolbar for mode/gizmo/snap/grid/axes.
+- Removed persistent object action rows from scene list UI:
+  - `ADD OBJECT`, `DUP`, `DEL`, `RENAME`, `UNPARENT` buttons no longer shown in scene window.
+- Kept object operations menu-driven:
+  - viewport right-click `ADD` actions for primitive creation,
+  - hierarchy row context menu for `RENAME`, `DUPLICATE`, `DELETE`, `UNPARENT`.
+- Added mobile utility fallback:
+  - single bottom drawer with `SCENE | INSPECTOR` switcher,
+  - default active tab is `SCENE`.
+- Added deterministic toolbar model/tests:
+  - `thirdSceneToolbar.ts`,
+  - `thirdSceneToolbar.test.ts`.
+
+Why it matters:
+- Keeps viewport interaction area clearer by moving frequent scene controls to compact toolbar.
+- Aligns workflow with DCC/editor mental model (project-style scene list + dedicated inspector).
+- Preserves keyboard and context-menu access while reducing persistent UI clutter.
+
+Risks / Notes:
+- Utility window visibility and mobile tab state are runtime-local only (not persisted).
+- Camera controls remain in inspector + viewport menu in this pass.

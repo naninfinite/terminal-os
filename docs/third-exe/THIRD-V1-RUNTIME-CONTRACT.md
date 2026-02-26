@@ -12,11 +12,14 @@ V1 includes:
 - primitive spawn/select/delete/duplicate,
 - `PLAY` and `EDIT` modes,
 - edit gizmo with snap,
-- Unity-style transform inspector sections (scene/camera/objects/transform/animation/physics/material),
+- split utility windows:
+  - left `SCENE` object-list window,
+  - right `INSPECTOR` editing window,
+- top-left scene toolbar for mode/gizmo/snap/grid/axes actions,
 - object hierarchy tree with drag/drop parenting, inline rename, and explicit unparent,
 - right-click viewport menu with grouped quick actions,
 - play-mode physics grab/drag,
-- global + per-object physics opt-in controls,
+- per-object physics opt-in controls,
 - per-object material selector (`matte`, `gloss`, `glass`, `neon`) + color + wireframe,
 - camera projection toggle (`perspective`/`orthographic`) + preset view actions (`top`/`front`/`right`) + reset,
 - local autosave persistence,
@@ -87,17 +90,22 @@ On first load / destructive reset:
 
 - Physics stepping is paused.
 - `TransformControls` enabled for selected object.
-- Right-docked inspector is hidden by default and revealable via `SHOW INSPECTOR`.
-- Inspector remains section-collapsible after reveal.
-- Full edit workflow lives inside inspector sections:
-  - `SCENE`, `CAMERA`, `OBJECTS`, `TRANSFORM`, `ANIMATION`, `PHYSICS`, `MATERIAL`.
-- `OBJECTS` section includes hierarchy UX controls:
+- `SCENE` and `INSPECTOR` windows are independent utility surfaces.
+- `SCENE` window contains hierarchy UX controls:
   - drag/drop reparenting,
   - root drop target for unparent-to-scene,
-  - explicit `UNPARENT` action for selected child,
   - inline rename (`double-click` or `F2`),
   - hierarchy row context menu (`right-click` / `ContextMenu` key / `Shift+F10`) for `RENAME`, `DUPLICATE`, `DELETE`, `UNPARENT`.
-- `SCENE` section includes explicit `GRID` and `AXES` visibility toggles.
+- `SCENE` window is list-first and menu-driven:
+  - no persistent `ADD`/`DUP`/`DEL` buttons in the list window.
+- Top-left scene toolbar owns quick scene controls:
+  - mode toggle,
+  - gizmo mode (`MOVE`/`ROTATE`/`SCALE`),
+  - snap toggle,
+  - grid toggle,
+  - axes toggle.
+- `INSPECTOR` window includes sections:
+  - `TRANSFORM`, `CAMERA`, `ANIMATION`, `PHYSICS`, `MATERIAL`.
 - Default inspector expansion starts fully collapsed (all sections closed).
 - Rotation fields display degrees and convert to radians in runtime state.
 - Valid numeric inspector edits apply live while typing.
@@ -142,6 +150,13 @@ On first load / destructive reset:
   - `INSPECTOR` (show/hide/collapse all/expand all).
 - If right-click raycast hits an object, that object is selected before menu actions.
 - Inspector `CAMERA` section mirrors projection + preset actions for keyboard-first access.
+
+### Mobile utility layout
+
+- Phone layout collapses utility surfaces into one bottom drawer.
+- Drawer includes local tab switcher: `SCENE` / `INSPECTOR`.
+- Default active drawer tab is `SCENE`.
+- Utility visibility/tab state is runtime-local only (not persisted).
 
 ## 6) Preset Animations
 
@@ -200,6 +215,8 @@ Added/updated tests:
 - `src/third/storage.test.ts`
 - `src/components/THIRD/transformInspector.test.ts`
 - `src/components/THIRD/thirdViewportMenu.test.ts`
+- `src/components/THIRD/thirdHierarchyMenu.test.ts`
+- `src/components/THIRD/thirdSceneToolbar.test.ts`
 - `src/components/StatusBar/subsystemContextMenu.test.ts`
 - `src/meos/menu/scopes.test.ts`
 
@@ -224,8 +241,6 @@ Validation baseline:
   - initial candidates: `cone`, `torus`, `capsule`, `pyramid`, `icosphere`.
 - Inspector ordering follow-up:
   - revisit section ordering after hierarchy/material/camera controls settle.
-- Scene toolbar follow-up:
-  - evaluate an icon-based top-left scene toolbar row (Unity/Blender style) as an alternative quick-action surface.
 - Mobile long-press context follow-up:
   - reduce tap/selection highlight interference on THIRD interactive surfaces so long-press can act as right-click more reliably,
   - evaluate broader site-wide highlight behavior as a separate pass to avoid accidental text-selection regressions.
