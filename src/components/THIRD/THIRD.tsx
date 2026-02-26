@@ -72,7 +72,7 @@ const MATERIAL_SWATCHES: ReadonlyArray<string> = [
 ];
 const INSPECTOR_GROUPS = ['position', 'rotation', 'scale'] as const;
 const INSPECTOR_AXES = ['x', 'y', 'z'] as const;
-const INSPECTOR_SECTION_IDS = ['camera', 'transform', 'animation', 'physics', 'material'] as const;
+const INSPECTOR_SECTION_IDS = ['transform', 'material', 'animation', 'physics', 'camera'] as const;
 
 type InspectorGroup = typeof INSPECTOR_GROUPS[number];
 type InspectorAxis = typeof INSPECTOR_AXES[number];
@@ -2729,43 +2729,61 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
           <button
             type="button"
             className={styles.inspectorSectionToggle}
-            onClick={() => toggleInspectorSection('camera')}
-            aria-expanded={inspectorSections.camera}
+            onClick={() => toggleInspectorSection('material')}
+            aria-expanded={inspectorSections.material}
           >
-            CAMERA
+            MATERIAL
           </button>
-          {inspectorSections.camera ? (
+          {inspectorSections.material ? (
             <div className={styles.inspectorSectionBody}>
-              <div className={`${styles.toolRow} ${styles.toolRowThirds}`.trim()}>
-                <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('top')}>
-                  TOP
-                </button>
-                <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('front')}>
-                  FRONT
-                </button>
-                <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('right')}>
-                  RIGHT
-                </button>
+              <div className={styles.toolRow}>
+                {MATERIAL_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    className={`${styles.toolBtn} ${selectedObject?.material.preset === preset ? styles.toolBtnActive : ''}`.trim()}
+                    onClick={() => selectionId && setObjectMaterialPreset(selectionId, preset)}
+                    disabled={!selectionId || !isEditMode}
+                  >
+                    {preset.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <div className={styles.materialSwatchRow} role="group" aria-label="Material color swatches">
+                {MATERIAL_SWATCHES.map((swatch) => (
+                  <button
+                    key={swatch}
+                    type="button"
+                    className={`${styles.materialSwatch} ${selectedObject?.material.color.toLowerCase() === swatch ? styles.materialSwatchActive : ''}`.trim()}
+                    style={{ backgroundColor: swatch }}
+                    onClick={() => selectionId && setObjectMaterialColor(selectionId, swatch)}
+                    disabled={!selectionId || !isEditMode}
+                    aria-label={`Set material color ${swatch}`}
+                    title={swatch}
+                  />
+                ))}
               </div>
               <div className={styles.toolRow}>
+                <label className={styles.materialColorLabel}>
+                  COLOR
+                  <input
+                    type="color"
+                    className={styles.materialColorInput}
+                    value={selectedObject?.material.color ?? '#00ff66'}
+                    onChange={(event) => selectionId && setObjectMaterialColor(selectionId, event.target.value)}
+                    disabled={!selectionId || !isEditMode}
+                    aria-label="Material custom color"
+                  />
+                </label>
                 <button
                   type="button"
-                  className={styles.toolBtn}
-                  onClick={() => {
-                    const nextMode: ThirdProjectionMode = cameraState.projectionMode === 'orthographic'
-                      ? 'perspective'
-                      : 'orthographic';
-                    setProjectionMode(nextMode);
-                    saveCameraFromRuntime();
-                  }}
+                  className={`${styles.toolBtn} ${selectedObject?.material.wireframe ? styles.toolBtnActive : ''}`.trim()}
+                  onClick={() => selectedObject && setObjectMaterialWireframe(selectedObject.id, !selectedObject.material.wireframe)}
+                  disabled={!selectedObject || !isEditMode}
                 >
-                  {projectionLabel(cameraState.projectionMode)}
-                </button>
-                <button type="button" className={styles.toolBtn} onClick={resetCameraView}>
-                  RESET
+                  WIREFRAME: {selectedObject?.material.wireframe ? 'ON' : 'OFF'}
                 </button>
               </div>
-              <span className={styles.inlineStatus}>RMB VIEWPORT MENU HAS THE SAME CAMERA ACTIONS.</span>
             </div>
           ) : null}
         </section>
@@ -2849,61 +2867,43 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
           <button
             type="button"
             className={styles.inspectorSectionToggle}
-            onClick={() => toggleInspectorSection('material')}
-            aria-expanded={inspectorSections.material}
+            onClick={() => toggleInspectorSection('camera')}
+            aria-expanded={inspectorSections.camera}
           >
-            MATERIAL
+            CAMERA
           </button>
-          {inspectorSections.material ? (
+          {inspectorSections.camera ? (
             <div className={styles.inspectorSectionBody}>
-              <div className={styles.toolRow}>
-                {MATERIAL_PRESETS.map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    className={`${styles.toolBtn} ${selectedObject?.material.preset === preset ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={() => selectionId && setObjectMaterialPreset(selectionId, preset)}
-                    disabled={!selectionId || !isEditMode}
-                  >
-                    {preset.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-              <div className={styles.materialSwatchRow} role="group" aria-label="Material color swatches">
-                {MATERIAL_SWATCHES.map((swatch) => (
-                  <button
-                    key={swatch}
-                    type="button"
-                    className={`${styles.materialSwatch} ${selectedObject?.material.color.toLowerCase() === swatch ? styles.materialSwatchActive : ''}`.trim()}
-                    style={{ backgroundColor: swatch }}
-                    onClick={() => selectionId && setObjectMaterialColor(selectionId, swatch)}
-                    disabled={!selectionId || !isEditMode}
-                    aria-label={`Set material color ${swatch}`}
-                    title={swatch}
-                  />
-                ))}
-              </div>
-              <div className={styles.toolRow}>
-                <label className={styles.materialColorLabel}>
-                  COLOR
-                  <input
-                    type="color"
-                    className={styles.materialColorInput}
-                    value={selectedObject?.material.color ?? '#00ff66'}
-                    onChange={(event) => selectionId && setObjectMaterialColor(selectionId, event.target.value)}
-                    disabled={!selectionId || !isEditMode}
-                    aria-label="Material custom color"
-                  />
-                </label>
-                <button
-                  type="button"
-                  className={`${styles.toolBtn} ${selectedObject?.material.wireframe ? styles.toolBtnActive : ''}`.trim()}
-                  onClick={() => selectedObject && setObjectMaterialWireframe(selectedObject.id, !selectedObject.material.wireframe)}
-                  disabled={!selectedObject || !isEditMode}
-                >
-                  WIREFRAME: {selectedObject?.material.wireframe ? 'ON' : 'OFF'}
+              <div className={`${styles.toolRow} ${styles.toolRowThirds}`.trim()}>
+                <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('top')}>
+                  TOP
+                </button>
+                <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('front')}>
+                  FRONT
+                </button>
+                <button type="button" className={styles.toolBtn} onClick={() => applyCameraPreset('right')}>
+                  RIGHT
                 </button>
               </div>
+              <div className={styles.toolRow}>
+                <button
+                  type="button"
+                  className={styles.toolBtn}
+                  onClick={() => {
+                    const nextMode: ThirdProjectionMode = cameraState.projectionMode === 'orthographic'
+                      ? 'perspective'
+                      : 'orthographic';
+                    setProjectionMode(nextMode);
+                    saveCameraFromRuntime();
+                  }}
+                >
+                  {projectionLabel(cameraState.projectionMode)}
+                </button>
+                <button type="button" className={styles.toolBtn} onClick={resetCameraView}>
+                  RESET
+                </button>
+              </div>
+              <span className={styles.inlineStatus}>RMB VIEWPORT MENU HAS THE SAME CAMERA ACTIONS.</span>
             </div>
           ) : null}
         </section>
