@@ -6,7 +6,7 @@ export default defineConfig({
   server: { 
     host: true, 
     allowedHosts: [
-      "excluded-nutrition-clothing-scroll.trycloudflare.com",
+      "adjacent-ins-infectious-since.trycloudflare.com",
     ],
     port: 5173,
     strictPort: true
