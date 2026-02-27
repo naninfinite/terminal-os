@@ -73,10 +73,6 @@ const isZoomBlockedTarget = (target: EventTarget | null): boolean => {
   return Boolean(target.closest(PANEL_ZOOM_BLOCK_SELECTOR));
 };
 
-const supportsPointerEvents = (): boolean => (
-  typeof window !== 'undefined' && 'PointerEvent' in window
-);
-
 /**
  * Small panel frame with optional behavior flags:
  * - `stretchBody`: child fills available panel body dimensions.
@@ -235,7 +231,6 @@ const Panel: React.FC<PanelProps> = ({
 
   const onZoomTouchStart: React.TouchEventHandler<HTMLDivElement> = (event) => {
     if (!enableMobilePinchZoom) return;
-    if (supportsPointerEvents()) return;
     if (isZoomBlockedTarget(event.target)) return;
     if (event.touches.length < 2) {
       touchPinchRef.current = null;
@@ -263,7 +258,6 @@ const Panel: React.FC<PanelProps> = ({
 
   const onZoomTouchMove: React.TouchEventHandler<HTMLDivElement> = (event) => {
     if (!enableMobilePinchZoom) return;
-    if (supportsPointerEvents()) return;
     const pinchState = touchPinchRef.current;
     if (!pinchState) return;
     if (event.touches.length < 2) {
