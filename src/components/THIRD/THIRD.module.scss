@@ -212,8 +212,18 @@ button.objectItem,
 }
 
 .sceneToolbarIcon {
-  font-size: 9px;
-  letter-spacing: 0.03em;
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sceneToolbarIcon svg {
+  width: 13px;
+  height: 13px;
+  display: block;
+  vector-effect: non-scaling-stroke;
 }
 
 .utilityRevealBtn {

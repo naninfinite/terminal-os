@@ -21,7 +21,7 @@ export type ThirdSceneToolbarActionId =
 export type ThirdSceneToolbarItem = {
   id: ThirdSceneToolbarActionId;
   group: 'transform' | 'scene' | 'camera';
-  icon: string;
+  icon: ThirdSceneToolbarActionId;
   label: string;
   title: string;
   active: boolean;
@@ -42,12 +42,11 @@ export const buildThirdSceneToolbar = (
 ): ThirdSceneToolbarItem[] => {
   const isEditMode = args.mode === 'edit';
 
-  // TODO(THIRD toolbar): Replace two-letter placeholder glyphs with real SVG icons.
   return [
     {
       id: 'scene_toggle_mode',
       group: 'transform',
-      icon: 'MD',
+      icon: 'scene_toggle_mode',
       label: 'MODE',
       title: `MODE | ${isEditMode ? 'EDIT' : 'PLAY'}`,
       active: isEditMode,
@@ -56,7 +55,7 @@ export const buildThirdSceneToolbar = (
     {
       id: 'transform_translate',
       group: 'transform',
-      icon: 'MV',
+      icon: 'transform_translate',
       label: 'MOVE',
       title: 'MOVE | W',
       active: args.transformMode === 'translate',
@@ -65,7 +64,7 @@ export const buildThirdSceneToolbar = (
     {
       id: 'transform_rotate',
       group: 'transform',
-      icon: 'RT',
+      icon: 'transform_rotate',
       label: 'ROTATE',
       title: 'ROTATE | R',
       active: args.transformMode === 'rotate',
@@ -74,7 +73,7 @@ export const buildThirdSceneToolbar = (
     {
       id: 'transform_scale',
       group: 'transform',
-      icon: 'SC',
+      icon: 'transform_scale',
       label: 'SCALE',
       title: 'SCALE | S',
       active: args.transformMode === 'scale',
@@ -83,7 +82,7 @@ export const buildThirdSceneToolbar = (
     {
       id: 'scene_toggle_snap',
       group: 'transform',
-      icon: 'SN',
+      icon: 'scene_toggle_snap',
       label: 'SNAP',
       title: `SNAP | ${args.snapEnabled ? 'ON' : 'OFF'} | G`,
       active: args.snapEnabled,
@@ -92,7 +91,7 @@ export const buildThirdSceneToolbar = (
     {
       id: 'scene_toggle_grid',
       group: 'scene',
-      icon: 'GD',
+      icon: 'scene_toggle_grid',
       label: 'GRID',
       title: `GRID | ${args.showGrid ? 'ON' : 'OFF'}`,
       active: args.showGrid,
@@ -101,7 +100,7 @@ export const buildThirdSceneToolbar = (
     {
       id: 'scene_toggle_axes',
       group: 'scene',
-      icon: 'AX',
+      icon: 'scene_toggle_axes',
       label: 'AXES',
       title: `AXES | ${args.showAxes ? 'ON' : 'OFF'}`,
       active: args.showAxes,
@@ -110,7 +109,7 @@ export const buildThirdSceneToolbar = (
     {
       id: 'camera_toggle_projection',
       group: 'camera',
-      icon: 'PJ',
+      icon: 'camera_toggle_projection',
       label: 'PROJ',
       title: `PROJECTION | ${args.projectionMode === 'orthographic' ? 'ORTHOGRAPHIC' : 'PERSPECTIVE'}`,
       active: args.projectionMode === 'orthographic',
@@ -119,7 +118,7 @@ export const buildThirdSceneToolbar = (
     {
       id: 'camera_view_top',
       group: 'camera',
-      icon: 'TP',
+      icon: 'camera_view_top',
       label: 'TOP',
       title: 'VIEW | TOP',
       active: false,
@@ -128,7 +127,7 @@ export const buildThirdSceneToolbar = (
     {
       id: 'camera_view_front',
       group: 'camera',
-      icon: 'FR',
+      icon: 'camera_view_front',
       label: 'FRONT',
       title: 'VIEW | FRONT',
       active: false,
@@ -137,7 +136,7 @@ export const buildThirdSceneToolbar = (
     {
       id: 'camera_view_right',
       group: 'camera',
-      icon: 'RG',
+      icon: 'camera_view_right',
       label: 'RIGHT',
       title: 'VIEW | RIGHT',
       active: false,
@@ -146,7 +145,7 @@ export const buildThirdSceneToolbar = (
     {
       id: 'camera_reset',
       group: 'camera',
-      icon: 'RS',
+      icon: 'camera_reset',
       label: 'RESET',
       title: 'VIEW | RESET',
       active: false,

@@ -40,6 +40,20 @@ describe('thirdSceneToolbar model', () => {
       'camera',
       'camera',
     ]);
+    expect(items.map((item) => item.icon)).toEqual([
+      'scene_toggle_mode',
+      'transform_translate',
+      'transform_rotate',
+      'transform_scale',
+      'scene_toggle_snap',
+      'scene_toggle_grid',
+      'scene_toggle_axes',
+      'camera_toggle_projection',
+      'camera_view_top',
+      'camera_view_front',
+      'camera_view_right',
+      'camera_reset',
+    ]);
   });
 
   it('disables transform and snap in play mode while keeping mode/grid/axes/camera enabled', () => {

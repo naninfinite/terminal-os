@@ -52,6 +52,12 @@ import {
   getThirdThemePalette,
   resolveThirdMaterialColorHex,
 } from './thirdTheme';
+import {
+  getThirdUtilityVisibilitySession,
+  resolveInitialThirdUtilityVisibility,
+  setThirdUtilityVisibilitySession,
+  type ThirdUtilityVisibility,
+} from './thirdMobileUtilityVisibility';
 import { useThirdRuntime } from '../../third/ThirdProvider';
 import {
   THIRD_DEFAULT_CAMERA_STATE,
@@ -431,6 +437,149 @@ const compareHierarchyObjects = (a: ThirdSceneObject, b: ThirdSceneObject): numb
   a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true })
 );
 
+const renderToolbarSvg = (content: React.ReactNode): React.ReactElement => (
+  <svg
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.5}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    focusable="false"
+  >
+    {content}
+  </svg>
+);
+
+const unreachableToolbarIcon = (iconId: never): never => {
+  throw new Error(`Unhandled THIRD scene toolbar icon: ${iconId}`);
+};
+
+const renderSceneToolbarIcon = (iconId: ThirdSceneToolbarActionId): React.ReactElement => {
+  switch (iconId) {
+    case 'scene_toggle_mode':
+      return renderToolbarSvg(
+        <>
+          <rect x="2.5" y="3" width="11" height="10" rx="1.5" />
+          <path d="M8 3V13" />
+          <path d="M4.5 6.5H6.5" />
+          <path d="M9.5 9.5H11.5" />
+        </>
+      );
+    case 'transform_translate':
+      return renderToolbarSvg(
+        <>
+          <path d="M8 2.5V13.5" />
+          <path d="M2.5 8H13.5" />
+          <path d="M8 2.5L6.7 3.8" />
+          <path d="M8 2.5L9.3 3.8" />
+          <path d="M8 13.5L6.7 12.2" />
+          <path d="M8 13.5L9.3 12.2" />
+          <path d="M2.5 8L3.8 6.7" />
+          <path d="M2.5 8L3.8 9.3" />
+          <path d="M13.5 8L12.2 6.7" />
+          <path d="M13.5 8L12.2 9.3" />
+        </>
+      );
+    case 'transform_rotate':
+      return renderToolbarSvg(
+        <>
+          <path d="M12.5 8A4.5 4.5 0 1 1 8 3.5" />
+          <path d="M9.5 2.5H12.5V5.5" />
+        </>
+      );
+    case 'transform_scale':
+      return renderToolbarSvg(
+        <>
+          <path d="M3 13L13 3" />
+          <path d="M10 3H13V6" />
+          <path d="M3 10V13H6" />
+          <rect x="4" y="4" width="3" height="3" rx="0.5" />
+          <rect x="9" y="9" width="3" height="3" rx="0.5" />
+        </>
+      );
+    case 'scene_toggle_snap':
+      return renderToolbarSvg(
+        <>
+          <path d="M5 3V8A3 3 0 0 0 11 8V3" />
+          <path d="M4 3H6" />
+          <path d="M10 3H12" />
+          <path d="M8 10.5V13.5" />
+          <path d="M6.5 12H9.5" />
+        </>
+      );
+    case 'scene_toggle_grid':
+      return renderToolbarSvg(
+        <>
+          <rect x="3" y="3" width="10" height="10" rx="1" />
+          <path d="M6.5 3V13" />
+          <path d="M9.5 3V13" />
+          <path d="M3 6.5H13" />
+          <path d="M3 9.5H13" />
+        </>
+      );
+    case 'scene_toggle_axes':
+      return renderToolbarSvg(
+        <>
+          <path d="M3 13V4" />
+          <path d="M3 13H12" />
+          <path d="M3 13L10 6" />
+          <path d="M3 4L2 5" />
+          <path d="M3 4L4 5" />
+          <path d="M12 13L11 12" />
+          <path d="M12 13L11 14" />
+          <path d="M10 6L8.8 6.4" />
+          <path d="M10 6L9.6 7.2" />
+        </>
+      );
+    case 'camera_toggle_projection':
+      return renderToolbarSvg(
+        <>
+          <rect x="2.5" y="4" width="5" height="8" rx="1" />
+          <path d="M7.5 5.5L12.5 4.5V11.5L7.5 10.5Z" />
+          <path d="M4 7.5H6" />
+        </>
+      );
+    case 'camera_view_top':
+      return renderToolbarSvg(
+        <>
+          <rect x="4" y="4" width="8" height="8" rx="1" />
+          <path d="M8 2.5V4" />
+          <path d="M8 2.5L6.8 3.7" />
+          <path d="M8 2.5L9.2 3.7" />
+        </>
+      );
+    case 'camera_view_front':
+      return renderToolbarSvg(
+        <>
+          <rect x="4" y="4" width="8" height="8" rx="1" />
+          <path d="M2.5 8H4" />
+          <path d="M2.5 8L3.7 6.8" />
+          <path d="M2.5 8L3.7 9.2" />
+        </>
+      );
+    case 'camera_view_right':
+      return renderToolbarSvg(
+        <>
+          <rect x="4" y="4" width="8" height="8" rx="1" />
+          <path d="M13.5 8H12" />
+          <path d="M13.5 8L12.3 6.8" />
+          <path d="M13.5 8L12.3 9.2" />
+        </>
+      );
+    case 'camera_reset':
+      return renderToolbarSvg(
+        <>
+          <circle cx="8" cy="8" r="2" />
+          <path d="M12.5 7A4.5 4.5 0 1 1 11.8 10.8" />
+          <path d="M11.5 4.2H13.5V6.2" />
+        </>
+      );
+  }
+  return unreachableToolbarIcon(iconId);
+};
+
 type ThirdProps = {
   mode?: 'panel' | 'fullscreen';
 };
@@ -543,6 +692,13 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const hierarchyMenuRef = useRef<HTMLDivElement | null>(null);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
   const projectionModeRef = useRef<ThirdProjectionMode>(cameraState.projectionMode);
+  const initialUtilityVisibility = useMemo<ThirdUtilityVisibility>(
+    () => resolveInitialThirdUtilityVisibility(
+      typeof window === 'undefined' ? null : window.innerWidth,
+      getThirdUtilityVisibilitySession()
+    ),
+    []
+  );
 
   const selectedObject = useMemo(
     () => objects.find((object) => object.id === selectionId) ?? null,
@@ -552,8 +708,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const [inspectorSections, setInspectorSections] = useState<InspectorSectionState>(
     () => createInitialThirdInspectorSectionState()
   );
-  const [sceneWindowVisible, setSceneWindowVisible] = useState(true);
-  const [inspectorWindowVisible, setInspectorWindowVisible] = useState(true);
+  const [sceneWindowVisible, setSceneWindowVisible] = useState(initialUtilityVisibility.sceneWindowVisible);
+  const [inspectorWindowVisible, setInspectorWindowVisible] = useState(initialUtilityVisibility.inspectorWindowVisible);
   const [mobileUtilityPanel, setMobileUtilityPanel] = useState<MobileUtilityPanel>('scene');
   const [viewportMenu, setViewportMenu] = useState<ViewportMenuState | null>(null);
   const [hierarchyMenu, setHierarchyMenu] = useState<HierarchyMenuState | null>(null);
@@ -2706,6 +2862,13 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   }, [cancelRenameObject, renamingObjectId, sceneWindowVisible]);
 
   useEffect(() => {
+    setThirdUtilityVisibilitySession({
+      sceneWindowVisible,
+      inspectorWindowVisible,
+    });
+  }, [inspectorWindowVisible, sceneWindowVisible]);
+
+  useEffect(() => {
     if (mobileUtilityPanel === 'scene' && !sceneWindowVisible && inspectorWindowVisible) {
       setMobileUtilityPanel('inspector');
       return;
@@ -3423,7 +3586,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
                 aria-pressed={item.active}
                 data-toolbar-group={item.group}
               >
-                <span className={styles.sceneToolbarIcon}>{item.icon}</span>
+                <span className={styles.sceneToolbarIcon}>{renderSceneToolbarIcon(item.icon)}</span>
               </button>
             </React.Fragment>
           );
