@@ -4,6 +4,7 @@
  * composes app panels and passes panel-specific layout flags.
  */
 import React, { useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import Panel from '../Panel/Panel';
 import ME from '../ME/ME';
 import YOU from '../YOU/YOU';
@@ -31,7 +32,10 @@ const Desktop: React.FC = () => {
     );
   }, []);
   const activatePanel = useCallback((scope: DesktopPanelScope) => {
-    setActiveZoomPanel(scope);
+    // Ensure active-panel zoom state is available immediately for multi-touch starts.
+    flushSync(() => {
+      setActiveZoomPanel(scope);
+    });
     setActiveScope(scope === 'me' ? null : scope);
   }, [setActiveScope]);
 
