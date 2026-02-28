@@ -72,7 +72,9 @@ import {
 } from './thirdUtilityPanelSession';
 import {
   clampThirdMobileDrawerDragOffset,
+  resolveThirdMobileDrawerOpenDragDistance,
   shouldCloseThirdMobileDrawer,
+  shouldOpenThirdMobileDrawer,
 } from './thirdMobileDrawerGesture';
 import { useThirdRuntime } from '../../third/ThirdProvider';
 import {
@@ -161,6 +163,7 @@ type HierarchyTreeNode = {
 type HierarchyDropTarget = string | typeof HIERARCHY_ROOT_DROP_TARGET | null;
 
 type MobileDrawerDragState = {
+  mode: 'open' | 'close';
   pointerId: number;
   startY: number;
 };
@@ -937,10 +940,12 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     setMobileToolbarExpanded((prev) => !prev);
   }, []);
 
-  const onMobileDrawerHandlePointerDown = useCallback((
-    event: React.PointerEvent<HTMLButtonElement>
+  const beginMobileDrawerDrag = useCallback((
+    event: React.PointerEvent<HTMLButtonElement>,
+    mode: 'open' | 'close'
   ) => {
     mobileDrawerDragStateRef.current = {
+      mode,
       pointerId: event.pointerId,
       startY: event.clientY,
     };
@@ -950,14 +955,24 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     event.currentTarget.setPointerCapture(event.pointerId);
   }, []);
 
+  const onMobileDrawerHandlePointerDown = useCallback((
+    event: React.PointerEvent<HTMLButtonElement>,
+    mode: 'open' | 'close'
+  ) => {
+    beginMobileDrawerDrag(event, mode);
+  }, [beginMobileDrawerDrag]);
+
   const onMobileDrawerHandlePointerMove = useCallback((
     event: React.PointerEvent<HTMLButtonElement>
   ) => {
     const dragState = mobileDrawerDragStateRef.current;
     if (!dragState || dragState.pointerId !== event.pointerId) return;
 
-    const dragOffsetY = clampThirdMobileDrawerDragOffset(event.clientY - dragState.startY);
-    if (dragOffsetY > 3) {
+    const rawDeltaY = event.clientY - dragState.startY;
+    const dragOffsetY = dragState.mode === 'open'
+      ? -resolveThirdMobileDrawerOpenDragDistance(rawDeltaY)
+      : clampThirdMobileDrawerDragOffset(rawDeltaY);
+    if (Math.abs(dragOffsetY) > 3) {
       suppressMobileDrawerHandleClickRef.current = true;
     }
     setMobileDrawerDragOffsetY(dragOffsetY);
@@ -978,29 +993,38 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       return;
     }
 
-    const dragOffsetY = clampThirdMobileDrawerDragOffset(event.clientY - dragState.startY);
-    const drawerHeight = mobileUtilityDrawerRef.current?.getBoundingClientRect().height ?? 0;
-    const shouldClose = shouldCloseThirdMobileDrawer({
-      dragOffsetY,
-      sheetHeight: drawerHeight,
-    });
+    const rawDeltaY = event.clientY - dragState.startY;
+    const shouldComplete = dragState.mode === 'open'
+      ? shouldOpenThirdMobileDrawer(rawDeltaY)
+      : shouldCloseThirdMobileDrawer({
+        dragOffsetY: clampThirdMobileDrawerDragOffset(rawDeltaY),
+        sheetHeight: mobileUtilityDrawerRef.current?.getBoundingClientRect().height ?? 0,
+      });
 
     resetMobileDrawerDrag();
-    if (shouldClose) {
+    if (!shouldComplete) return;
+    if (dragState.mode === 'open') {
+      openUtilityPanel();
+    } else {
       hideUtilityPanel();
     }
-  }, [hideUtilityPanel, resetMobileDrawerDrag]);
+  }, [hideUtilityPanel, openUtilityPanel, resetMobileDrawerDrag]);
 
   const onMobileDrawerHandleClick = useCallback((
-    event: React.MouseEvent<HTMLButtonElement>
+    event: React.MouseEvent<HTMLButtonElement>,
+    mode: 'open' | 'close'
   ) => {
     if (suppressMobileDrawerHandleClickRef.current) {
       suppressMobileDrawerHandleClickRef.current = false;
       event.preventDefault();
       return;
     }
+    if (mode === 'open') {
+      openUtilityPanel();
+      return;
+    }
     hideUtilityPanel();
-  }, [hideUtilityPanel]);
+  }, [hideUtilityPanel, openUtilityPanel]);
 
   const activateUtilityTab = useCallback((tabId: ThirdUtilityTabId) => {
     setActiveUtilityTab(resolveNextVisibleThirdUtilityTab({ currentTab: tabId }));
@@ -3638,8 +3662,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
           <button
             type="button"
             className={styles.mobileSheetHandleBtn}
-            onClick={onMobileDrawerHandleClick}
-            onPointerDown={onMobileDrawerHandlePointerDown}
+            onClick={(event) => onMobileDrawerHandleClick(event, 'close')}
+            onPointerDown={(event) => onMobileDrawerHandlePointerDown(event, 'close')}
             onPointerMove={onMobileDrawerHandlePointerMove}
             onPointerUp={onMobileDrawerHandlePointerUpOrCancel}
             onPointerCancel={onMobileDrawerHandlePointerUpOrCancel}
@@ -3840,13 +3864,30 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         </div>
       ) : null}
 
-      {!utilityPanelVisible ? (
+      {!utilityPanelVisible && !mobileLayout ? (
         <button
           type="button"
-          className={`${styles.utilityRevealBtn} ${mobileLayout ? styles.mobileRevealBtn : styles.panelRevealBtn}`.trim()}
+          className={`${styles.utilityRevealBtn} ${styles.panelRevealBtn}`.trim()}
           onClick={openUtilityPanel}
         >
           SHOW PANEL
+        </button>
+      ) : null}
+
+      {!utilityPanelVisible && mobileLayout ? (
+        <button
+          type="button"
+          className={`${styles.mobileDrawerPeek} ${mobileDrawerDragging ? styles.mobileDrawerPeekDragging : ''}`.trim()}
+          style={{ transform: `translateY(${mobileDrawerDragOffsetY}px)` }}
+          onClick={(event) => onMobileDrawerHandleClick(event, 'open')}
+          onPointerDown={(event) => onMobileDrawerHandlePointerDown(event, 'open')}
+          onPointerMove={onMobileDrawerHandlePointerMove}
+          onPointerUp={onMobileDrawerHandlePointerUpOrCancel}
+          onPointerCancel={onMobileDrawerHandlePointerUpOrCancel}
+          aria-label="Show panel"
+          title="Show panel"
+        >
+          <span className={styles.mobileSheetHandle} aria-hidden="true" />
         </button>
       ) : null}
 

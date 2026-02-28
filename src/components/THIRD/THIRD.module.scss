@@ -311,6 +311,10 @@ button.objectItem,
   touch-action: none;
 }
 
+.mobileDrawerPeek {
+  display: none;
+}
+
 .mobileSheetHandle {
   width: 42px;
   height: 4px;
@@ -1011,17 +1015,24 @@ button.objectItem,
     transition: none;
   }
 
-  .mobileRevealBtn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    left: 12px;
-    right: 12px;
-    bottom: max(8px, env(safe-area-inset-bottom, 0px));
-    top: auto;
-    min-height: 28px;
-    border-radius: 999px;
-    box-shadow: 0 8px 20px rgb(0 0 0 / 18%);
+  .mobileDrawerPeek {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 3;
+    display: grid;
+    justify-items: center;
+    border: 0;
+    background: linear-gradient(to top, rgb(0 0 0 / 14%), transparent);
+    padding: 6px 0 max(8px, env(safe-area-inset-bottom, 0px));
+    touch-action: none;
+    transition: transform 0.18s ease;
+    will-change: transform;
+  }
+
+  .mobileDrawerPeekDragging {
+    transition: none;
   }
 
   .viewportMenu {

@@ -196,10 +196,11 @@ On first load / destructive reset:
 ### Mobile utility layout
 
 - Phone layout uses the same unified utility panel as desktop, rendered as one bottom sheet anchored to the bottom edge.
-- The sheet handle closes the panel on phone layouts via tap or downward drag; there is no separate `HIDE` button in the mobile header.
+- When the mobile panel is closed, a bottom-edge handle remains visible and opens the panel via tap or upward drag.
+- When the mobile panel is open, the sheet handle closes it via tap or downward drag; there is no separate `HIDE` button in the mobile header.
 - Drawer tabs match desktop: `SCENE`, `TRANSFORM`, `MATERIAL`, `ANIMATION`, `PHYSICS`, `CAMERA`.
 - Mobile tab strip scrolls horizontally instead of wrapping.
-- First entry defaults to the panel hidden for all users; only the viewport/object is shown until `SHOW PANEL` is used.
+- First entry defaults to the panel hidden for all users; only the viewport/object plus the bottom drawer handle are shown.
 - Default active tab is `SCENE`.
 - Panel visibility and active tab are runtime-local only (not persisted).
 - Same-page remount restores the last panel visibility and active tab from in-memory session state.
