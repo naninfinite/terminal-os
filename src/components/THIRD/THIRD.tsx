@@ -39,6 +39,7 @@ import {
   getThirdUtilityTabLabel,
   isThirdInspectorSectionTab,
   resolveNextVisibleThirdUtilityTab,
+  shouldShowThirdUtilityHideAction,
   type ThirdUtilityTabId,
 } from './thirdUtilityTabs';
 import {
@@ -3535,10 +3536,24 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const activeTabLabel = getThirdUtilityTabLabel(activeUtilityTab);
     const activeTabId = `third-utility-tab-${mode}-${activeUtilityTab}`;
     const activePanelId = `third-utility-panel-${mode}-${activeUtilityTab}`;
+    const mobilePanel = options.mobile === true;
+    const showHideAction = shouldShowThirdUtilityHideAction(mobilePanel);
+    const showHistoryActions = isThirdInspectorSectionTab(activeUtilityTab);
+    const showHeaderActions = showHideAction || showHistoryActions;
 
     return (
       <section className={`${styles.utilityPanel} ${options.mobile ? styles.mobilePanel : ''}`.trim()}>
-        {options.mobile ? <div className={styles.mobileSheetHandle} aria-hidden="true" /> : null}
+        {mobilePanel ? (
+          <button
+            type="button"
+            className={styles.mobileSheetHandleBtn}
+            onClick={hideUtilityPanel}
+            aria-label="Hide panel"
+            title="Hide panel"
+          >
+            <span className={styles.mobileSheetHandle} aria-hidden="true" />
+          </button>
+        ) : null}
         <header className={styles.utilityHeader}>
           <div className={styles.utilityHeaderMeta}>
             <p className={styles.utilityTitle}>{activeTabLabel}</p>
@@ -3553,25 +3568,29 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
               </>
             )}
           </div>
-          <div className={styles.utilityHeaderActions}>
-            {isThirdInspectorSectionTab(activeUtilityTab) ? (
-              <>
-                <button type="button" className={styles.toolBtn} onClick={undo} disabled={!canUndo}>
-                  UNDO
+          {showHeaderActions ? (
+            <div className={styles.utilityHeaderActions}>
+              {showHistoryActions ? (
+                <>
+                  <button type="button" className={styles.toolBtn} onClick={undo} disabled={!canUndo}>
+                    UNDO
+                  </button>
+                  <button type="button" className={styles.toolBtn} onClick={redo} disabled={!canRedo}>
+                    REDO
+                  </button>
+                </>
+              ) : null}
+              {showHideAction ? (
+                <button
+                  type="button"
+                  className={styles.toolBtn}
+                  onClick={hideUtilityPanel}
+                >
+                  HIDE
                 </button>
-                <button type="button" className={styles.toolBtn} onClick={redo} disabled={!canRedo}>
-                  REDO
-                </button>
-              </>
-            ) : null}
-            <button
-              type="button"
-              className={styles.toolBtn}
-              onClick={hideUtilityPanel}
-            >
-              HIDE
-            </button>
-          </div>
+              ) : null}
+            </div>
+          ) : null}
         </header>
         <div className={styles.utilityTabs} role="tablist" aria-label="THIRD utility tabs">
           {THIRD_UTILITY_TAB_IDS.map((tabId) => {

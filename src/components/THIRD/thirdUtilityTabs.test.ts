@@ -3,6 +3,7 @@ import {
   getThirdUtilityTabLabel,
   isThirdInspectorSectionTab,
   resolveNextVisibleThirdUtilityTab,
+  shouldShowThirdUtilityHideAction,
   THIRD_DEFAULT_UTILITY_TAB_ID,
   THIRD_UTILITY_TAB_IDS,
 } from './thirdUtilityTabs';
@@ -51,5 +52,10 @@ describe('thirdUtilityTabs', () => {
       currentTab: null,
       fallbackTab: 'physics',
     })).toBe('physics');
+  });
+
+  it('shows the explicit hide action only on desktop layouts', () => {
+    expect(shouldShowThirdUtilityHideAction(false)).toBe(true);
+    expect(shouldShowThirdUtilityHideAction(true)).toBe(false);
   });
 });

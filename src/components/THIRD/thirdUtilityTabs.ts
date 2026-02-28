@@ -29,6 +29,8 @@ export const getThirdUtilityTabLabel = (tabId: ThirdUtilityTabId): string => (
   THIRD_UTILITY_TAB_LABELS[tabId]
 );
 
+export const shouldShowThirdUtilityHideAction = (mobileLayout: boolean): boolean => !mobileLayout;
+
 export const resolveNextVisibleThirdUtilityTab = (args: {
   currentTab: ThirdUtilityTabId | null | undefined;
   fallbackTab?: ThirdUtilityTabId;

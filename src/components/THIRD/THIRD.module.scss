@@ -46,6 +46,7 @@
 
 .canvas,
 .mobileSceneToolbarToggle,
+.mobileSheetHandleBtn,
 .sceneToolbarBtn,
 .utilityRevealBtn,
 .toolBtn,
@@ -209,6 +210,16 @@ button.objectItem,
   outline: none;
 }
 
+.mobileSheetHandleBtn:focus-visible {
+  outline: none;
+}
+
+.mobileSheetHandleBtn:focus-visible .mobileSheetHandle {
+  background: var(--third-accent);
+  box-shadow: var(--ui-shadow-focus);
+  opacity: 1;
+}
+
 .sceneToolbarBtn:disabled {
   opacity: 0.45;
 }
@@ -289,6 +300,14 @@ button.objectItem,
 .mobilePanel {
   border: 0;
   background: transparent;
+}
+
+.mobileSheetHandleBtn {
+  border: 0;
+  background: transparent;
+  padding: 4px 0 0;
+  display: grid;
+  justify-items: center;
 }
 
 .mobileSheetHandle {
