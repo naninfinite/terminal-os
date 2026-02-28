@@ -99,7 +99,11 @@ const RIGHT_CLICK_OPEN_TOLERANCE_PX = 6;
 const TOUCH_CONTEXT_MENU_OPEN_DELAY_MS = CONTEXT_LONG_PRESS_MS;
 const TOUCH_CONTEXT_MENU_OPEN_TOLERANCE_PX = CONTEXT_MOVE_TOLERANCE_PX;
 const MIN_CAMERA_DISTANCE = 1.2;
+const SCENE_CAMERA_FAR_PLANE = 5000;
 const ORTHOGRAPHIC_FRUSTUM_HEIGHT = 11;
+const SCENE_GRID_CELL_SIZE = 1;
+const SCENE_GRID_DIVISIONS = 1024;
+const SCENE_GRID_SIZE = SCENE_GRID_CELL_SIZE * SCENE_GRID_DIVISIONS;
 const HIERARCHY_ROOT_DROP_TARGET = '__root__' as const;
 const MATERIAL_PRESETS: ReadonlyArray<ThirdMaterialPreset> = ['matte', 'gloss', 'glass', 'neon'];
 const MATERIAL_SWATCHES: ReadonlyArray<string> = [
@@ -212,6 +216,14 @@ const applyMaterialParams = (
   }
 
   material.needsUpdate = true;
+};
+
+const snapGridAnchor = (value: number): number => (
+  Math.round(value / SCENE_GRID_CELL_SIZE) * SCENE_GRID_CELL_SIZE
+);
+
+const syncGridToTarget = (grid: THREE.GridHelper, target: THREE.Vector3): void => {
+  grid.position.set(snapGridAnchor(target.x), 0, snapGridAnchor(target.z));
 };
 
 const vec3FromThree = (value: THREE.Vector3): ThirdVec3 => ({
@@ -1858,15 +1870,14 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(palette.background);
 
-    // TODO(THIRD camera): Increase camera far clip distance; current far plane is too shallow for larger scenes.
-    const perspectiveCamera = new THREE.PerspectiveCamera(55, 1, 0.1, 400);
+    const perspectiveCamera = new THREE.PerspectiveCamera(55, 1, 0.1, SCENE_CAMERA_FAR_PLANE);
     perspectiveCamera.position.set(
       cameraState.position.x,
       cameraState.position.y,
       cameraState.position.z
     );
 
-    const orthographicCamera = new THREE.OrthographicCamera(-5, 5, 5, -5, 0.1, 400);
+    const orthographicCamera = new THREE.OrthographicCamera(-5, 5, 5, -5, 0.1, SCENE_CAMERA_FAR_PLANE);
     orthographicCamera.position.set(
       cameraState.position.x,
       cameraState.position.y,
@@ -1889,7 +1900,12 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     renderer.domElement.style.touchAction = 'none';
     mount.appendChild(renderer.domElement);
 
-    const grid = new THREE.GridHelper(48, 48, palette.grid, palette.grid);
+    const grid = new THREE.GridHelper(
+      SCENE_GRID_SIZE,
+      SCENE_GRID_DIVISIONS,
+      palette.grid,
+      palette.grid
+    );
     const initialGridMaterials = Array.isArray(grid.material) ? grid.material : [grid.material];
     initialGridMaterials.forEach((material) => {
       material.transparent = true;
@@ -1913,6 +1929,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     orbit.dampingFactor = 0.08;
     orbit.enablePan = true;
     orbit.target.set(cameraState.target.x, cameraState.target.y, cameraState.target.z);
+    syncGridToTarget(grid, orbit.target);
     orbit.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
     orbit.mouseButtons.MIDDLE = THREE.MOUSE.DOLLY;
     orbit.mouseButtons.RIGHT = THREE.MOUSE.PAN;
@@ -2436,6 +2453,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       const delta = Math.min(clock.getDelta(), 0.1);
       elapsedSeconds += delta;
       engine.orbit.update();
+      syncGridToTarget(engine.grid, engine.orbit.target);
 
       if (modeRef.current === 'play') {
         engine.entries.forEach((entry) => applyBodySimulationMode(entry));

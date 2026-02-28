@@ -1110,6 +1110,18 @@ button.objectItem,
     touch-action: none;
     transition: transform 0.18s ease;
     will-change: transform;
+    overflow: visible;
+  }
+
+  .mobileDrawerPeek::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    height: 100vh;
+    background: var(--third-panel-bg);
+    pointer-events: none;
   }
 
   .mobileDrawerPeekDragging {
