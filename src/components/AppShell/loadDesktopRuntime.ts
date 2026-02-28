@@ -1,9 +1,5 @@
-let desktopRuntimePromise: Promise<typeof import('./DesktopRuntime')> | null = null;
+import { createRetriableLazyImport } from '../../utils/lazyImport';
 
-export const loadDesktopRuntime = (): Promise<typeof import('./DesktopRuntime')> => {
-  if (!desktopRuntimePromise) {
-    desktopRuntimePromise = import('./DesktopRuntime');
-  }
-
-  return desktopRuntimePromise;
-};
+export const loadDesktopRuntime = createRetriableLazyImport(
+  () => import('./DesktopRuntime')
+);

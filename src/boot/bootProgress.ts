@@ -16,6 +16,13 @@ const BOOT_STAGE_PROGRESS: Record<BootStage, number> = {
   landing_interactive: 100,
 };
 
+const BOOT_STAGE_CEILING: Record<BootStage, number> = {
+  html_shell: 28,
+  react_bootstrap: 58,
+  app_mounted: 92,
+  landing_interactive: 100,
+};
+
 const BOOT_STAGE_LABEL: Record<BootStage, string> = {
   html_shell: 'BOOTSTRAP READY',
   react_bootstrap: 'REACT BOOTSTRAP',
@@ -44,6 +51,7 @@ const resolveBootController = (
 };
 
 export const getBootStageProgress = (stage: BootStage): number => BOOT_STAGE_PROGRESS[stage];
+export const getBootStageCeiling = (stage: BootStage): number => BOOT_STAGE_CEILING[stage];
 
 export const publishBootProgress = (
   percent: number,

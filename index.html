@@ -128,7 +128,6 @@
         transform: scaleX(0.12);
         transform-origin: left center;
         background: linear-gradient(90deg, rgba(0, 255, 102, 0.18), var(--boot-text), rgba(0, 255, 102, 0.3));
-        transition: transform 220ms ease;
       }
 
       #boot-shell-fill::after {
@@ -154,8 +153,7 @@
       }
 
       @media (prefers-reduced-motion: reduce) {
-        #boot-shell,
-        #boot-shell-fill {
+        #boot-shell {
           transition: none;
         }
 
@@ -189,8 +187,14 @@
         var labelNode = document.getElementById('boot-shell-label');
         var percentNode = document.getElementById('boot-shell-percent');
         var root = document.documentElement;
-        var currentProgress = 0;
+        var reduceMotion = typeof window.matchMedia === 'function'
+          && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var floorProgress = 0;
+        var displayProgress = 0;
+        var currentLabel = 'BOOTSTRAP READY';
         var completed = false;
+        var rafId = 0;
+        var lastTickAt = 0;
 
         var readStoredValue = function (key, fallbackValue) {
           try {
@@ -221,32 +225,83 @@
         root.style.setProperty('color-scheme', resolvedTheme);
 
         var clampProgress = function (value) {
-          if (!Number.isFinite(value)) return currentProgress;
-          return Math.max(0, Math.min(100, Math.round(value)));
+          if (!Number.isFinite(value)) return floorProgress;
+          return Math.max(0, Math.min(100, value));
         };
 
-        var render = function (progress, label) {
-          currentProgress = Math.max(currentProgress, clampProgress(progress));
+        var resolveStageCeiling = function (progress) {
+          if (progress >= 100) return 100;
+          if (progress >= 68) return 92;
+          if (progress >= 32) return 58;
+          if (progress >= 12) return 28;
+          return 12;
+        };
+
+        var render = function () {
           if (fill) {
-            fill.style.transform = 'scaleX(' + (currentProgress / 100) + ')';
+            fill.style.transform = 'scaleX(' + (displayProgress / 100) + ')';
           }
           if (labelNode) {
-            labelNode.textContent = label;
+            labelNode.textContent = currentLabel;
           }
           if (percentNode) {
-            percentNode.textContent = String(currentProgress).padStart(3, '0') + '%';
+            percentNode.textContent = String(Math.round(displayProgress)).padStart(3, '0') + '%';
           }
+        };
+
+        var requestTick = function () {
+          if (completed || rafId) return;
+          rafId = window.requestAnimationFrame(tick);
+        };
+
+        var tick = function (now) {
+          rafId = 0;
+          if (completed) return;
+
+          var ceiling = resolveStageCeiling(floorProgress);
+          if (displayProgress < floorProgress) {
+            displayProgress = floorProgress;
+          }
+
+          if (displayProgress < ceiling) {
+            var delta = lastTickAt > 0 ? Math.max(16, now - lastTickAt) : 16;
+            var gap = ceiling - displayProgress;
+            var step = reduceMotion
+              ? Math.max(0.15, gap * 0.045)
+              : Math.max(0.28, gap * 0.055 + delta * 0.01);
+
+            displayProgress = Math.min(ceiling, Math.max(floorProgress, displayProgress + step));
+            render();
+            requestTick();
+          }
+
+          lastTickAt = now;
         };
 
         window.__TERMINAL_OS_BOOT__ = {
           setProgress: function (progress, label) {
             if (completed) return;
-            render(progress, label || 'BOOTSTRAP READY');
+            floorProgress = Math.max(floorProgress, clampProgress(progress));
+            currentLabel = label || currentLabel;
+            if (displayProgress < floorProgress) {
+              displayProgress = floorProgress;
+            }
+            render();
+            if (floorProgress < 100) {
+              requestTick();
+            }
           },
           complete: function () {
             if (completed) return;
             completed = true;
-            render(100, 'LANDING INTERACTIVE');
+            if (rafId) {
+              window.cancelAnimationFrame(rafId);
+              rafId = 0;
+            }
+            floorProgress = 100;
+            displayProgress = 100;
+            currentLabel = 'LANDING INTERACTIVE';
+            render();
             if (shell) {
               shell.setAttribute('data-state', 'complete');
               shell.setAttribute('aria-hidden', 'true');

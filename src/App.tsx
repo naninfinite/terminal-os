@@ -89,7 +89,9 @@ const App: React.FC = () => {
     let idleId: number | null = null;
 
     const preloadDesktopRuntime = () => {
-      void primeDesktopRuntime();
+      void primeDesktopRuntime().catch(() => {
+        // Idle preloading failures should stay silent until the user explicitly enters.
+      });
     };
 
     if (typeof idleWindow.requestIdleCallback === 'function') {

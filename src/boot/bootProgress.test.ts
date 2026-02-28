@@ -3,6 +3,7 @@ import {
   __getBootProgressStateForTest,
   __resetBootProgressForTest,
   completeBootProgress,
+  getBootStageCeiling,
   getBootStageProgress,
   publishBootProgress,
   publishBootStage,
@@ -51,6 +52,13 @@ describe('bootProgress', () => {
       { type: 'complete' },
     ]);
     expect(__getBootProgressStateForTest()).toEqual({ progress: 100, completed: true });
+  });
+
+  it('exposes bounded stage ceilings for estimated live fill', () => {
+    expect(getBootStageCeiling('html_shell')).toBe(28);
+    expect(getBootStageCeiling('react_bootstrap')).toBe(58);
+    expect(getBootStageCeiling('app_mounted')).toBe(92);
+    expect(getBootStageCeiling('landing_interactive')).toBe(100);
   });
 
   it('clamps direct progress updates into the supported range', () => {

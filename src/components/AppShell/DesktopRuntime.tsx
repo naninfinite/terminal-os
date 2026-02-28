@@ -26,7 +26,9 @@ const DesktopRuntime: React.FC = () => {
     let idleId: number | null = null;
 
     const preloadThirdSurface = () => {
-      void loadThirdSurface();
+      void loadThirdSurface().catch(() => {
+        // Idle preloading failures should not surface to the user.
+      });
     };
 
     if (typeof idleWindow.requestIdleCallback === 'function') {

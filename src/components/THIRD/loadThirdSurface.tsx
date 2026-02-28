@@ -1,15 +1,10 @@
 import React from 'react';
 import styles from './THIRD.module.scss';
+import { createRetriableLazyImport } from '../../utils/lazyImport';
 
-let thirdSurfacePromise: Promise<typeof import('./THIRD')> | null = null;
-
-export const loadThirdSurface = (): Promise<typeof import('./THIRD')> => {
-  if (!thirdSurfacePromise) {
-    thirdSurfacePromise = import('./THIRD');
-  }
-
-  return thirdSurfacePromise;
-};
+export const loadThirdSurface = createRetriableLazyImport(
+  () => import('./THIRD')
+);
 
 type ThirdLoadingSurfaceProps = {
   mode: 'panel' | 'fullscreen';
