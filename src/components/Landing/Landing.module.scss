@@ -186,9 +186,14 @@
   border: $border-thin solid $phosphor-green;
   background: rgb(0 0 0 / 0.56);
   color: $text-dim;
+  box-sizing: border-box;
+  line-height: 1;
   text-align: center;
   font-size: $font-xs;
   letter-spacing: 0.08em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .videoBox[data-loading='true'] .sceneSweep {
@@ -212,6 +217,9 @@
   box-shadow: none;
   border-radius: 0;
   text-shadow: none;
+  box-sizing: border-box;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .enterBtn:hover,

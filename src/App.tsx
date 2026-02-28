@@ -2,6 +2,7 @@
  * `App` controls the top-level flow:
  * - Landing screen (`ENTER.EXE`) with an enter transition.
  * - Desktop shell is lazy-loaded with retry diagnostics before the transition completes.
+ * - Background preloading only runs when startup conditions look favorable.
  *
  * Design notes:
  * - `entered` gates which screen is mounted.
@@ -14,6 +15,10 @@ import {
   createDesktopRuntimeDiagnostic,
   type DesktopLoadErrorKind,
 } from './components/AppShell/desktopRuntimeError';
+import {
+  readDesktopRuntimePreloadSignals,
+  shouldPreloadDesktopRuntime,
+} from './components/AppShell/desktopRuntimePreload';
 import landingStyles from './components/Landing/Landing.module.scss';
 import crt from './styles/crt.module.scss';
 import Cursor from './components/Cursor/Cursor';
@@ -27,6 +32,10 @@ type IdleAwareWindow = Window & {
 
 const DESKTOP_RUNTIME_RELOAD_SESSION_KEY = 'terminalOS.desktopRuntime.reloadAttempted.v1';
 const DesktopRuntime = React.lazy(loadDesktopRuntime);
+
+type AppProps = {
+  initialEnterRequested?: boolean;
+};
 
 const hasDesktopReloadAttempted = (): boolean => {
   try {
@@ -44,7 +53,7 @@ const markDesktopReloadAttempted = (): void => {
   }
 };
 
-const App: React.FC = () => {
+const App: React.FC<AppProps> = ({ initialEnterRequested = false }) => {
   const [entered, setEntered] = useState(false);
   const [exiting, setExiting] = useState(false);
   const [enterQueued, setEnterQueued] = useState(false);
@@ -55,6 +64,7 @@ const App: React.FC = () => {
   const enterTimeoutRef = useRef<number | null>(null);
   const desktopLoadRef = useRef<Promise<DesktopRuntimeModule> | null>(null);
   const desktopReadyRef = useRef(false);
+  const initialEnterHandledRef = useRef(false);
   const reloadRequestedRef = useRef(false);
 
   const clearDesktopLoadError = useCallback(() => {
@@ -148,6 +158,14 @@ const App: React.FC = () => {
   }, [clearDesktopLoadError, ensureDesktopRuntime, enterQueued, entered, exiting, handleDesktopRuntimeFailure, startExit]);
 
   useEffect(() => {
+    const preloadSignals = readDesktopRuntimePreloadSignals(
+      window.navigator,
+      typeof window.performance?.now === 'function' ? window.performance.now() : 0
+    );
+    if (!shouldPreloadDesktopRuntime(preloadSignals)) {
+      return;
+    }
+
     const idleWindow = window as IdleAwareWindow;
     let timeoutId: number | null = null;
     let idleId: number | null = null;
@@ -177,6 +195,12 @@ const App: React.FC = () => {
       }
     };
   }, [ensureDesktopRuntime, handleDesktopRuntimeFailure]);
+
+  useEffect(() => {
+    if (!initialEnterRequested || initialEnterHandledRef.current) return;
+    initialEnterHandledRef.current = true;
+    triggerEnter();
+  }, [initialEnterRequested, triggerEnter]);
 
   // Listen for Enter key to start exiting from the landing screen.
   useEffect(() => {
@@ -222,7 +246,7 @@ const App: React.FC = () => {
       : exiting
         ? 'ENTERING SHELL...'
         : waitingForDesktop
-          ? 'LOADING DESKTOP SHELL...'
+          ? 'LOADING DESKTOP...'
           : 'PRESS ENTER TO LOAD DESKTOP.';
   const runtimeStatus = desktopLoadError != null
     ? 'RETRY STANDBY'

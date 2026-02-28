@@ -11,28 +11,26 @@
     <title>TERMINAL-OS</title>
     <style>
       :root {
-        --boot-bg: #000000;
-        --boot-surface: rgba(0, 17, 0, 0.94);
-        --boot-text: #00ff66;
-        --boot-text-muted: #66ffcc;
-        --boot-border: #00ff66;
-        --boot-shadow: 0 0 0 1px rgba(0, 255, 102, 0.18) inset;
+        --landing-bg: #000000;
+        --landing-text: #00ff66;
+        --landing-text-muted: #66ffcc;
+        --landing-border: #00ff66;
+        --landing-shadow: 0 0 0 1px rgba(0, 255, 102, 0.18) inset;
       }
 
       :root[data-theme='light'] {
-        --boot-bg: #f5f4ef;
-        --boot-surface: rgba(255, 255, 255, 0.96);
-        --boot-text: #101010;
-        --boot-text-muted: #3f3f3f;
-        --boot-border: #101010;
-        --boot-shadow: 0 0 0 1px rgba(16, 16, 16, 0.12) inset;
+        --landing-bg: #f5f4ef;
+        --landing-text: #101010;
+        --landing-text-muted: #3f3f3f;
+        --landing-border: #101010;
+        --landing-shadow: 0 0 0 1px rgba(16, 16, 16, 0.12) inset;
       }
 
       html,
       body {
         margin: 0;
         min-height: 100%;
-        background: var(--boot-bg);
+        background: var(--landing-bg);
       }
 
       body {
@@ -44,175 +42,289 @@
         min-height: 100dvh;
       }
 
-      #boot-shell {
+      #landing-shell {
         position: fixed;
         inset: 0;
         z-index: 9999;
         display: grid;
         place-items: center;
-        padding: 16px;
-        box-sizing: border-box;
-        background:
-          radial-gradient(circle at 50% 22%, rgba(0, 255, 102, 0.12), transparent 34%),
-          var(--boot-bg);
-        color: var(--boot-text);
+        background: var(--landing-bg);
+        color: var(--landing-text);
         font-family: 'IBM Plex Mono', 'Iosevka Term', 'Courier New', monospace;
-        letter-spacing: 0.08em;
-        pointer-events: none;
-        transition: opacity 280ms ease, visibility 280ms ease;
+        font-size: 14px;
+        letter-spacing: 0.05em;
+        text-transform: var(--ui-text-transform, uppercase);
+        transition: opacity 220ms ease, visibility 220ms ease;
       }
 
-      #boot-shell[data-state='failed'] {
-        pointer-events: auto;
-      }
-
-      #boot-shell[data-state='complete'] {
+      #landing-shell[data-state='hidden'] {
         opacity: 0;
         visibility: hidden;
+        pointer-events: none;
       }
 
-      #boot-shell::before {
+      #landing-shell::before {
         content: '';
         position: absolute;
         inset: 0;
         background:
           linear-gradient(to right, rgba(0, 255, 102, 0.08) 1px, transparent 1px),
           linear-gradient(to bottom, rgba(0, 255, 102, 0.08) 1px, transparent 1px);
-        background-size: 24px 24px;
+        background-size: 28px 28px;
         opacity: 0.18;
+        pointer-events: none;
       }
 
-      #boot-shell-frame {
+      #landing-shell-center {
         position: relative;
-        width: min(560px, 100%);
+        width: min(92vw, 960px);
+        max-width: 100%;
         display: grid;
-        gap: 14px;
-        border: 2px solid var(--boot-border);
-        background: var(--boot-surface);
-        box-shadow: var(--boot-shadow);
-        padding: 16px;
+        place-items: center;
+        padding: 0 12px;
         box-sizing: border-box;
       }
 
-      #boot-shell-title {
-        border-bottom: 1px solid var(--boot-border);
-        padding-bottom: 6px;
+      #landing-shell-frame {
+        width: 100%;
+        max-width: 100%;
+        min-height: 360px;
+        border: 2px solid var(--landing-border);
+        box-shadow: var(--landing-shadow);
+        padding: 8px;
+        background: var(--landing-bg);
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+      }
+
+      #landing-shell-header {
+        width: 100%;
+        border-bottom: 1px solid var(--landing-border);
+        padding-bottom: 4px;
+        margin-bottom: 6px;
         font-size: 12px;
       }
 
-      #boot-shell-copy {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        font-size: 11px;
-        color: var(--boot-text-muted);
-      }
-
-      #boot-shell-label {
-        color: var(--boot-text);
-      }
-
-      #boot-shell-percent {
-        flex: 0 0 auto;
-      }
-
-      #boot-shell-meter {
+      #landing-shell-body {
         position: relative;
-        height: 12px;
-        overflow: hidden;
-        border: 1px solid var(--boot-border);
-        background: rgba(0, 0, 0, 0.28);
-      }
-
-      #boot-shell-status {
-        min-height: 1.2em;
-        margin: 0;
-        font-size: 10px;
-        color: var(--boot-text-muted);
-      }
-
-      #boot-shell-actions {
-        display: none;
-        justify-content: flex-end;
-      }
-
-      #boot-shell[data-state='failed'] #boot-shell-actions {
         display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        flex: 1 1 auto;
+        min-height: 0;
       }
 
-      #boot-shell-reload {
-        border: 1px solid var(--boot-border);
+      #landing-shell-scene {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border: 2px solid var(--landing-border);
+        background:
+          radial-gradient(circle at 50% 28%, rgba(0, 255, 102, 0.14), transparent 34%),
+          linear-gradient(180deg, rgba(0, 255, 102, 0.06), transparent 30%, rgba(0, 255, 102, 0.03)),
+          var(--landing-bg);
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+      }
+
+      #landing-shell-scene[data-loading='true'] #landing-shell-sweep {
+        animation-duration: 1.3s;
+        opacity: 0.94;
+      }
+
+      #landing-shell-field {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+      }
+
+      #landing-shell-glow {
+        position: absolute;
+        inset: 16% 18%;
+        background: radial-gradient(circle, rgba(0, 255, 102, 0.26), transparent 64%);
+        filter: blur(18px);
+        opacity: 0.75;
+      }
+
+      #landing-shell-grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(to right, rgba(0, 255, 102, 0.08) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(0, 255, 102, 0.08) 1px, transparent 1px);
+        background-size: 28px 28px;
+        mask-image: linear-gradient(180deg, transparent, #000 22%, #000 82%, transparent);
+        opacity: 0.78;
+      }
+
+      #landing-shell-sweep {
+        position: absolute;
+        inset: -30% 0;
+        background: linear-gradient(180deg, transparent 36%, rgba(0, 255, 102, 0.18) 50%, transparent 64%);
+        animation: landing-shell-sweep 2.8s linear infinite;
+        opacity: 0.72;
+      }
+
+      #landing-shell-telemetry {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        display: grid;
+        gap: 7px;
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        color: var(--landing-text);
+        text-shadow: 0 0 8px rgba(0, 255, 102, 0.38);
+      }
+
+      #landing-shell-status {
+        position: absolute;
+        left: 16px;
+        right: 16px;
+        bottom: 54px;
+        z-index: 1;
+        margin: 0;
+        padding: 4px 10px;
+        border: 1px solid var(--landing-border);
+        background: rgba(0, 0, 0, 0.56);
+        color: var(--landing-text-muted);
+        box-sizing: border-box;
+        line-height: 1;
+        text-align: center;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      #landing-shell-enter {
+        appearance: none;
+        -webkit-appearance: none;
+        position: absolute;
+        left: 50%;
+        bottom: 12px;
+        transform: translateX(-50%);
+        z-index: 1;
+        border: 2px solid var(--landing-border);
         background: transparent;
-        color: var(--boot-text);
-        padding: 8px 14px;
-        font: inherit;
+        color: var(--landing-text);
+        padding: 6px 12px;
+        font-family: inherit;
+        font-size: 12px;
         letter-spacing: inherit;
+        line-height: 1;
         cursor: pointer;
+        box-sizing: border-box;
+        white-space: nowrap;
       }
 
-      #boot-shell-reload:focus-visible {
-        outline: 2px solid var(--boot-border);
+      #landing-shell-enter:focus-visible {
+        outline: 1px dashed var(--landing-border);
         outline-offset: 2px;
       }
 
-      #boot-shell-fill {
-        position: absolute;
-        inset: 0 auto 0 0;
-        width: 100%;
-        transform: scaleX(0.12);
-        transform-origin: left center;
-        background: linear-gradient(90deg, rgba(0, 255, 102, 0.18), var(--boot-text), rgba(0, 255, 102, 0.3));
-      }
-
-      #boot-shell-fill::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: repeating-linear-gradient(
-          90deg,
-          transparent 0 12px,
-          rgba(255, 255, 255, 0.18) 12px 24px
-        );
-        animation: boot-shell-stride 1.1s linear infinite;
-        mix-blend-mode: screen;
-      }
-
-      @keyframes boot-shell-stride {
+      @keyframes landing-shell-sweep {
         from {
-          transform: translateX(0);
+          transform: translateY(-48%);
         }
+
         to {
-          transform: translateX(24px);
+          transform: translateY(48%);
+        }
+      }
+
+      @media (max-width: 520px) {
+        #landing-shell-center {
+          width: 100%;
+          min-height: 100vh;
+          min-height: 100dvh;
+          place-items: stretch;
+          padding: 0;
+        }
+
+        #landing-shell-frame {
+          min-height: 100vh;
+          min-height: 100dvh;
+          padding:
+            calc(8px + env(safe-area-inset-top, 0px))
+            calc(8px + env(safe-area-inset-right, 0px))
+            calc(8px + env(safe-area-inset-bottom, 0px))
+            calc(8px + env(safe-area-inset-left, 0px));
+        }
+
+        #landing-shell-scene {
+          height: 100%;
+          min-height: 0;
+          aspect-ratio: auto;
+        }
+
+        #landing-shell-telemetry {
+          top: 12px;
+          left: 12px;
+          gap: 5px;
+          font-size: 9px;
+        }
+
+        #landing-shell-status {
+          left: 10px;
+          right: 10px;
+          bottom: 50px;
+          padding: 4px 8px;
+          font-size: 9px;
         }
       }
 
       @media (prefers-reduced-motion: reduce) {
-        #boot-shell {
+        #landing-shell {
           transition: none;
         }
 
-        #boot-shell-fill::after {
+        #landing-shell-enter {
+          transition: none;
+        }
+
+        #landing-shell-sweep {
           animation: none;
+          opacity: 0.3;
         }
       }
     </style>
   </head>
   <body>
-    <div id="boot-shell" data-state="active">
-      <div id="boot-shell-frame" role="status" aria-live="polite" aria-atomic="true">
-        <div id="boot-shell-title">[BOOT]</div>
-        <div id="boot-shell-copy">
-          <span id="boot-shell-label">BOOTSTRAP READY</span>
-          <span id="boot-shell-percent">012%</span>
-        </div>
-        <div id="boot-shell-meter" aria-hidden="true">
-          <span id="boot-shell-fill"></span>
-        </div>
-        <p id="boot-shell-status"></p>
-        <div id="boot-shell-actions">
-          <button id="boot-shell-reload" type="button">RELOAD</button>
-        </div>
+    <div id="landing-shell" data-state="visible">
+      <div id="landing-shell-center">
+        <section id="landing-shell-frame" aria-label="ENTER.EXE" aria-busy="false">
+          <header id="landing-shell-header">[ENTER.EXE]</header>
+          <div id="landing-shell-body">
+            <div id="landing-shell-scene" data-loading="false">
+              <div id="landing-shell-field" aria-hidden="true">
+                <div id="landing-shell-glow"></div>
+                <div id="landing-shell-grid"></div>
+                <div id="landing-shell-sweep"></div>
+                <div id="landing-shell-telemetry">
+                  <span>BOOT SECTOR 01</span>
+                  <span>DISPLAY BUS ONLINE</span>
+                  <span>STANDBY</span>
+                </div>
+              </div>
+              <p id="landing-shell-status" role="status" aria-live="polite" aria-atomic="true">
+                PRESS ENTER TO LOAD DESKTOP.
+              </p>
+              <button
+                id="landing-shell-enter"
+                type="button"
+                aria-label="Enter Terminal-OS"
+                aria-busy="false"
+              >
+                ENTER
+              </button>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
     <div id="root"></div>
@@ -221,27 +333,26 @@
         var THEME_STORAGE_KEY = 'terminalOS.ui.v1.theme';
         var TEXT_CASE_STORAGE_KEY = 'terminalOS.ui.v1.textCase';
         var LEGACY_LOCATION_CASE_STORAGE_KEY = 'terminalOS.ui.v1.locationCase';
-        var shell = document.getElementById('boot-shell');
-        var fill = document.getElementById('boot-shell-fill');
-        var labelNode = document.getElementById('boot-shell-label');
-        var percentNode = document.getElementById('boot-shell-percent');
-        var statusNode = document.getElementById('boot-shell-status');
-        var reloadButton = document.getElementById('boot-shell-reload');
-        var root = document.documentElement;
+        var DEFAULT_STATUS = 'PRESS ENTER TO LOAD DESKTOP.';
+        var WARNING_STATUS = 'STILL INITIALIZING INTERFACE...';
+        var PENDING_STATUS = 'LOADING DESKTOP...';
+        var FAILED_STATUS = 'INTERFACE STALLED. PRESS RELOAD TO RETRY.';
         var reduceMotion = typeof window.matchMedia === 'function'
           && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        var floorProgress = 0;
-        var displayProgress = 0;
-        var currentLabel = 'BOOTSTRAP READY';
-        var currentStatus = '';
-        var bootState = 'active';
-        var completed = false;
-        var rafId = 0;
-        var lastTickAt = 0;
+        var root = document.documentElement;
+        var shell = document.getElementById('landing-shell');
+        var statusNode = document.getElementById('landing-shell-status');
+        var enterButton = document.getElementById('landing-shell-enter');
+        var scene = document.getElementById('landing-shell-scene');
+        var shellFrame = document.getElementById('landing-shell-frame');
+        var enterRequested = false;
+        var interactive = false;
+        var failed = false;
         var warningTimeoutId = 0;
         var failureTimeoutId = 0;
         var errorListener = null;
         var rejectionListener = null;
+        var keyListener = null;
 
         var readStoredValue = function (key, fallbackValue) {
           try {
@@ -251,6 +362,100 @@
           } catch (error) {
             return fallbackValue;
           }
+        };
+
+        var setStatus = function (message) {
+          if (statusNode) {
+            statusNode.textContent = message;
+          }
+        };
+
+        var setSceneLoading = function (isLoading) {
+          if (scene) {
+            scene.setAttribute('data-loading', isLoading ? 'true' : 'false');
+          }
+          if (shellFrame) {
+            shellFrame.setAttribute('aria-busy', isLoading ? 'true' : 'false');
+          }
+          if (enterButton) {
+            enterButton.setAttribute('aria-busy', isLoading ? 'true' : 'false');
+          }
+        };
+
+        var setButtonMode = function (mode) {
+          if (!enterButton) return;
+
+          if (mode === 'reload') {
+            enterButton.textContent = 'RELOAD';
+            enterButton.setAttribute('aria-label', 'Reload Terminal-OS');
+            return;
+          }
+
+          if (mode === 'loading') {
+            enterButton.textContent = 'LOADING...';
+            enterButton.setAttribute('aria-label', 'Initializing Terminal-OS');
+            return;
+          }
+
+          enterButton.textContent = 'ENTER';
+          enterButton.setAttribute('aria-label', 'Enter Terminal-OS');
+        };
+
+        var cleanupLandingWatchdog = function () {
+          if (warningTimeoutId) {
+            window.clearTimeout(warningTimeoutId);
+            warningTimeoutId = 0;
+          }
+          if (failureTimeoutId) {
+            window.clearTimeout(failureTimeoutId);
+            failureTimeoutId = 0;
+          }
+          if (errorListener) {
+            window.removeEventListener('error', errorListener);
+            errorListener = null;
+          }
+          if (rejectionListener) {
+            window.removeEventListener('unhandledrejection', rejectionListener);
+            rejectionListener = null;
+          }
+          if (keyListener) {
+            window.removeEventListener('keydown', keyListener);
+            keyListener = null;
+          }
+        };
+
+        var normalizeLandingErrorMessage = function (value) {
+          if (typeof value === 'string' && value.trim()) return value.trim();
+          if (value && typeof value === 'object' && typeof value.message === 'string' && value.message.trim()) {
+            return value.message.trim();
+          }
+          try {
+            var nextValue = String(value || '').trim();
+            return nextValue || 'Unknown landing bootstrap failure';
+          } catch (error) {
+            return 'Unknown landing bootstrap failure';
+          }
+        };
+
+        var failLanding = function (message) {
+          if (interactive || failed) return;
+          failed = true;
+          cleanupLandingWatchdog();
+          setSceneLoading(false);
+          setButtonMode('reload');
+          setStatus(message || FAILED_STATUS);
+        };
+
+        var queueEnterRequest = function () {
+          if (interactive) return;
+          if (failed) {
+            window.location.reload();
+            return;
+          }
+          enterRequested = true;
+          setSceneLoading(true);
+          setButtonMode('loading');
+          setStatus(PENDING_STATUS);
         };
 
         var themeMode = readStoredValue(THEME_STORAGE_KEY, 'auto');
@@ -271,193 +476,75 @@
         root.setAttribute('data-text-case', resolvedTextCase);
         root.style.setProperty('color-scheme', resolvedTheme);
 
-        var clampProgress = function (value) {
-          if (!Number.isFinite(value)) return floorProgress;
-          return Math.max(0, Math.min(100, value));
-        };
+        setSceneLoading(false);
+        setButtonMode('enter');
+        setStatus(DEFAULT_STATUS);
 
-        var resolveStageCeiling = function (progress) {
-          if (progress >= 100) return 100;
-          if (progress >= 68) return 92;
-          if (progress >= 32) return 58;
-          if (progress >= 12) return 28;
-          return 12;
-        };
-
-        var normalizeBootErrorMessage = function (value) {
-          if (typeof value === 'string' && value.trim()) return value.trim();
-          if (value && typeof value === 'object' && typeof value.message === 'string' && value.message.trim()) {
-            return value.message.trim();
-          }
-          try {
-            var nextValue = String(value || '').trim();
-            return nextValue || 'Unknown boot failure';
-          } catch (error) {
-            return 'Unknown boot failure';
-          }
-        };
-
-        var setBootState = function (state, message) {
-          bootState = state;
-          currentStatus = message || '';
-          if (shell) {
-            shell.setAttribute('data-state', state);
-            if (state === 'complete') {
-              shell.setAttribute('aria-hidden', 'true');
-            } else {
-              shell.removeAttribute('aria-hidden');
-            }
-          }
-          if (statusNode) {
-            statusNode.textContent = currentStatus;
-          }
-        };
-
-        var cleanupBootWatchdog = function () {
-          if (warningTimeoutId) {
-            window.clearTimeout(warningTimeoutId);
-            warningTimeoutId = 0;
-          }
-          if (failureTimeoutId) {
-            window.clearTimeout(failureTimeoutId);
-            failureTimeoutId = 0;
-          }
-          if (errorListener) {
-            window.removeEventListener('error', errorListener);
-            errorListener = null;
-          }
-          if (rejectionListener) {
-            window.removeEventListener('unhandledrejection', rejectionListener);
-            rejectionListener = null;
-          }
-        };
-
-        var failBoot = function (message) {
-          if (completed) return;
-          cleanupBootWatchdog();
-          if (rafId) {
-            window.cancelAnimationFrame(rafId);
-            rafId = 0;
-          }
-          setBootState('failed', message || 'load stalled. reload to retry.');
-        };
-
-        var render = function () {
-          if (fill) {
-            fill.style.transform = 'scaleX(' + (displayProgress / 100) + ')';
-          }
-          if (labelNode) {
-            labelNode.textContent = currentLabel;
-          }
-          if (percentNode) {
-            percentNode.textContent = String(Math.round(displayProgress)).padStart(3, '0') + '%';
-          }
-        };
-
-        var requestTick = function () {
-          if (completed || bootState === 'failed' || rafId) return;
-          rafId = window.requestAnimationFrame(tick);
-        };
-
-        var tick = function (now) {
-          rafId = 0;
-          if (completed) return;
-
-          var ceiling = resolveStageCeiling(floorProgress);
-          if (displayProgress < floorProgress) {
-            displayProgress = floorProgress;
-          }
-
-          if (displayProgress < ceiling) {
-            var delta = lastTickAt > 0 ? Math.max(16, now - lastTickAt) : 16;
-            var gap = ceiling - displayProgress;
-            var step = reduceMotion
-              ? Math.max(0.15, gap * 0.045)
-              : Math.max(0.28, gap * 0.055 + delta * 0.01);
-
-            displayProgress = Math.min(ceiling, Math.max(floorProgress, displayProgress + step));
-            render();
-            requestTick();
-          }
-
-          lastTickAt = now;
-        };
-
-        if (reloadButton) {
-          reloadButton.addEventListener('click', function () {
-            window.location.reload();
+        if (enterButton) {
+          enterButton.addEventListener('click', function () {
+            queueEnterRequest();
           });
         }
 
+        keyListener = function (event) {
+          if (event.key !== 'Enter') return;
+          event.preventDefault();
+          queueEnterRequest();
+        };
+
+        window.addEventListener('keydown', keyListener);
+
         warningTimeoutId = window.setTimeout(function () {
-          if (completed || bootState === 'failed') return;
-          setBootState('warning', 'still loading...');
+          if (interactive || failed || enterRequested) return;
+          setStatus(WARNING_STATUS);
         }, 6000);
 
         failureTimeoutId = window.setTimeout(function () {
-          failBoot('load stalled. reload to retry.');
+          failLanding(FAILED_STATUS);
         }, 18000);
 
         errorListener = function (event) {
-          if (completed) return;
-          var errorMessage = normalizeBootErrorMessage(
+          if (interactive || failed) return;
+          var errorMessage = normalizeLandingErrorMessage(
             event && typeof event === 'object' && 'error' in event ? (event.error || event.message) : event
           );
-          console.error('Boot shell error before app became interactive.', errorMessage, event);
-          failBoot('load stalled. reload to retry.');
+          console.error('Landing bootstrap error before React became interactive.', errorMessage, event);
+          failLanding(FAILED_STATUS);
         };
 
         rejectionListener = function (event) {
-          if (completed) return;
+          if (interactive || failed) return;
           var reason = event && typeof event === 'object' && 'reason' in event ? event.reason : event;
-          var errorMessage = normalizeBootErrorMessage(reason);
-          console.error('Boot shell unhandled rejection before app became interactive.', errorMessage, reason);
-          failBoot('load stalled. reload to retry.');
+          var errorMessage = normalizeLandingErrorMessage(reason);
+          console.error('Landing bootstrap unhandled rejection before React became interactive.', errorMessage, reason);
+          failLanding(FAILED_STATUS);
         };
 
         window.addEventListener('error', errorListener);
         window.addEventListener('unhandledrejection', rejectionListener);
 
-        window.__TERMINAL_OS_BOOT__ = {
-          setProgress: function (progress, label) {
-            if (completed) return;
-            floorProgress = Math.max(floorProgress, clampProgress(progress));
-            currentLabel = label || currentLabel;
-            if (displayProgress < floorProgress) {
-              displayProgress = floorProgress;
-            }
-            render();
-            if (floorProgress < 100) {
-              requestTick();
-            }
+        window.__TERMINAL_OS_LANDING__ = {
+          consumeEnterRequest: function () {
+            var nextRequest = enterRequested;
+            enterRequested = false;
+            return nextRequest;
           },
-          complete: function () {
-            if (completed) return;
-            completed = true;
-            cleanupBootWatchdog();
-            if (rafId) {
-              window.cancelAnimationFrame(rafId);
-              rafId = 0;
-            }
-            floorProgress = 100;
-            displayProgress = 100;
-            currentLabel = 'LANDING INTERACTIVE';
-            render();
+          markInteractive: function () {
+            if (interactive) return;
+            interactive = true;
+            cleanupLandingWatchdog();
             if (shell) {
-              setBootState('complete', '');
+              shell.setAttribute('data-state', 'hidden');
               window.setTimeout(function () {
                 if (shell.parentNode) {
                   shell.parentNode.removeChild(shell);
                 }
-              }, 420);
+              }, reduceMotion ? 0 : 220);
             }
           }
         };
-
-        setBootState('active', '');
-        window.__TERMINAL_OS_BOOT__.setProgress(12, 'BOOTSTRAP READY');
       })();
     </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
-  </html>
+</html>

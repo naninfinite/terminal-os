@@ -9,8 +9,8 @@ interface ImportMeta {
 }
 
 interface Window {
-  __TERMINAL_OS_BOOT__?: {
-    setProgress: (percent: number, label: string) => void;
-    complete: () => void;
+  __TERMINAL_OS_LANDING__?: {
+    consumeEnterRequest: () => boolean;
+    markInteractive: () => void;
   };
 }
