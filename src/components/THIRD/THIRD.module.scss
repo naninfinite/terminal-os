@@ -308,6 +308,7 @@ button.objectItem,
   padding: 4px 0 0;
   display: grid;
   justify-items: center;
+  touch-action: none;
 }
 
 .mobileSheetHandle {
@@ -1002,6 +1003,12 @@ button.objectItem,
     max-height: min(64%, 360px);
     padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
     overflow: hidden;
+    transition: transform 0.18s ease;
+    will-change: transform;
+  }
+
+  .mobileUtilityDrawerDragging {
+    transition: none;
   }
 
   .mobileRevealBtn {

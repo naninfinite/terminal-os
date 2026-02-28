@@ -70,6 +70,10 @@ import {
   setThirdUtilityPanelSession,
   type ThirdUtilityPanelSession,
 } from './thirdUtilityPanelSession';
+import {
+  clampThirdMobileDrawerDragOffset,
+  shouldCloseThirdMobileDrawer,
+} from './thirdMobileDrawerGesture';
 import { useThirdRuntime } from '../../third/ThirdProvider';
 import {
   THIRD_DEFAULT_CAMERA_STATE,
@@ -155,6 +159,11 @@ type HierarchyTreeNode = {
 };
 
 type HierarchyDropTarget = string | typeof HIERARCHY_ROOT_DROP_TARGET | null;
+
+type MobileDrawerDragState = {
+  pointerId: number;
+  startY: number;
+};
 
 const applyMaterialParams = (
   material: THREE.MeshPhongMaterial,
@@ -702,6 +711,9 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const viewportMenuRef = useRef<HTMLDivElement | null>(null);
   const hierarchyMenuRef = useRef<HTMLDivElement | null>(null);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
+  const mobileUtilityDrawerRef = useRef<HTMLElement | null>(null);
+  const mobileDrawerDragStateRef = useRef<MobileDrawerDragState | null>(null);
+  const suppressMobileDrawerHandleClickRef = useRef(false);
   const projectionModeRef = useRef<ThirdProjectionMode>(cameraState.projectionMode);
   const utilityTabRefsRef = useRef<Partial<Record<ThirdUtilityTabId, HTMLButtonElement | null>>>({});
   const initialUtilityPanelSession = useMemo<ThirdUtilityPanelSession>(
@@ -724,6 +736,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const [mobileLayout, setMobileLayout] = useState<boolean>(
     () => typeof window !== 'undefined' && isThirdMobileUtilityViewport(window.innerWidth)
   );
+  const [mobileDrawerDragOffsetY, setMobileDrawerDragOffsetY] = useState(0);
+  const [mobileDrawerDragging, setMobileDrawerDragging] = useState(false);
   const [mobileToolbarExpanded, setMobileToolbarExpanded] = useState(false);
   const [viewportMenu, setViewportMenu] = useState<ViewportMenuState | null>(null);
   const [hierarchyMenu, setHierarchyMenu] = useState<HierarchyMenuState | null>(null);
@@ -908,13 +922,85 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     setUtilityPanelVisible(true);
   }, []);
 
+  const hideUtilityPanel = useCallback(() => {
+    setUtilityPanelVisible(false);
+  }, []);
+
+  const resetMobileDrawerDrag = useCallback(() => {
+    mobileDrawerDragStateRef.current = null;
+    suppressMobileDrawerHandleClickRef.current = false;
+    setMobileDrawerDragging(false);
+    setMobileDrawerDragOffsetY(0);
+  }, []);
+
   const toggleMobileToolbar = useCallback(() => {
     setMobileToolbarExpanded((prev) => !prev);
   }, []);
 
-  const hideUtilityPanel = useCallback(() => {
-    setUtilityPanelVisible(false);
+  const onMobileDrawerHandlePointerDown = useCallback((
+    event: React.PointerEvent<HTMLButtonElement>
+  ) => {
+    mobileDrawerDragStateRef.current = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+    };
+    suppressMobileDrawerHandleClickRef.current = false;
+    setMobileDrawerDragging(true);
+    setMobileDrawerDragOffsetY(0);
+    event.currentTarget.setPointerCapture(event.pointerId);
   }, []);
+
+  const onMobileDrawerHandlePointerMove = useCallback((
+    event: React.PointerEvent<HTMLButtonElement>
+  ) => {
+    const dragState = mobileDrawerDragStateRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+    const dragOffsetY = clampThirdMobileDrawerDragOffset(event.clientY - dragState.startY);
+    if (dragOffsetY > 3) {
+      suppressMobileDrawerHandleClickRef.current = true;
+    }
+    setMobileDrawerDragOffsetY(dragOffsetY);
+  }, []);
+
+  const onMobileDrawerHandlePointerUpOrCancel = useCallback((
+    event: React.PointerEvent<HTMLButtonElement>
+  ) => {
+    const dragState = mobileDrawerDragStateRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    if (event.type === 'pointercancel') {
+      resetMobileDrawerDrag();
+      return;
+    }
+
+    const dragOffsetY = clampThirdMobileDrawerDragOffset(event.clientY - dragState.startY);
+    const drawerHeight = mobileUtilityDrawerRef.current?.getBoundingClientRect().height ?? 0;
+    const shouldClose = shouldCloseThirdMobileDrawer({
+      dragOffsetY,
+      sheetHeight: drawerHeight,
+    });
+
+    resetMobileDrawerDrag();
+    if (shouldClose) {
+      hideUtilityPanel();
+    }
+  }, [hideUtilityPanel, resetMobileDrawerDrag]);
+
+  const onMobileDrawerHandleClick = useCallback((
+    event: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    if (suppressMobileDrawerHandleClickRef.current) {
+      suppressMobileDrawerHandleClickRef.current = false;
+      event.preventDefault();
+      return;
+    }
+    hideUtilityPanel();
+  }, [hideUtilityPanel]);
 
   const activateUtilityTab = useCallback((tabId: ThirdUtilityTabId) => {
     setActiveUtilityTab(resolveNextVisibleThirdUtilityTab({ currentTab: tabId }));
@@ -2959,6 +3045,11 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   }, [mobileLayout]);
 
   useEffect(() => {
+    if (mobileLayout && utilityPanelVisible) return;
+    resetMobileDrawerDrag();
+  }, [mobileLayout, resetMobileDrawerDrag, utilityPanelVisible]);
+
+  useEffect(() => {
     if (!renamingObjectId) return;
     const rafId = window.requestAnimationFrame(() => {
       const input = renameInputRef.current;
@@ -3547,7 +3638,11 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
           <button
             type="button"
             className={styles.mobileSheetHandleBtn}
-            onClick={hideUtilityPanel}
+            onClick={onMobileDrawerHandleClick}
+            onPointerDown={onMobileDrawerHandlePointerDown}
+            onPointerMove={onMobileDrawerHandlePointerMove}
+            onPointerUp={onMobileDrawerHandlePointerUpOrCancel}
+            onPointerCancel={onMobileDrawerHandlePointerUpOrCancel}
             aria-label="Hide panel"
             title="Hide panel"
           >
@@ -3762,7 +3857,12 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       ) : null}
 
       {utilityPanelVisible && mobileLayout ? (
-        <section className={styles.mobileUtilityDrawer} aria-label="THIRD mobile utility drawer">
+        <section
+          ref={mobileUtilityDrawerRef}
+          className={`${styles.mobileUtilityDrawer} ${mobileDrawerDragging ? styles.mobileUtilityDrawerDragging : ''}`.trim()}
+          style={{ transform: `translateY(${mobileDrawerDragOffsetY}px)` }}
+          aria-label="THIRD mobile utility drawer"
+        >
           {renderUtilityPanel({ mobile: true })}
         </section>
       ) : null}
