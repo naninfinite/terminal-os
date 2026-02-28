@@ -1,6 +1,6 @@
 import type { ThirdEditorMode, ThirdProjectionMode, ThirdVec3 } from '../../third/types';
 
-export type ThirdViewportMenuGroupId = 'add' | 'camera' | 'scene' | 'object' | 'inspector';
+export type ThirdViewportMenuGroupId = 'add' | 'camera' | 'scene' | 'object' | 'panel';
 export type ThirdCameraPresetId = 'top' | 'front' | 'right';
 
 export const CAMERA_PRESET_IDS: ReadonlyArray<ThirdCameraPresetId> = ['top', 'front', 'right'];
@@ -20,9 +20,7 @@ export type ThirdViewportMenuActionId =
   | 'object_duplicate'
   | 'object_delete'
   | 'object_toggle_physics'
-  | 'inspector_toggle_visibility'
-  | 'inspector_collapse_all'
-  | 'inspector_expand_all';
+  | 'panel_toggle_visibility';
 
 export type ThirdViewportMenuItem = {
   id: ThirdViewportMenuActionId;
@@ -46,7 +44,7 @@ export type BuildThirdViewportMenuArgs = {
   mode: ThirdEditorMode;
   snapEnabled: boolean;
   projectionMode: ThirdProjectionMode;
-  inspectorVisible: boolean;
+  panelVisible: boolean;
   hasSelection: boolean;
   selectedObjectLocked: boolean;
   selectedObjectPhysicsEnabled: boolean;
@@ -133,15 +131,13 @@ export const buildThirdViewportMenu = (
       ],
     },
     {
-      id: 'inspector',
-      label: 'INSPECTOR',
+      id: 'panel',
+      label: 'PANEL',
       items: [
         {
-          id: 'inspector_toggle_visibility',
-          label: args.inspectorVisible ? 'HIDE INSPECTOR' : 'SHOW INSPECTOR',
+          id: 'panel_toggle_visibility',
+          label: args.panelVisible ? 'HIDE PANEL' : 'SHOW PANEL',
         },
-        { id: 'inspector_collapse_all', label: 'COLLAPSE ALL' },
-        { id: 'inspector_expand_all', label: 'EXPAND ALL' },
       ],
     },
   ];

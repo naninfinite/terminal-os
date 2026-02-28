@@ -11,13 +11,13 @@ describe('thirdViewportMenu model', () => {
       mode: 'play',
       snapEnabled: false,
       projectionMode: 'perspective',
-      inspectorVisible: true,
+      panelVisible: true,
       hasSelection: true,
       selectedObjectLocked: false,
       selectedObjectPhysicsEnabled: false,
     });
 
-    expect(groups.map((group) => group.id)).toEqual(['add', 'camera', 'scene', 'object', 'inspector']);
+    expect(groups.map((group) => group.id)).toEqual(['add', 'camera', 'scene', 'object', 'panel']);
 
     const cameraItems = groups.find((group) => group.id === 'camera')?.items ?? [];
     expect(cameraItems.map((item) => item.id)).toEqual([
@@ -27,6 +27,10 @@ describe('thirdViewportMenu model', () => {
       'camera_view_right',
       'camera_reset',
     ]);
+
+    const panelItems = groups.find((group) => group.id === 'panel')?.items ?? [];
+    expect(panelItems.map((item) => item.id)).toEqual(['panel_toggle_visibility']);
+    expect(panelItems[0]?.label).toBe('HIDE PANEL');
   });
 
   it('disables object actions without a selected object', () => {
@@ -34,7 +38,7 @@ describe('thirdViewportMenu model', () => {
       mode: 'edit',
       snapEnabled: true,
       projectionMode: 'orthographic',
-      inspectorVisible: false,
+      panelVisible: false,
       hasSelection: false,
       selectedObjectLocked: false,
       selectedObjectPhysicsEnabled: false,
@@ -52,7 +56,7 @@ describe('thirdViewportMenu model', () => {
       mode: 'edit',
       snapEnabled: true,
       projectionMode: 'perspective',
-      inspectorVisible: true,
+      panelVisible: true,
       hasSelection: true,
       selectedObjectLocked: true,
       selectedObjectPhysicsEnabled: true,

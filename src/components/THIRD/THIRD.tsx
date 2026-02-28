@@ -27,10 +27,16 @@ import {
 } from './thirdInspectorCameraLayout';
 import {
   createInitialThirdInspectorSectionState,
-  createThirdInspectorSectionState,
   type ThirdInspectorSectionId,
   type ThirdInspectorSectionState,
 } from './thirdInspectorSections';
+import {
+  THIRD_UTILITY_TAB_IDS,
+  getThirdUtilityTabLabel,
+  isThirdInspectorSectionTab,
+  resolveNextVisibleThirdUtilityTab,
+  type ThirdUtilityTabId,
+} from './thirdUtilityTabs';
 import {
   resolveFocusCameraDistance,
   resolveThirdCameraHotkey,
@@ -53,11 +59,12 @@ import {
   resolveThirdMaterialColorHex,
 } from './thirdTheme';
 import {
-  getThirdUtilityVisibilitySession,
-  resolveInitialThirdUtilityVisibility,
-  setThirdUtilityVisibilitySession,
-  type ThirdUtilityVisibility,
-} from './thirdMobileUtilityVisibility';
+  getThirdUtilityPanelSession,
+  isThirdMobileUtilityViewport,
+  resolveInitialThirdUtilityPanelSession,
+  setThirdUtilityPanelSession,
+  type ThirdUtilityPanelSession,
+} from './thirdUtilityPanelSession';
 import { useThirdRuntime } from '../../third/ThirdProvider';
 import {
   THIRD_DEFAULT_CAMERA_STATE,
@@ -143,7 +150,6 @@ type HierarchyTreeNode = {
 };
 
 type HierarchyDropTarget = string | typeof HIERARCHY_ROOT_DROP_TARGET | null;
-type MobileUtilityPanel = 'scene' | 'inspector';
 
 const applyMaterialParams = (
   material: THREE.MeshPhongMaterial,
@@ -692,10 +698,11 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const hierarchyMenuRef = useRef<HTMLDivElement | null>(null);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
   const projectionModeRef = useRef<ThirdProjectionMode>(cameraState.projectionMode);
-  const initialUtilityVisibility = useMemo<ThirdUtilityVisibility>(
-    () => resolveInitialThirdUtilityVisibility(
+  const utilityTabRefsRef = useRef<Partial<Record<ThirdUtilityTabId, HTMLButtonElement | null>>>({});
+  const initialUtilityPanelSession = useMemo<ThirdUtilityPanelSession>(
+    () => resolveInitialThirdUtilityPanelSession(
       typeof window === 'undefined' ? null : window.innerWidth,
-      getThirdUtilityVisibilitySession()
+      getThirdUtilityPanelSession()
     ),
     []
   );
@@ -708,9 +715,13 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const [inspectorSections, setInspectorSections] = useState<InspectorSectionState>(
     () => createInitialThirdInspectorSectionState()
   );
-  const [sceneWindowVisible, setSceneWindowVisible] = useState(initialUtilityVisibility.sceneWindowVisible);
-  const [inspectorWindowVisible, setInspectorWindowVisible] = useState(initialUtilityVisibility.inspectorWindowVisible);
-  const [mobileUtilityPanel, setMobileUtilityPanel] = useState<MobileUtilityPanel>('scene');
+  const [utilityPanelVisible, setUtilityPanelVisible] = useState(initialUtilityPanelSession.panelVisible);
+  const [activeUtilityTab, setActiveUtilityTab] = useState<ThirdUtilityTabId>(
+    resolveNextVisibleThirdUtilityTab({ currentTab: initialUtilityPanelSession.activeTab })
+  );
+  const [mobileLayout, setMobileLayout] = useState<boolean>(
+    () => typeof window !== 'undefined' && isThirdMobileUtilityViewport(window.innerWidth)
+  );
   const [viewportMenu, setViewportMenu] = useState<ViewportMenuState | null>(null);
   const [hierarchyMenu, setHierarchyMenu] = useState<HierarchyMenuState | null>(null);
   const [hierarchyExpanded, setHierarchyExpanded] = useState(true);
@@ -738,18 +749,19 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const isEditMode = editorMode === 'edit';
   const selectedObjectLocked = selectedObject?.locked === true;
   const canEditSelectedObject = isEditMode && selectedObject != null && !selectedObjectLocked;
+  const sceneTabVisible = utilityPanelVisible && activeUtilityTab === 'scene';
   const viewportMenuGroups = useMemo(() => buildThirdViewportMenu({
     mode: editorMode,
     snapEnabled,
     projectionMode: cameraState.projectionMode,
-    inspectorVisible: inspectorWindowVisible,
+    panelVisible: utilityPanelVisible,
     hasSelection: selectedObject != null,
     selectedObjectLocked,
     selectedObjectPhysicsEnabled: selectedObject?.physicsEnabled ?? false,
   }), [
     cameraState.projectionMode,
     editorMode,
-    inspectorWindowVisible,
+    utilityPanelVisible,
     selectedObjectLocked,
     selectedObject,
     snapEnabled,
@@ -880,9 +892,69 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     setInspectorSections((prev) => ({ ...prev, [section]: !prev[section] }));
   }, []);
 
-  const setAllInspectorSections = useCallback((expanded: boolean) => {
-    setInspectorSections(createThirdInspectorSectionState(expanded));
+  const setUtilityTabButtonRef = useCallback((tabId: ThirdUtilityTabId, node: HTMLButtonElement | null) => {
+    utilityTabRefsRef.current[tabId] = node;
   }, []);
+
+  const focusUtilityTab = useCallback((tabId: ThirdUtilityTabId) => {
+    utilityTabRefsRef.current[tabId]?.focus();
+  }, []);
+
+  const openUtilityPanel = useCallback(() => {
+    setUtilityPanelVisible(true);
+  }, []);
+
+  const hideUtilityPanel = useCallback(() => {
+    setUtilityPanelVisible(false);
+  }, []);
+
+  const activateUtilityTab = useCallback((tabId: ThirdUtilityTabId) => {
+    setActiveUtilityTab(resolveNextVisibleThirdUtilityTab({ currentTab: tabId }));
+    setUtilityPanelVisible(true);
+  }, []);
+
+  const onUtilityTabKeyDown = useCallback((
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    tabId: ThirdUtilityTabId
+  ) => {
+    const currentIndex = THIRD_UTILITY_TAB_IDS.indexOf(tabId);
+    if (currentIndex < 0) return;
+
+    const focusAndActivate = (nextTabId: ThirdUtilityTabId) => {
+      activateUtilityTab(nextTabId);
+      window.requestAnimationFrame(() => focusUtilityTab(nextTabId));
+    };
+
+    switch (event.key) {
+      case 'ArrowLeft': {
+        event.preventDefault();
+        const nextIndex = currentIndex === 0 ? THIRD_UTILITY_TAB_IDS.length - 1 : currentIndex - 1;
+        focusAndActivate(THIRD_UTILITY_TAB_IDS[nextIndex]);
+        return;
+      }
+      case 'ArrowRight': {
+        event.preventDefault();
+        const nextIndex = currentIndex === THIRD_UTILITY_TAB_IDS.length - 1 ? 0 : currentIndex + 1;
+        focusAndActivate(THIRD_UTILITY_TAB_IDS[nextIndex]);
+        return;
+      }
+      case 'Home':
+        event.preventDefault();
+        focusAndActivate(THIRD_UTILITY_TAB_IDS[0]);
+        return;
+      case 'End':
+        event.preventDefault();
+        focusAndActivate(THIRD_UTILITY_TAB_IDS[THIRD_UTILITY_TAB_IDS.length - 1]);
+        return;
+      case 'Enter':
+      case ' ':
+        event.preventDefault();
+        activateUtilityTab(tabId);
+        return;
+      default:
+        return;
+    }
+  }, [activateUtilityTab, focusUtilityTab]);
 
   const toggleHierarchyNode = useCallback((id: string) => {
     setHierarchyCollapsedIds((prev) => {
@@ -1501,14 +1573,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
           setObjectPhysicsEnabled(selectedObject.id, !selectedObject.physicsEnabled);
         }
         break;
-      case 'inspector_toggle_visibility':
-        setInspectorWindowVisible((prev) => !prev);
-        break;
-      case 'inspector_collapse_all':
-        setAllInspectorSections(false);
-        break;
-      case 'inspector_expand_all':
-        setAllInspectorSections(true);
+      case 'panel_toggle_visibility':
+        setUtilityPanelVisible((prev) => !prev);
         break;
       default:
         break;
@@ -1524,9 +1590,9 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     saveCameraFromRuntime,
     selectedObject,
     selectedObjectLocked,
-    setAllInspectorSections,
     setObjectPhysicsEnabled,
     setProjectionMode,
+    setUtilityPanelVisible,
     toggleMode,
     toggleSnap,
   ]);
@@ -2832,9 +2898,9 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
   useEffect(() => {
     if (!hierarchyMenu) return;
-    if (sceneWindowVisible) return;
+    if (sceneTabVisible) return;
     closeHierarchyMenu();
-  }, [closeHierarchyMenu, hierarchyMenu, sceneWindowVisible]);
+  }, [closeHierarchyMenu, hierarchyMenu, sceneTabVisible]);
 
   useEffect(() => {
     if (!hierarchyMenu) return;
@@ -2857,26 +2923,28 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
   useEffect(() => {
     if (!renamingObjectId) return;
-    if (sceneWindowVisible) return;
+    if (sceneTabVisible) return;
     cancelRenameObject();
-  }, [cancelRenameObject, renamingObjectId, sceneWindowVisible]);
+  }, [cancelRenameObject, renamingObjectId, sceneTabVisible]);
 
   useEffect(() => {
-    setThirdUtilityVisibilitySession({
-      sceneWindowVisible,
-      inspectorWindowVisible,
+    setThirdUtilityPanelSession({
+      panelVisible: utilityPanelVisible,
+      activeTab: resolveNextVisibleThirdUtilityTab({ currentTab: activeUtilityTab }),
     });
-  }, [inspectorWindowVisible, sceneWindowVisible]);
+  }, [activeUtilityTab, utilityPanelVisible]);
 
   useEffect(() => {
-    if (mobileUtilityPanel === 'scene' && !sceneWindowVisible && inspectorWindowVisible) {
-      setMobileUtilityPanel('inspector');
-      return;
-    }
-    if (mobileUtilityPanel === 'inspector' && !inspectorWindowVisible && sceneWindowVisible) {
-      setMobileUtilityPanel('scene');
-    }
-  }, [inspectorWindowVisible, mobileUtilityPanel, sceneWindowVisible]);
+    const onResize = () => {
+      setMobileLayout(isThirdMobileUtilityViewport(window.innerWidth));
+    };
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', onResize);
+    };
+  }, []);
 
   useEffect(() => {
     if (!renamingObjectId) return;
@@ -3035,51 +3103,68 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     })
   );
 
-  const renderScenePanel = (options: { mobile?: boolean } = {}): React.ReactNode => (
-    <section className={`${styles.utilityPanel} ${options.mobile ? styles.mobilePanel : ''}`.trim()}>
-      <header className={styles.utilityHeader}>
-        <div className={styles.utilityHeaderMeta}>
-          <p className={styles.utilityTitle}>SCENE</p>
-          <span className={styles.utilitySubtle}>{`${objects.length} OBJECTS`}</span>
-        </div>
+  const renderSceneTabContent = (): React.ReactNode => (
+    <>
+      <div className={styles.sceneOptionsRow}>
         <button
           type="button"
-          className={styles.toolBtn}
-          onClick={() => setSceneWindowVisible(false)}
+          className={`${styles.toolBtn} ${sceneLockedOnly ? styles.toolBtnActive : ''}`.trim()}
+          onClick={() => setSceneLockedOnly((prev) => !prev)}
         >
-          HIDE
+          LOCKED
         </button>
-      </header>
-      <div className={styles.utilityBody}>
-        <div className={styles.sceneOptionsRow}>
-          <button
-            type="button"
-            className={`${styles.toolBtn} ${sceneLockedOnly ? styles.toolBtnActive : ''}`.trim()}
-            onClick={() => setSceneLockedOnly((prev) => !prev)}
-          >
-            LOCKED
-          </button>
-          <button
-            type="button"
-            className={`${styles.toolBtn} ${sceneSortLockedFirst ? styles.toolBtnActive : ''}`.trim()}
-            onClick={() => setSceneSortLockedFirst((prev) => !prev)}
-          >
-            LOCK FIRST
-          </button>
-        </div>
-        <span className={styles.inlineStatus}>OBJECT ACTIONS VIA HIERARCHY CONTEXT MENU.</span>
-        <div
-          className={styles.objectList}
-          aria-label="THIRD object hierarchy"
-          tabIndex={0}
-          onPointerDown={onHierarchyListPointerDown}
-          onPointerMove={onHierarchyListPointerMove}
-          onPointerUp={onHierarchyListPointerUpOrCancel}
-          onPointerCancel={onHierarchyListPointerUpOrCancel}
-          onClickCapture={onHierarchyListClickCapture}
+        <button
+          type="button"
+          className={`${styles.toolBtn} ${sceneSortLockedFirst ? styles.toolBtnActive : ''}`.trim()}
+          onClick={() => setSceneSortLockedFirst((prev) => !prev)}
+        >
+          LOCK FIRST
+        </button>
+      </div>
+      <span className={styles.inlineStatus}>OBJECT ACTIONS VIA HIERARCHY CONTEXT MENU.</span>
+      <div
+        className={styles.objectList}
+        aria-label="THIRD object hierarchy"
+        tabIndex={0}
+        onPointerDown={onHierarchyListPointerDown}
+        onPointerMove={onHierarchyListPointerMove}
+        onPointerUp={onHierarchyListPointerUpOrCancel}
+        onPointerCancel={onHierarchyListPointerUpOrCancel}
+        onClickCapture={onHierarchyListClickCapture}
+        onContextMenu={(event) => {
+          const target = event.target as HTMLElement | null;
+          if (target?.closest('[data-hierarchy-node="true"]')) return;
+          event.preventDefault();
+          event.stopPropagation();
+          openHierarchyMenuForScene({
+            clientX: event.clientX,
+            clientY: event.clientY,
+          });
+        }}
+        onKeyDown={(event) => {
+          if (event.defaultPrevented) return;
+          if (event.target !== event.currentTarget) return;
+          if (event.key !== 'ContextMenu' && !(event.shiftKey && event.key === 'F10')) return;
+          event.preventDefault();
+          const rect = event.currentTarget.getBoundingClientRect();
+          openHierarchyMenuForScene({
+            clientX: rect.left + rect.width * 0.25,
+            clientY: rect.top + 28,
+          });
+        }}
+      >
+        <button
+          type="button"
+          className={[
+            styles.hierarchyRoot,
+            (isEditMode && hierarchyDragObjectId && canSetHierarchyParent(hierarchyDragObjectId, null))
+              ? styles.hierarchyRootDropHint
+              : '',
+            hierarchyDropTargetId === HIERARCHY_ROOT_DROP_TARGET ? styles.objectRowDropTarget : '',
+          ].join(' ').trim()}
+          aria-expanded={hierarchyExpanded}
+          onClick={() => setHierarchyExpanded((prev) => !prev)}
           onContextMenu={(event) => {
-            const target = event.target as HTMLElement | null;
-            if (target?.closest('[data-hierarchy-node="true"]')) return;
             event.preventDefault();
             event.stopPropagation();
             openHierarchyMenuForScene({
@@ -3088,409 +3173,441 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
             });
           }}
           onKeyDown={(event) => {
-            if (event.defaultPrevented) return;
-            if (event.target !== event.currentTarget) return;
             if (event.key !== 'ContextMenu' && !(event.shiftKey && event.key === 'F10')) return;
             event.preventDefault();
             const rect = event.currentTarget.getBoundingClientRect();
             openHierarchyMenuForScene({
-              clientX: rect.left + rect.width * 0.25,
-              clientY: rect.top + 28,
+              clientX: rect.left + rect.width / 2,
+              clientY: rect.top + rect.height / 2,
             });
           }}
-        >
-          <button
-            type="button"
-            className={[
-              styles.hierarchyRoot,
-              (isEditMode && hierarchyDragObjectId && canSetHierarchyParent(hierarchyDragObjectId, null))
-                ? styles.hierarchyRootDropHint
-                : '',
-              hierarchyDropTargetId === HIERARCHY_ROOT_DROP_TARGET ? styles.objectRowDropTarget : '',
-            ].join(' ').trim()}
-            aria-expanded={hierarchyExpanded}
-            onClick={() => setHierarchyExpanded((prev) => !prev)}
-            onContextMenu={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              openHierarchyMenuForScene({
-                clientX: event.clientX,
-                clientY: event.clientY,
-              });
-            }}
-            onKeyDown={(event) => {
-              if (event.key !== 'ContextMenu' && !(event.shiftKey && event.key === 'F10')) return;
-              event.preventDefault();
-              const rect = event.currentTarget.getBoundingClientRect();
-              openHierarchyMenuForScene({
-                clientX: rect.left + rect.width / 2,
-                clientY: rect.top + rect.height / 2,
-              });
-            }}
-            onDragOver={(event) => {
-              if (!isEditMode || !hierarchyDragObjectId || !canSetHierarchyParent(hierarchyDragObjectId, null)) {
-                if (hierarchyDropTargetId === HIERARCHY_ROOT_DROP_TARGET) {
-                  setHierarchyDropTargetId(null);
-                }
-                return;
-              }
-              event.preventDefault();
-              event.dataTransfer.dropEffect = 'move';
-              setHierarchyDropTargetId(HIERARCHY_ROOT_DROP_TARGET);
-            }}
-            onDragLeave={() => {
+          onDragOver={(event) => {
+            if (!isEditMode || !hierarchyDragObjectId || !canSetHierarchyParent(hierarchyDragObjectId, null)) {
               if (hierarchyDropTargetId === HIERARCHY_ROOT_DROP_TARGET) {
                 setHierarchyDropTargetId(null);
               }
-            }}
-            onDrop={(event) => {
-              if (!isEditMode || !hierarchyDragObjectId || !canSetHierarchyParent(hierarchyDragObjectId, null)) return;
-              event.preventDefault();
-              dropHierarchyParent(null);
-              clearHierarchyDragState();
-            }}
-          >
-            SCENE ({visibleHierarchyObjects.length})
-          </button>
-          {hierarchyExpanded ? (
-            <div className={styles.hierarchyChildren}>
-              {hierarchyTree.length > 0
-                ? renderHierarchyNodes(hierarchyTree, 0)
-                : <p className={styles.inspectorEmpty}>NO OBJECTS MATCH CURRENT FILTER.</p>}
-            </div>
-          ) : null}
-        </div>
+              return;
+            }
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            setHierarchyDropTargetId(HIERARCHY_ROOT_DROP_TARGET);
+          }}
+          onDragLeave={() => {
+            if (hierarchyDropTargetId === HIERARCHY_ROOT_DROP_TARGET) {
+              setHierarchyDropTargetId(null);
+            }
+          }}
+          onDrop={(event) => {
+            if (!isEditMode || !hierarchyDragObjectId || !canSetHierarchyParent(hierarchyDragObjectId, null)) return;
+            event.preventDefault();
+            dropHierarchyParent(null);
+            clearHierarchyDragState();
+          }}
+        >
+          SCENE ({visibleHierarchyObjects.length})
+        </button>
+        {hierarchyExpanded ? (
+          <div className={styles.hierarchyChildren}>
+            {hierarchyTree.length > 0
+              ? renderHierarchyNodes(hierarchyTree, 0)
+              : <p className={styles.inspectorEmpty}>NO OBJECTS MATCH CURRENT FILTER.</p>}
+          </div>
+        ) : null}
       </div>
-    </section>
+    </>
   );
 
-  const renderInspectorPanel = (options: { mobile?: boolean } = {}): React.ReactNode => (
-    <section className={`${styles.utilityPanel} ${options.mobile ? styles.mobilePanel : ''}`.trim()}>
-      <header className={styles.utilityHeader}>
-        <div className={styles.utilityHeaderMeta}>
-          <p className={styles.utilityTitle}>INSPECTOR</p>
-          <span className={`${styles.editTag} ${isEditMode ? styles.editTagActive : ''}`.trim()}>
-            {isEditMode ? 'EDIT' : 'PLAY'}
-          </span>
-          <span className={styles.inspectorObjectName}>{selectedObject?.name ?? 'NO SELECTION'}</span>
-        </div>
-        <div className={styles.utilityHeaderActions}>
-          <button type="button" className={styles.toolBtn} onClick={undo} disabled={!canUndo}>
-            UNDO
-          </button>
-          <button type="button" className={styles.toolBtn} onClick={redo} disabled={!canRedo}>
-            REDO
-          </button>
-          <button type="button" className={styles.toolBtn} onClick={() => setAllInspectorSections(false)}>
-            COLLAPSE
-          </button>
-          <button type="button" className={styles.toolBtn} onClick={() => setAllInspectorSections(true)}>
-            EXPAND
-          </button>
-          <button
-            type="button"
-            className={styles.toolBtn}
-            onClick={() => setInspectorWindowVisible(false)}
-          >
-            HIDE
-          </button>
-        </div>
-      </header>
-
-      <div className={styles.utilityBody}>
-        <section className={styles.inspectorSection}>
-          <button
-            type="button"
-            className={styles.inspectorSectionToggle}
-            onClick={() => toggleInspectorSection('transform')}
-            aria-expanded={inspectorSections.transform}
-          >
-            TRANSFORM
-          </button>
-          {inspectorSections.transform ? (
-            selectedObject ? (
-              <div className={styles.inspectorSectionBody}>
-                <div className={styles.toolRow}>
-                  <label className={styles.lockToggleLabel}>
-                    <input
-                      type="checkbox"
-                      className={styles.lockToggleCheckbox}
-                      checked={selectedObjectLocked}
-                      onChange={(event) => setObjectLocked(selectedObject.id, event.target.checked)}
-                      aria-label="Lock selected object"
-                    />
-                    LOCK
-                  </label>
-                </div>
-                {selectedObjectLocked ? (
-                  <p className={styles.inspectorEmpty}>OBJECT IS LOCKED. UNLOCK TO EDIT TRANSFORM.</p>
-                ) : isEditMode ? (
-                  <div className={styles.inspectorGrid}>
-                    {/* TODO(THIRD transform): Support Unity-style click-drag horizontal scrubbing for transform numeric fields. */}
-                    {INSPECTOR_GROUPS.map((group) => (
-                      <div key={group} className={styles.inspectorVectorRow}>
-                        <span className={styles.inspectorVectorLabel}>{inspectorGroupLabel(group)}</span>
-                        {INSPECTOR_AXES.map((axis) => {
-                          const fieldKey = toInspectorFieldKey(group, axis);
-                          return (
-                            <label key={fieldKey} className={styles.inspectorAxisField}>
-                              <span className={styles.inspectorAxisToken}>{axis.toUpperCase()}</span>
-                              <input
-                                type="number"
-                                className={styles.inspectorInput}
-                                step={inspectorStepByGroup(group)}
-                                value={inspectorDraft[fieldKey] ?? ''}
-                                inputMode="decimal"
-                                onFocus={() => onInspectorFieldFocus(group, axis)}
-                                onChange={(event) => onInspectorFieldChange(group, axis, event.target.value)}
-                                onBlur={() => onInspectorFieldBlur(group, axis)}
-                                aria-label={`${inspectorGroupLabel(group)} ${axis.toUpperCase()}`}
-                              />
-                            </label>
-                          );
-                        })}
-                      </div>
-                    ))}
+  const renderTransformSection = (): React.ReactNode => (
+    <section className={styles.inspectorSection}>
+      <button
+        type="button"
+        className={styles.inspectorSectionToggle}
+        onClick={() => toggleInspectorSection('transform')}
+        aria-expanded={inspectorSections.transform}
+      >
+        TRANSFORM
+      </button>
+      {inspectorSections.transform ? (
+        selectedObject ? (
+          <div className={styles.inspectorSectionBody}>
+            <div className={styles.toolRow}>
+              <label className={styles.lockToggleLabel}>
+                <input
+                  type="checkbox"
+                  className={styles.lockToggleCheckbox}
+                  checked={selectedObjectLocked}
+                  onChange={(event) => setObjectLocked(selectedObject.id, event.target.checked)}
+                  aria-label="Lock selected object"
+                />
+                LOCK
+              </label>
+            </div>
+            {selectedObjectLocked ? (
+              <p className={styles.inspectorEmpty}>OBJECT IS LOCKED. UNLOCK TO EDIT TRANSFORM.</p>
+            ) : isEditMode ? (
+              <div className={styles.inspectorGrid}>
+                {/* TODO(THIRD transform): Support Unity-style click-drag horizontal scrubbing for transform numeric fields. */}
+                {INSPECTOR_GROUPS.map((group) => (
+                  <div key={group} className={styles.inspectorVectorRow}>
+                    <span className={styles.inspectorVectorLabel}>{inspectorGroupLabel(group)}</span>
+                    {INSPECTOR_AXES.map((axis) => {
+                      const fieldKey = toInspectorFieldKey(group, axis);
+                      return (
+                        <label key={fieldKey} className={styles.inspectorAxisField}>
+                          <span className={styles.inspectorAxisToken}>{axis.toUpperCase()}</span>
+                          <input
+                            type="number"
+                            className={styles.inspectorInput}
+                            step={inspectorStepByGroup(group)}
+                            value={inspectorDraft[fieldKey] ?? ''}
+                            inputMode="decimal"
+                            onFocus={() => onInspectorFieldFocus(group, axis)}
+                            onChange={(event) => onInspectorFieldChange(group, axis, event.target.value)}
+                            onBlur={() => onInspectorFieldBlur(group, axis)}
+                            aria-label={`${inspectorGroupLabel(group)} ${axis.toUpperCase()}`}
+                          />
+                        </label>
+                      );
+                    })}
                   </div>
-                ) : (
-                  <p className={styles.inspectorEmpty}>TRANSFORM FIELDS ARE READ-ONLY WHILE IN PLAY MODE.</p>
-                )}
+                ))}
               </div>
             ) : (
-              <p className={styles.inspectorEmpty}>SELECT AN OBJECT TO EDIT TRANSFORM.</p>
-            )
-          ) : null}
-        </section>
-
-        <section className={styles.inspectorSection}>
-          <button
-            type="button"
-            className={styles.inspectorSectionToggle}
-            onClick={() => toggleInspectorSection('material')}
-            aria-expanded={inspectorSections.material}
-          >
-            MATERIAL
-          </button>
-          {inspectorSections.material ? (
-            <div className={styles.inspectorSectionBody}>
-              <div className={styles.toolRow}>
-                {MATERIAL_PRESETS.map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    className={`${styles.toolBtn} ${selectedObject?.material.preset === preset ? styles.toolBtnActive : ''}`.trim()}
-                    onClick={() => selectionId && setObjectMaterialPreset(selectionId, preset)}
-                    disabled={!selectionId || !canEditSelectedObject}
-                  >
-                    {preset.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-              <div className={styles.materialSwatchRow} role="group" aria-label="Material color swatches">
-                {MATERIAL_SWATCHES.map((swatch) => (
-                  <button
-                    key={swatch}
-                    type="button"
-                    className={`${styles.materialSwatch} ${selectedObject?.material.color.toLowerCase() === swatch ? styles.materialSwatchActive : ''}`.trim()}
-                    style={{ backgroundColor: swatch }}
-                    onClick={() => selectionId && setObjectMaterialColor(selectionId, swatch)}
-                    disabled={!selectionId || !canEditSelectedObject}
-                    aria-label={`Set material color ${swatch}`}
-                    title={swatch}
-                  />
-                ))}
-              </div>
-              <div className={styles.toolRow}>
-                <label className={styles.materialColorLabel}>
-                  COLOR
-                  <input
-                    type="color"
-                    className={styles.materialColorInput}
-                    value={selectedObject?.material.color ?? '#00ff66'}
-                    onChange={(event) => selectionId && setObjectMaterialColor(selectionId, event.target.value)}
-                    disabled={!selectionId || !canEditSelectedObject}
-                    aria-label="Material custom color"
-                  />
-                </label>
-                <button
-                  type="button"
-                  className={`${styles.toolBtn} ${selectedObject?.material.wireframe ? styles.toolBtnActive : ''}`.trim()}
-                  onClick={() => selectedObject && setObjectMaterialWireframe(selectedObject.id, !selectedObject.material.wireframe)}
-                  disabled={!canEditSelectedObject}
-                >
-                  WIREFRAME: {selectedObject?.material.wireframe ? 'ON' : 'OFF'}
-                </button>
-              </div>
-              {selectedObjectLocked ? (
-                <p className={styles.inspectorEmpty}>MATERIAL CONTROLS ARE DISABLED WHILE OBJECT IS LOCKED.</p>
-              ) : null}
-            </div>
-          ) : null}
-        </section>
-
-        <section className={styles.inspectorSection}>
-          <button
-            type="button"
-            className={styles.inspectorSectionToggle}
-            onClick={() => toggleInspectorSection('animation')}
-            aria-expanded={inspectorSections.animation}
-          >
-            ANIMATION
-          </button>
-          {inspectorSections.animation ? (
-            <div className={styles.inspectorSectionBody}>
-              <div className={styles.toolRow}>
-                <button
-                  type="button"
-                  className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'none' ? styles.toolBtnActive : ''}`.trim()}
-                  onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'none')}
-                  disabled={!selectionId || !canEditSelectedObject}
-                >
-                  NONE
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'bounce' ? styles.toolBtnActive : ''}`.trim()}
-                  onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'bounce')}
-                  disabled={!selectionId || !canEditSelectedObject}
-                >
-                  BOUNCE
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'rotate' ? styles.toolBtnActive : ''}`.trim()}
-                  onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'rotate')}
-                  disabled={!selectionId || !canEditSelectedObject}
-                >
-                  ROTATE
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'pulse' ? styles.toolBtnActive : ''}`.trim()}
-                  onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'pulse')}
-                  disabled={!selectionId || !canEditSelectedObject}
-                >
-                  PULSE
-                </button>
-              </div>
-              {selectedObjectLocked ? (
-                <p className={styles.inspectorEmpty}>ANIMATION CONTROLS ARE DISABLED WHILE OBJECT IS LOCKED.</p>
-              ) : null}
-            </div>
-          ) : null}
-        </section>
-
-        <section className={styles.inspectorSection}>
-          <button
-            type="button"
-            className={styles.inspectorSectionToggle}
-            onClick={() => toggleInspectorSection('physics')}
-            aria-expanded={inspectorSections.physics}
-          >
-            PHYSICS
-          </button>
-          {inspectorSections.physics ? (
-            <div className={styles.inspectorSectionBody}>
-              <button
-                type="button"
-                className={`${styles.objectPhysicsBtn} ${selectedObject?.physicsEnabled ? styles.objectPhysicsBtnActive : ''}`.trim()}
-                onClick={() => selectedObject && setObjectPhysicsEnabled(selectedObject.id, !selectedObject.physicsEnabled)}
-                disabled={!selectedObject || selectedObjectLocked}
-              >
-                {selectedObject?.physicsEnabled ? 'REMOVE PHYSICS' : 'ADD PHYSICS'}
-              </button>
-              <p className={styles.inspectorEmpty}>
-                {selectedObjectLocked
-                  ? 'OBJECT IS LOCKED. UNLOCK TO CHANGE PHYSICS.'
-                  : 'PLAY GRAB/SIM REQUIRES OBJECT PHYSICS ON.'}
-              </p>
-            </div>
-          ) : null}
-        </section>
-
-        <section className={styles.inspectorSection}>
-          <button
-            type="button"
-            className={styles.inspectorSectionToggle}
-            onClick={() => toggleInspectorSection('camera')}
-            aria-expanded={inspectorSections.camera}
-          >
-            CAMERA
-          </button>
-          {inspectorSections.camera ? (
-            <div className={styles.inspectorSectionBody}>
-              {THIRD_INSPECTOR_CAMERA_ROWS.map((row, rowIndex) => (
-                <div
-                  key={`camera-row-${rowIndex}`}
-                  className={`${styles.toolRow} ${row.length === 3 ? styles.toolRowThirds : ''}`.trim()}
-                >
-                  {row.map((actionId) => {
-                    const runCameraAction = (id: ThirdInspectorCameraActionId) => {
-                      switch (id) {
-                        case 'camera_view_top':
-                          applyCameraPreset('top');
-                          return;
-                        case 'camera_view_front':
-                          applyCameraPreset('front');
-                          return;
-                        case 'camera_view_right':
-                          applyCameraPreset('right');
-                          return;
-                        case 'camera_toggle_projection': {
-                          const nextMode: ThirdProjectionMode = cameraState.projectionMode === 'orthographic'
-                            ? 'perspective'
-                            : 'orthographic';
-                          setProjectionMode(nextMode);
-                          saveCameraFromRuntime();
-                          return;
-                        }
-                        case 'camera_reset':
-                          resetCameraView();
-                          return;
-                        default:
-                          return;
-                      }
-                    };
-
-                    const label = (() => {
-                      switch (actionId) {
-                        case 'camera_view_top':
-                          return 'TOP';
-                        case 'camera_view_front':
-                          return 'FRONT';
-                        case 'camera_view_right':
-                          return 'RIGHT';
-                        case 'camera_toggle_projection':
-                          return projectionLabel(cameraState.projectionMode);
-                        case 'camera_reset':
-                          return 'RESET';
-                        default:
-                          return '';
-                      }
-                    })();
-
-                    return (
-                      <button
-                        key={actionId}
-                        type="button"
-                        className={styles.toolBtn}
-                        onClick={() => runCameraAction(actionId)}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
-              <span className={styles.inlineStatus}>RMB OR TOUCH-HOLD VIEWPORT MENU HAS THE SAME CAMERA ACTIONS.</span>
-            </div>
-          ) : null}
-        </section>
-      </div>
+              <p className={styles.inspectorEmpty}>TRANSFORM FIELDS ARE READ-ONLY WHILE IN PLAY MODE.</p>
+            )}
+          </div>
+        ) : (
+          <p className={styles.inspectorEmpty}>SELECT AN OBJECT TO EDIT TRANSFORM.</p>
+        )
+      ) : null}
     </section>
   );
 
-  const anyUtilityWindowVisible = sceneWindowVisible || inspectorWindowVisible;
+  const renderMaterialSection = (): React.ReactNode => (
+    <section className={styles.inspectorSection}>
+      <button
+        type="button"
+        className={styles.inspectorSectionToggle}
+        onClick={() => toggleInspectorSection('material')}
+        aria-expanded={inspectorSections.material}
+      >
+        MATERIAL
+      </button>
+      {inspectorSections.material ? (
+        <div className={styles.inspectorSectionBody}>
+          <div className={styles.toolRow}>
+            {MATERIAL_PRESETS.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                className={`${styles.toolBtn} ${selectedObject?.material.preset === preset ? styles.toolBtnActive : ''}`.trim()}
+                onClick={() => selectionId && setObjectMaterialPreset(selectionId, preset)}
+                disabled={!selectionId || !canEditSelectedObject}
+              >
+                {preset.toUpperCase()}
+              </button>
+            ))}
+          </div>
+          <div className={styles.materialSwatchRow} role="group" aria-label="Material color swatches">
+            {MATERIAL_SWATCHES.map((swatch) => (
+              <button
+                key={swatch}
+                type="button"
+                className={`${styles.materialSwatch} ${selectedObject?.material.color.toLowerCase() === swatch ? styles.materialSwatchActive : ''}`.trim()}
+                style={{ backgroundColor: swatch }}
+                onClick={() => selectionId && setObjectMaterialColor(selectionId, swatch)}
+                disabled={!selectionId || !canEditSelectedObject}
+                aria-label={`Set material color ${swatch}`}
+                title={swatch}
+              />
+            ))}
+          </div>
+          <div className={styles.toolRow}>
+            <label className={styles.materialColorLabel}>
+              COLOR
+              <input
+                type="color"
+                className={styles.materialColorInput}
+                value={selectedObject?.material.color ?? '#00ff66'}
+                onChange={(event) => selectionId && setObjectMaterialColor(selectionId, event.target.value)}
+                disabled={!selectionId || !canEditSelectedObject}
+                aria-label="Material custom color"
+              />
+            </label>
+            <button
+              type="button"
+              className={`${styles.toolBtn} ${selectedObject?.material.wireframe ? styles.toolBtnActive : ''}`.trim()}
+              onClick={() => selectedObject && setObjectMaterialWireframe(selectedObject.id, !selectedObject.material.wireframe)}
+              disabled={!canEditSelectedObject}
+            >
+              WIREFRAME: {selectedObject?.material.wireframe ? 'ON' : 'OFF'}
+            </button>
+          </div>
+          {selectedObjectLocked ? (
+            <p className={styles.inspectorEmpty}>MATERIAL CONTROLS ARE DISABLED WHILE OBJECT IS LOCKED.</p>
+          ) : null}
+        </div>
+      ) : null}
+    </section>
+  );
+
+  const renderAnimationSection = (): React.ReactNode => (
+    <section className={styles.inspectorSection}>
+      <button
+        type="button"
+        className={styles.inspectorSectionToggle}
+        onClick={() => toggleInspectorSection('animation')}
+        aria-expanded={inspectorSections.animation}
+      >
+        ANIMATION
+      </button>
+      {inspectorSections.animation ? (
+        <div className={styles.inspectorSectionBody}>
+          <div className={styles.toolRow}>
+            <button
+              type="button"
+              className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'none' ? styles.toolBtnActive : ''}`.trim()}
+              onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'none')}
+              disabled={!selectionId || !canEditSelectedObject}
+            >
+              NONE
+            </button>
+            <button
+              type="button"
+              className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'bounce' ? styles.toolBtnActive : ''}`.trim()}
+              onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'bounce')}
+              disabled={!selectionId || !canEditSelectedObject}
+            >
+              BOUNCE
+            </button>
+            <button
+              type="button"
+              className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'rotate' ? styles.toolBtnActive : ''}`.trim()}
+              onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'rotate')}
+              disabled={!selectionId || !canEditSelectedObject}
+            >
+              ROTATE
+            </button>
+            <button
+              type="button"
+              className={`${styles.toolBtn} ${selectedObject?.animationPreset === 'pulse' ? styles.toolBtnActive : ''}`.trim()}
+              onClick={() => selectionId && setObjectAnimationPreset(selectionId, 'pulse')}
+              disabled={!selectionId || !canEditSelectedObject}
+            >
+              PULSE
+            </button>
+          </div>
+          {selectedObjectLocked ? (
+            <p className={styles.inspectorEmpty}>ANIMATION CONTROLS ARE DISABLED WHILE OBJECT IS LOCKED.</p>
+          ) : null}
+        </div>
+      ) : null}
+    </section>
+  );
+
+  const renderPhysicsSection = (): React.ReactNode => (
+    <section className={styles.inspectorSection}>
+      <button
+        type="button"
+        className={styles.inspectorSectionToggle}
+        onClick={() => toggleInspectorSection('physics')}
+        aria-expanded={inspectorSections.physics}
+      >
+        PHYSICS
+      </button>
+      {inspectorSections.physics ? (
+        <div className={styles.inspectorSectionBody}>
+          <button
+            type="button"
+            className={`${styles.objectPhysicsBtn} ${selectedObject?.physicsEnabled ? styles.objectPhysicsBtnActive : ''}`.trim()}
+            onClick={() => selectedObject && setObjectPhysicsEnabled(selectedObject.id, !selectedObject.physicsEnabled)}
+            disabled={!selectedObject || selectedObjectLocked}
+          >
+            {selectedObject?.physicsEnabled ? 'REMOVE PHYSICS' : 'ADD PHYSICS'}
+          </button>
+          <p className={styles.inspectorEmpty}>
+            {selectedObjectLocked
+              ? 'OBJECT IS LOCKED. UNLOCK TO CHANGE PHYSICS.'
+              : 'PLAY GRAB/SIM REQUIRES OBJECT PHYSICS ON.'}
+          </p>
+        </div>
+      ) : null}
+    </section>
+  );
+
+  const renderCameraSection = (): React.ReactNode => (
+    <section className={styles.inspectorSection}>
+      <button
+        type="button"
+        className={styles.inspectorSectionToggle}
+        onClick={() => toggleInspectorSection('camera')}
+        aria-expanded={inspectorSections.camera}
+      >
+        CAMERA
+      </button>
+      {inspectorSections.camera ? (
+        <div className={styles.inspectorSectionBody}>
+          {THIRD_INSPECTOR_CAMERA_ROWS.map((row, rowIndex) => (
+            <div
+              key={`camera-row-${rowIndex}`}
+              className={`${styles.toolRow} ${row.length === 3 ? styles.toolRowThirds : ''}`.trim()}
+            >
+              {row.map((actionId) => {
+                const runCameraAction = (id: ThirdInspectorCameraActionId) => {
+                  switch (id) {
+                    case 'camera_view_top':
+                      applyCameraPreset('top');
+                      return;
+                    case 'camera_view_front':
+                      applyCameraPreset('front');
+                      return;
+                    case 'camera_view_right':
+                      applyCameraPreset('right');
+                      return;
+                    case 'camera_toggle_projection': {
+                      const nextMode: ThirdProjectionMode = cameraState.projectionMode === 'orthographic'
+                        ? 'perspective'
+                        : 'orthographic';
+                      setProjectionMode(nextMode);
+                      saveCameraFromRuntime();
+                      return;
+                    }
+                    case 'camera_reset':
+                      resetCameraView();
+                      return;
+                    default:
+                      return;
+                  }
+                };
+
+                const label = (() => {
+                  switch (actionId) {
+                    case 'camera_view_top':
+                      return 'TOP';
+                    case 'camera_view_front':
+                      return 'FRONT';
+                    case 'camera_view_right':
+                      return 'RIGHT';
+                    case 'camera_toggle_projection':
+                      return projectionLabel(cameraState.projectionMode);
+                    case 'camera_reset':
+                      return 'RESET';
+                    default:
+                      return '';
+                  }
+                })();
+
+                return (
+                  <button
+                    key={actionId}
+                    type="button"
+                    className={styles.toolBtn}
+                    onClick={() => runCameraAction(actionId)}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+          <span className={styles.inlineStatus}>RMB OR TOUCH-HOLD VIEWPORT MENU HAS THE SAME CAMERA ACTIONS.</span>
+        </div>
+      ) : null}
+    </section>
+  );
+
+  const renderActiveUtilityTabContent = (): React.ReactNode => {
+    switch (activeUtilityTab) {
+      case 'scene':
+        return renderSceneTabContent();
+      case 'transform':
+        return renderTransformSection();
+      case 'material':
+        return renderMaterialSection();
+      case 'animation':
+        return renderAnimationSection();
+      case 'physics':
+        return renderPhysicsSection();
+      case 'camera':
+        return renderCameraSection();
+      default:
+        return renderSceneTabContent();
+    }
+  };
+
+  const renderUtilityPanel = (options: { mobile?: boolean } = {}): React.ReactNode => {
+    const activeTabLabel = getThirdUtilityTabLabel(activeUtilityTab);
+    const activeTabId = `third-utility-tab-${mode}-${activeUtilityTab}`;
+    const activePanelId = `third-utility-panel-${mode}-${activeUtilityTab}`;
+
+    return (
+      <section className={`${styles.utilityPanel} ${options.mobile ? styles.mobilePanel : ''}`.trim()}>
+        <header className={styles.utilityHeader}>
+          <div className={styles.utilityHeaderMeta}>
+            <p className={styles.utilityTitle}>{activeTabLabel}</p>
+            {activeUtilityTab === 'scene' ? (
+              <span className={styles.utilitySubtle}>{`${objects.length} OBJECTS`}</span>
+            ) : (
+              <>
+                <span className={`${styles.editTag} ${isEditMode ? styles.editTagActive : ''}`.trim()}>
+                  {isEditMode ? 'EDIT' : 'PLAY'}
+                </span>
+                <span className={styles.inspectorObjectName}>{selectedObject?.name ?? 'NO SELECTION'}</span>
+              </>
+            )}
+          </div>
+          <div className={styles.utilityHeaderActions}>
+            {isThirdInspectorSectionTab(activeUtilityTab) ? (
+              <>
+                <button type="button" className={styles.toolBtn} onClick={undo} disabled={!canUndo}>
+                  UNDO
+                </button>
+                <button type="button" className={styles.toolBtn} onClick={redo} disabled={!canRedo}>
+                  REDO
+                </button>
+              </>
+            ) : null}
+            <button
+              type="button"
+              className={styles.toolBtn}
+              onClick={hideUtilityPanel}
+            >
+              HIDE
+            </button>
+          </div>
+        </header>
+        <div className={styles.utilityTabs} role="tablist" aria-label="THIRD utility tabs">
+          {THIRD_UTILITY_TAB_IDS.map((tabId) => {
+            const active = activeUtilityTab === tabId;
+            return (
+              <button
+                key={tabId}
+                id={`third-utility-tab-${mode}-${tabId}`}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                tabIndex={active ? 0 : -1}
+                className={`${styles.utilityTab} ${active ? styles.utilityTabActive : ''}`.trim()}
+                onClick={() => activateUtilityTab(tabId)}
+                onKeyDown={(event) => onUtilityTabKeyDown(event, tabId)}
+                ref={(node) => setUtilityTabButtonRef(tabId, node)}
+              >
+                {getThirdUtilityTabLabel(tabId)}
+              </button>
+            );
+          })}
+        </div>
+        <div
+          id={activePanelId}
+          role="tabpanel"
+          aria-labelledby={activeTabId}
+          className={styles.utilityBody}
+        >
+          {renderActiveUtilityTabContent()}
+        </div>
+      </section>
+    );
+  };
 
   return (
     <div
@@ -3593,86 +3710,27 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         })}
       </div>
 
-      {!sceneWindowVisible ? (
+      {!utilityPanelVisible ? (
         <button
           type="button"
-          className={`${styles.utilityRevealBtn} ${styles.sceneRevealBtn}`.trim()}
-          onClick={() => {
-            setSceneWindowVisible(true);
-            setMobileUtilityPanel('scene');
-          }}
+          className={`${styles.utilityRevealBtn} ${mobileLayout ? styles.mobileRevealBtn : styles.panelRevealBtn}`.trim()}
+          onClick={openUtilityPanel}
         >
-          SHOW SCENE
+          SHOW PANEL
         </button>
       ) : null}
 
-      {!inspectorWindowVisible ? (
-        <button
-          type="button"
-          className={`${styles.utilityRevealBtn} ${styles.inspectorRevealBtn}`.trim()}
-          onClick={() => {
-            setInspectorWindowVisible(true);
-            setMobileUtilityPanel('inspector');
-          }}
-        >
-          SHOW INSPECTOR
-        </button>
-      ) : null}
-
-      {sceneWindowVisible ? (
-        <aside className={`${styles.sceneWindow} ${styles.desktopUtilityWindow}`.trim()} aria-label="THIRD scene window">
-          {renderScenePanel()}
+      {utilityPanelVisible && !mobileLayout ? (
+        <aside className={`${styles.utilityWindow} ${styles.desktopUtilityWindow}`.trim()} aria-label="THIRD utility panel">
+          {renderUtilityPanel()}
         </aside>
       ) : null}
 
-      {inspectorWindowVisible ? (
-        <aside className={`${styles.inspectorWindow} ${styles.desktopUtilityWindow}`.trim()} aria-label="THIRD inspector window">
-          {renderInspectorPanel()}
-        </aside>
-      ) : null}
-
-      {anyUtilityWindowVisible ? (
+      {utilityPanelVisible && mobileLayout ? (
         <section className={styles.mobileUtilityDrawer} aria-label="THIRD mobile utility drawer">
-          <div className={styles.mobileUtilityTabs} role="tablist" aria-label="THIRD utility panels">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mobileUtilityPanel === 'scene'}
-              className={`${styles.mobileUtilityTab} ${mobileUtilityPanel === 'scene' ? styles.mobileUtilityTabActive : ''}`.trim()}
-              onClick={() => setMobileUtilityPanel('scene')}
-              disabled={!sceneWindowVisible}
-            >
-              SCENE
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mobileUtilityPanel === 'inspector'}
-              className={`${styles.mobileUtilityTab} ${mobileUtilityPanel === 'inspector' ? styles.mobileUtilityTabActive : ''}`.trim()}
-              onClick={() => setMobileUtilityPanel('inspector')}
-              disabled={!inspectorWindowVisible}
-            >
-              INSPECTOR
-            </button>
-          </div>
-          <div className={styles.mobileUtilityBody}>
-            {mobileUtilityPanel === 'scene' && sceneWindowVisible ? renderScenePanel({ mobile: true }) : null}
-            {mobileUtilityPanel === 'inspector' && inspectorWindowVisible ? renderInspectorPanel({ mobile: true }) : null}
-          </div>
+          {renderUtilityPanel({ mobile: true })}
         </section>
-      ) : (
-        <button
-          type="button"
-          className={`${styles.utilityRevealBtn} ${styles.mobileRevealBtn}`.trim()}
-          onClick={() => {
-            setSceneWindowVisible(true);
-            setInspectorWindowVisible(true);
-            setMobileUtilityPanel('scene');
-          }}
-        >
-          SHOW WINDOWS
-        </button>
-      )}
+      ) : null}
     </div>
   );
 };

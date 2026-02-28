@@ -55,7 +55,7 @@ button.objectItem,
 .viewportMenuGroupBtn,
 .viewportMenuItem,
 .hierarchyMenuItem,
-.mobileUtilityTab {
+.utilityTab {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
@@ -237,12 +237,7 @@ button.objectItem,
   padding: 3px 8px;
 }
 
-.sceneRevealBtn {
-  top: 46px;
-  left: 8px;
-}
-
-.inspectorRevealBtn {
+.panelRevealBtn {
   top: 46px;
   right: 8px;
 }
@@ -262,21 +257,16 @@ button.objectItem,
   max-height: calc(100% - 52px);
 }
 
-.sceneWindow {
-  left: 8px;
-  width: min(320px, calc(42% - 20px));
-}
-
-.inspectorWindow {
+.utilityWindow {
   right: 8px;
-  width: min(336px, calc(42% - 20px));
+  width: min(360px, calc(42% - 20px));
 }
 
 .utilityPanel {
   height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
 }
 
 .mobilePanel {
@@ -331,16 +321,21 @@ button.objectItem,
   display: none;
 }
 
-.mobileUtilityTabs {
-  display: inline-flex;
-  width: 100%;
+.utilityTabs {
+  display: flex;
   gap: 4px;
   border-bottom: $border-thin solid var(--third-border);
   padding: 6px;
   box-sizing: border-box;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
 }
 
-.mobileUtilityTab {
+.utilityTab {
+  flex: 0 0 auto;
   border: $border-thin solid var(--third-border);
   background: var(--third-surface-bg);
   color: var(--third-text);
@@ -349,16 +344,19 @@ button.objectItem,
   letter-spacing: 0.04em;
 }
 
-.mobileUtilityTabActive {
+.utilityTab:hover,
+.utilityTab:focus-visible {
+  border-color: var(--third-accent);
+  background: var(--third-surface-hover);
+  color: var(--third-accent);
+  outline: none;
+}
+
+.utilityTabActive {
   border-color: var(--third-accent);
   background: var(--third-surface-strong);
   color: var(--third-accent);
   box-shadow: var(--ui-shadow-focus);
-}
-
-.mobileUtilityBody {
-  min-height: 0;
-  overflow: auto;
 }
 
 .inspectorObjectName {
@@ -890,8 +888,7 @@ button.objectItem,
   }
 
   .desktopUtilityWindow,
-  .sceneRevealBtn,
-  .inspectorRevealBtn {
+  .panelRevealBtn {
     display: none;
   }
 
@@ -939,7 +936,7 @@ button.objectItem,
   .inlineStatus,
   .objectPhysicsBtn,
   .utilityRevealBtn,
-  .mobileUtilityTab {
+  .utilityTab {
     font-size: 9px;
     padding: 2px 5px;
   }

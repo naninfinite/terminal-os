@@ -13,9 +13,10 @@ V1 includes:
 - `PLAY` and `EDIT` modes,
 - edit gizmo with snap,
 - per-object lock/freeze controls with edit/simulation safety gates,
-- split utility windows:
-  - left `SCENE` object-list window,
-  - right `INSPECTOR` editing window,
+- unified utility panel:
+  - right-side utility window on desktop,
+  - bottom drawer on phones,
+  - shared tabs: `SCENE`, `TRANSFORM`, `MATERIAL`, `ANIMATION`, `PHYSICS`, `CAMERA`,
 - top-left scene toolbar for mode/gizmo/snap/grid/axes plus camera quick actions,
 - object hierarchy tree with drag/drop parenting, inline rename, explicit unparent, and context menus,
 - hierarchy object-menu child spawn actions (`ADD CHILD CUBE/SPHERE/CYLINDER/PLANE`),
@@ -95,14 +96,20 @@ On first load / destructive reset:
 
 - Physics stepping is paused.
 - `TransformControls` enabled for selected object.
-- `SCENE` and `INSPECTOR` windows are independent utility surfaces.
-- `SCENE` window contains hierarchy UX controls:
+- Utility controls live in one shared panel with tabs:
+  - `SCENE`,
+  - `TRANSFORM`,
+  - `MATERIAL`,
+  - `ANIMATION`,
+  - `PHYSICS`,
+  - `CAMERA`.
+- `SCENE` tab contains hierarchy UX controls:
   - drag/drop reparenting,
   - root drop target for unparent-to-scene,
   - inline rename (`double-click` or `F2`),
   - hierarchy row context menu (`right-click` / `ContextMenu` key / `Shift+F10`) for `FOCUS`, `LOCK/UNLOCK`, `ADD CHILD CUBE/SPHERE/CYLINDER/PLANE`, `RENAME`, `DUPLICATE`, `DELETE`, `UNPARENT`,
   - scene/root context menu (`right-click` / `ContextMenu` key / `Shift+F10`) for primitive add (`CUBE`, `SPHERE`, `CYLINDER`, `PLANE`).
-- `SCENE` window is list-first and menu-driven:
+- `SCENE` tab is list-first and menu-driven:
   - no persistent `ADD`/`DUP`/`DEL` buttons in the list window.
   - hierarchy rows show lock affordance (`L`) for locked objects.
   - optional list filters/sort controls: `LOCKED` and `LOCK FIRST`.
@@ -116,9 +123,9 @@ On first load / destructive reset:
   - camera preset views (`TOP`/`FRONT`/`RIGHT`),
   - camera reset.
   - items are grouped (`transform` / `scene` / `camera`) with visual separators and consistent tooltip format.
-- `INSPECTOR` window includes sections:
-  - `TRANSFORM`, `CAMERA`, `ANIMATION`, `PHYSICS`, `MATERIAL`.
-- Default inspector expansion starts with `TRANSFORM` open and remaining sections collapsed.
+- Utility section tabs (`TRANSFORM`, `MATERIAL`, `ANIMATION`, `PHYSICS`, `CAMERA`) each render one section at a time.
+- Default section expansion starts with `TRANSFORM` open and remaining sections collapsed.
+- Section open/closed state is preserved while switching tabs.
 - `TRANSFORM` includes a compact `LOCK` checkbox for the selected object.
 - Rotation fields display degrees and convert to radians in runtime state.
 - Valid numeric inspector edits apply live while typing.
@@ -177,20 +184,21 @@ On first load / destructive reset:
   - `CAMERA` (projection toggle, top/front/right, reset),
   - `SCENE` (mode/snap),
   - `OBJECT` (duplicate/delete/object physics),
-  - `INSPECTOR` (show/hide/collapse all/expand all).
+  - `PANEL` (show/hide).
 - If right-click raycast hits an object, that object is selected before menu actions.
 - Object-group actions are disabled when the selected object is locked.
-- Inspector `CAMERA` section mirrors projection + preset actions for keyboard-first access.
-- Inspector `CAMERA` section layout order:
+- Utility `CAMERA` tab mirrors projection + preset actions for keyboard-first access.
+- Utility `CAMERA` tab layout order:
   - first row: `TOP` / `FRONT` / `RIGHT`,
   - second row: `PERSPECTIVE`/`ORTHOGRAPHIC` toggle + `RESET`.
 
 ### Mobile utility layout
 
-- Phone layout collapses utility surfaces into one bottom drawer.
-- Drawer includes local tab switcher: `SCENE` / `INSPECTOR`.
-- Default active drawer tab is `SCENE`.
-- Utility visibility/tab state is runtime-local only (not persisted).
+- Phone layout uses the same unified utility panel as desktop, rendered as one bottom drawer.
+- Drawer tabs match desktop: `SCENE`, `TRANSFORM`, `MATERIAL`, `ANIMATION`, `PHYSICS`, `CAMERA`.
+- Mobile tab strip scrolls horizontally instead of wrapping.
+- Default active tab is `SCENE`.
+- Panel visibility and active tab are runtime-local only (not persisted).
 
 ## 6) Preset Animations
 
