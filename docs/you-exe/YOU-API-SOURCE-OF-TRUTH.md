@@ -71,7 +71,8 @@ Ship YOU.EXE in M6 as the first online shared feature with durable backend persi
 
 ## Polling model
 - Poll every 10 seconds while visible
-- Panel mode shows latest 5
+- Panel mode shows as many newest messages as fit in the available panel viewport
+- Panel mode auto-loads additional recent pages when a large viewport can display more than the initially loaded batch
 - Fullscreen shows full feed + paging (load older)
 - Panel and fullscreen share one runtime state
 

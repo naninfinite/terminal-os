@@ -1,23 +1,67 @@
 export const PANEL_PREVIEW_DEFAULT_COUNT = 5;
-export const PANEL_PREVIEW_MIN_COUNT = 1;
-export const PANEL_PREVIEW_MAX_COUNT = 20;
+export const PANEL_PREVIEW_TOLERANCE_PX = 1;
 
-const PANEL_FEED_PADDING_PX = 12;
-const PANEL_FEED_ROW_ESTIMATE_PX = 74;
-const PANEL_FEED_ROW_GAP_PX = 6;
+export type DerivePanelPreviewFitInput = {
+  feedHeightPx: number;
+  itemHeightsPx: number[];
+  gapPx: number;
+  paddingTopPx: number;
+  paddingBottomPx: number;
+  tolerancePx?: number;
+};
 
-const clamp = (value: number, min: number, max: number): number => (
-  Math.max(min, Math.min(max, value))
+export type PanelPreviewFit = {
+  visibleCount: number;
+  usedHeightPx: number;
+  hasSpareSpace: boolean;
+};
+
+const normalizeLengthPx = (value: number): number => (
+  Number.isFinite(value) && value > 0 ? value : 0
 );
 
-export const derivePanelPreviewLimit = (feedHeightPx: number): number => {
+export const derivePanelPreviewFit = ({
+  feedHeightPx,
+  itemHeightsPx,
+  gapPx,
+  paddingTopPx,
+  paddingBottomPx,
+  tolerancePx = PANEL_PREVIEW_TOLERANCE_PX,
+}: DerivePanelPreviewFitInput): PanelPreviewFit => {
   if (!Number.isFinite(feedHeightPx) || feedHeightPx <= 0) {
-    return PANEL_PREVIEW_DEFAULT_COUNT;
+    return {
+      visibleCount: PANEL_PREVIEW_DEFAULT_COUNT,
+      usedHeightPx: 0,
+      hasSpareSpace: false,
+    };
   }
 
-  const usableHeight = Math.max(0, feedHeightPx - PANEL_FEED_PADDING_PX);
-  const estimatedRowUnit = PANEL_FEED_ROW_ESTIMATE_PX + PANEL_FEED_ROW_GAP_PX;
-  const estimatedRows = Math.floor((usableHeight + PANEL_FEED_ROW_GAP_PX) / estimatedRowUnit);
+  const availableHeightPx = normalizeLengthPx(feedHeightPx);
+  const gapHeightPx = normalizeLengthPx(gapPx);
+  const topPaddingPx = normalizeLengthPx(paddingTopPx);
+  const bottomPaddingPx = normalizeLengthPx(paddingBottomPx);
+  const tolerance = normalizeLengthPx(tolerancePx);
 
-  return clamp(estimatedRows, PANEL_PREVIEW_MIN_COUNT, PANEL_PREVIEW_MAX_COUNT);
+  let visibleCount = 0;
+  let usedHeightPx = topPaddingPx + bottomPaddingPx;
+
+  for (const rawItemHeightPx of itemHeightsPx) {
+    const itemHeightPx = normalizeLengthPx(rawItemHeightPx);
+    const nextHeightPx = visibleCount === 0
+      ? usedHeightPx + itemHeightPx
+      : usedHeightPx + gapHeightPx + itemHeightPx;
+
+    if (nextHeightPx - availableHeightPx > tolerance) break;
+
+    usedHeightPx = nextHeightPx;
+    visibleCount += 1;
+  }
+
+  const allMeasuredItemsFit = visibleCount >= itemHeightsPx.length;
+
+  return {
+    visibleCount,
+    usedHeightPx,
+    hasSpareSpace: allMeasuredItemsFit && (availableHeightPx - usedHeightPx > tolerance),
+  };
 };

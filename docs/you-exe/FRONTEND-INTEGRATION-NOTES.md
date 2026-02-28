@@ -33,7 +33,8 @@ Optional (only if verify_jwt=true):
   - fullscreen mode
 
 ## UX behaviour
-- Panel preview shows latest 5 from shared store.
+- Panel preview shows as many newest messages as fit in the available panel viewport.
+- Panel preview auto-loads additional recent pages when a large viewport can display more than the initially loaded batch.
 - Fullscreen can page older using before=<oldest createdAt>.
 
 ## Testing targets

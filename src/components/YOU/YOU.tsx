@@ -5,13 +5,20 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './YOU.module.scss';
 import { useYouBoard } from '../../you/YouProvider';
-import { PANEL_PREVIEW_DEFAULT_COUNT, derivePanelPreviewLimit } from './panelPreview';
+import { PANEL_PREVIEW_DEFAULT_COUNT, derivePanelPreviewFit, type PanelPreviewFit } from './panelPreview';
+import type { YouMessage } from '../../you/types';
 
 type YouProps = {
   mode?: 'panel' | 'fullscreen';
 };
 
 const MAX_BODY_LENGTH = 500;
+const PANEL_MESSAGE_SELECTOR = '[data-you-panel-message="true"]';
+const DEFAULT_PANEL_PREVIEW_FIT: PanelPreviewFit = {
+  visibleCount: PANEL_PREVIEW_DEFAULT_COUNT,
+  usedHeightPx: 0,
+  hasSpareSpace: false,
+};
 
 const formatTimestamp = (iso: string): string => {
   const date = new Date(iso);
@@ -23,6 +30,27 @@ const formatTimestamp = (iso: string): string => {
     hour12: false,
   }).format(date);
 };
+
+const readLengthPx = (value: string): number => {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const isSamePanelPreviewFit = (left: PanelPreviewFit, right: PanelPreviewFit): boolean => (
+  left.visibleCount === right.visibleCount
+  && left.usedHeightPx === right.usedHeightPx
+  && left.hasSpareSpace === right.hasSpareSpace
+);
+
+const MessageCard: React.FC<{ message: YouMessage }> = ({ message }) => (
+  <article className={styles.message} data-you-panel-message="true">
+    <header className={styles.messageHead}>
+      <span className={styles.author}>{message.isAnon ? 'ANON' : (message.displayName ?? 'ANON')}</span>
+      <span className={styles.time}>{formatTimestamp(message.createdAt)}</span>
+    </header>
+    <p className={styles.body}>{message.body}</p>
+  </article>
+);
 
 const YOU: React.FC<YouProps> = ({ mode = 'panel' }) => {
   const {
@@ -47,16 +75,20 @@ const YOU: React.FC<YouProps> = ({ mode = 'panel' }) => {
     closeFullscreen,
   } = useYouBoard();
 
-  const panelFeedRef = useRef<HTMLDivElement | null>(null);
+  const panelFeedFrameRef = useRef<HTMLDivElement | null>(null);
+  const panelMeasureFeedRef = useRef<HTMLDivElement | null>(null);
+  const panelAutoBackfillKeyRef = useRef<string | null>(null);
   const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
-  const [panelPreviewLimit, setPanelPreviewLimit] = useState(PANEL_PREVIEW_DEFAULT_COUNT);
-  const panelVisibleCount = mode === 'panel'
-    ? Math.min(messages.length, panelPreviewLimit)
+  const [panelPreviewFit, setPanelPreviewFit] = useState<PanelPreviewFit>(DEFAULT_PANEL_PREVIEW_FIT);
+  const isPanelMode = mode === 'panel';
+  const panelVisibleCount = isPanelMode
+    ? Math.min(messages.length, panelPreviewFit.visibleCount)
     : messages.length;
-  const visibleMessages = mode === 'panel'
+  const visibleMessages = isPanelMode
     ? messages.slice(0, panelVisibleCount)
     : messages;
   const hiddenCount = Math.max(0, messages.length - panelVisibleCount);
+  const oldestLoadedMessageId = messages[messages.length - 1]?.id ?? null;
   const cooldownText = useMemo(() => {
     if (!rateLimitedUntil) return null;
     const remaining = Math.ceil((rateLimitedUntil - Date.now()) / 1000);
@@ -92,34 +124,90 @@ const YOU: React.FC<YouProps> = ({ mode = 'panel' }) => {
   }, [displayMode, mode]);
 
   useEffect(() => {
-    if (mode !== 'panel') return undefined;
-    const feedNode = panelFeedRef.current;
-    if (!feedNode) return undefined;
+    if (!isPanelMode) {
+      panelAutoBackfillKeyRef.current = null;
+      setPanelPreviewFit((previous) => (
+        isSamePanelPreviewFit(previous, DEFAULT_PANEL_PREVIEW_FIT)
+          ? previous
+          : DEFAULT_PANEL_PREVIEW_FIT
+      ));
+      return undefined;
+    }
+
+    const feedFrameNode = panelFeedFrameRef.current;
+    const measureFeedNode = panelMeasureFeedRef.current;
+    if (!feedFrameNode || !measureFeedNode) return undefined;
 
     let rafId: number | null = null;
-    const updatePreviewLimit = () => {
+    const updatePreviewFit = () => {
       if (rafId != null) window.cancelAnimationFrame(rafId);
       rafId = window.requestAnimationFrame(() => {
-        setPanelPreviewLimit(derivePanelPreviewLimit(feedNode.clientHeight));
+        const measuredItems = Array.from(
+          measureFeedNode.querySelectorAll<HTMLElement>(PANEL_MESSAGE_SELECTOR)
+        );
+        const computedFeedStyles = window.getComputedStyle(measureFeedNode);
+        const nextFit = derivePanelPreviewFit({
+          feedHeightPx: feedFrameNode.clientHeight,
+          itemHeightsPx: measuredItems.map((item) => item.offsetHeight),
+          gapPx: readLengthPx(computedFeedStyles.rowGap || computedFeedStyles.gap),
+          paddingTopPx: readLengthPx(computedFeedStyles.paddingTop),
+          paddingBottomPx: readLengthPx(computedFeedStyles.paddingBottom),
+        });
+
+        setPanelPreviewFit((previous) => (
+          isSamePanelPreviewFit(previous, nextFit)
+            ? previous
+            : nextFit
+        ));
       });
     };
 
-    updatePreviewLimit();
+    updatePreviewFit();
 
     const resizeObserver = typeof ResizeObserver !== 'undefined'
-      ? new ResizeObserver(() => updatePreviewLimit())
+      ? new ResizeObserver(() => updatePreviewFit())
       : null;
-    resizeObserver?.observe(feedNode);
-    window.addEventListener('resize', updatePreviewLimit);
-    window.addEventListener('orientationchange', updatePreviewLimit);
+    resizeObserver?.observe(feedFrameNode);
+    window.addEventListener('resize', updatePreviewFit);
+    window.addEventListener('orientationchange', updatePreviewFit);
 
     return () => {
-      window.removeEventListener('resize', updatePreviewLimit);
-      window.removeEventListener('orientationchange', updatePreviewLimit);
+      window.removeEventListener('resize', updatePreviewFit);
+      window.removeEventListener('orientationchange', updatePreviewFit);
       resizeObserver?.disconnect();
       if (rafId != null) window.cancelAnimationFrame(rafId);
     };
-  }, [mode, messages.length]);
+  }, [isPanelMode, messages]);
+
+  useEffect(() => {
+    if (
+      !isPanelMode
+      || !panelPreviewFit.hasSpareSpace
+      || panelVisibleCount < messages.length
+      || !hasMore
+    ) {
+      panelAutoBackfillKeyRef.current = null;
+      return;
+    }
+
+    if (loadingInitial || loadingOlder || messages.length === 0 || !oldestLoadedMessageId) return;
+
+    const nextAutoBackfillKey = `${oldestLoadedMessageId}:${panelVisibleCount}`;
+    if (panelAutoBackfillKeyRef.current === nextAutoBackfillKey) return;
+
+    panelAutoBackfillKeyRef.current = nextAutoBackfillKey;
+    void loadOlder();
+  }, [
+    hasMore,
+    isPanelMode,
+    loadOlder,
+    loadingInitial,
+    loadingOlder,
+    messages.length,
+    oldestLoadedMessageId,
+    panelPreviewFit.hasSpareSpace,
+    panelVisibleCount,
+  ]);
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -175,21 +263,33 @@ const YOU: React.FC<YouProps> = ({ mode = 'panel' }) => {
           </div>
         </form>
 
-        <div className={styles.feed} ref={panelFeedRef} aria-live="polite" aria-atomic="false">
-          {loadingInitial ? <p className={styles.empty}>LOADING BOARD...</p> : null}
-          {!loadingInitial && visibleMessages.length === 0 ? <p className={styles.empty}>NO MESSAGES YET.</p> : null}
-          {visibleMessages.map((message) => (
-            <article key={message.id} className={styles.message}>
-              <header className={styles.messageHead}>
-                <span className={styles.author}>{message.isAnon ? 'ANON' : (message.displayName ?? 'ANON')}</span>
-                <span className={styles.time}>{formatTimestamp(message.createdAt)}</span>
-              </header>
-              <p className={styles.body}>{message.body}</p>
-            </article>
-          ))}
+        <div className={styles.feedFrame} ref={panelFeedFrameRef}>
+          <div
+            className={`${styles.feed} ${isPanelMode ? styles.feedPanel : styles.feedFullscreen}`.trim()}
+            aria-live="polite"
+            aria-atomic="false"
+          >
+            {loadingInitial ? <p className={styles.empty}>LOADING BOARD...</p> : null}
+            {!loadingInitial && visibleMessages.length === 0 ? <p className={styles.empty}>NO MESSAGES YET.</p> : null}
+            {visibleMessages.map((message) => (
+              <MessageCard key={message.id} message={message} />
+            ))}
+          </div>
+
+          {isPanelMode ? (
+            <div
+              ref={panelMeasureFeedRef}
+              className={`${styles.feed} ${styles.measurementFeed}`.trim()}
+              aria-hidden="true"
+            >
+              {messages.map((message) => (
+                <MessageCard key={`measure-${message.id}`} message={message} />
+              ))}
+            </div>
+          ) : null}
         </div>
 
-        {mode === 'panel' && hiddenCount > 0 ? (
+        {isPanelMode && hiddenCount > 0 ? (
           <p className={styles.previewHint}>{`+${hiddenCount} MORE IN FULL FEED`}</p>
         ) : null}
 
