@@ -18,7 +18,6 @@ export const createThirdInspectorSectionState = (
   }, {} as ThirdInspectorSectionState)
 );
 
-export const createInitialThirdInspectorSectionState = (): ThirdInspectorSectionState => ({
-  ...createThirdInspectorSectionState(false),
-  transform: true,
-});
+export const createInitialThirdInspectorSectionState = (): ThirdInspectorSectionState => (
+  createThirdInspectorSectionState(true)
+);

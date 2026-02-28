@@ -33,13 +33,13 @@ describe('thirdInspectorSections', () => {
     });
   });
 
-  it('defaults inspector to transform-open only', () => {
+  it('defaults all inspector section tabs to expanded', () => {
     expect(createInitialThirdInspectorSectionState()).toEqual({
       transform: true,
-      material: false,
-      animation: false,
-      physics: false,
-      camera: false,
+      material: true,
+      animation: true,
+      physics: true,
+      camera: true,
     });
   });
 });

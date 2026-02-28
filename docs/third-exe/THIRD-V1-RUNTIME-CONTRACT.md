@@ -124,7 +124,7 @@ On first load / destructive reset:
   - camera reset.
   - items are grouped (`transform` / `scene` / `camera`) with visual separators and consistent tooltip format.
 - Utility section tabs (`TRANSFORM`, `MATERIAL`, `ANIMATION`, `PHYSICS`, `CAMERA`) each render one section at a time.
-- Default section expansion starts with `TRANSFORM` open and remaining sections collapsed.
+- Default section expansion starts with all utility section tabs open.
 - Section open/closed state is preserved while switching tabs.
 - `TRANSFORM` includes a compact `LOCK` checkbox for the selected object.
 - Rotation fields display degrees and convert to radians in runtime state.
