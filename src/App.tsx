@@ -1,118 +1,29 @@
 /**
  * `App` controls the top-level flow:
  * - Landing screen (`ENTER.EXE`) with an enter transition.
- * - Desktop shell is lazy-loaded after the landing screen becomes interactive.
+ * - Desktop shell mounts after the landing screen exit transition completes.
  *
  * Design notes:
  * - `entered` gates which screen is mounted.
  * - `exiting` drives the fade-out state before switching to desktop.
  * - Transition timing matches CSS unless reduced-motion is enabled.
  */
-import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import DesktopRuntime from './components/AppShell/DesktopRuntime';
 import landingStyles from './components/Landing/Landing.module.scss';
 import crt from './styles/crt.module.scss';
-import { loadDesktopRuntime } from './components/AppShell/loadDesktopRuntime';
 import Cursor from './components/Cursor/Cursor';
-
-type DesktopRuntimeModule = typeof import('./components/AppShell/DesktopRuntime');
-type IdleAwareWindow = Window & {
-  requestIdleCallback?: (callback: () => void) => number;
-  cancelIdleCallback?: (handle: number) => void;
-};
-
-const DesktopRuntime = React.lazy(loadDesktopRuntime);
 
 const App: React.FC = () => {
   const [entered, setEntered] = useState(false);
   const [exiting, setExiting] = useState(false);
-  const [enterQueued, setEnterQueued] = useState(false);
-  const [desktopReady, setDesktopReady] = useState(false);
-  const [desktopLoadError, setDesktopLoadError] = useState(false);
   const enterTimeoutRef = useRef<number | null>(null);
-  const desktopLoadRef = useRef<Promise<DesktopRuntimeModule> | null>(null);
-  const desktopReadyRef = useRef(false);
-
-  const startExit = useCallback(() => {
-    if (exiting || entered) return;
-    setEnterQueued(false);
-    setExiting(true);
-  }, [entered, exiting]);
-
-  const markDesktopReady = useCallback(() => {
-    desktopReadyRef.current = true;
-    setDesktopReady(true);
-    setDesktopLoadError(false);
-  }, []);
-
-  const primeDesktopRuntime = useCallback((): Promise<DesktopRuntimeModule> => {
-    if (desktopLoadRef.current) return desktopLoadRef.current;
-
-    const nextPromise = loadDesktopRuntime();
-    desktopLoadRef.current = nextPromise;
-
-    void nextPromise.then(() => {
-      markDesktopReady();
-    }).catch(() => {
-      desktopLoadRef.current = null;
-      desktopReadyRef.current = false;
-      setDesktopReady(false);
-    });
-
-    return nextPromise;
-  }, [markDesktopReady]);
 
   // Shared guard used by click + keyboard triggers to avoid duplicate transitions.
   const triggerEnter = useCallback(() => {
-    if (exiting || entered || enterQueued) return;
-
-    setDesktopLoadError(false);
-
-    if (desktopReadyRef.current) {
-      startExit();
-      return;
-    }
-
-    setEnterQueued(true);
-    void primeDesktopRuntime()
-      .then(() => {
-        startExit();
-      })
-      .catch(() => {
-        setEnterQueued(false);
-        setDesktopLoadError(true);
-      });
-  }, [enterQueued, entered, exiting, primeDesktopRuntime, startExit]);
-
-  useEffect(() => {
-    const idleWindow = window as IdleAwareWindow;
-    let timeoutId: number | null = null;
-    let idleId: number | null = null;
-
-    const preloadDesktopRuntime = () => {
-      void primeDesktopRuntime().catch(() => {
-        // Idle preloading failures should stay silent until the user explicitly enters.
-      });
-    };
-
-    if (typeof idleWindow.requestIdleCallback === 'function') {
-      idleId = idleWindow.requestIdleCallback(() => {
-        preloadDesktopRuntime();
-      });
-    } else {
-      timeoutId = window.setTimeout(() => {
-        preloadDesktopRuntime();
-      }, 1200);
-    }
-
-    return () => {
-      if (idleId != null && typeof idleWindow.cancelIdleCallback === 'function') {
-        idleWindow.cancelIdleCallback(idleId);
-      }
-      if (timeoutId != null) {
-        window.clearTimeout(timeoutId);
-      }
-    };
-  }, [primeDesktopRuntime]);
+    if (exiting || entered) return;
+    setExiting(true);
+  }, [entered, exiting]);
 
   // Listen for Enter key to start exiting from the landing screen.
   useEffect(() => {
@@ -143,28 +54,9 @@ const App: React.FC = () => {
     }
   }, [exiting, entered]);
 
-  const waitingForDesktop = enterQueued && !desktopReady && !exiting;
-  const enterButtonLabel = desktopLoadError
-    ? 'RETRY'
-    : exiting
-      ? 'ENTERING...'
-      : waitingForDesktop
-        ? 'LOADING...'
-        : 'ENTER';
-  const enterStatus = desktopLoadError
-    ? 'DESKTOP LOAD FAILED. PRESS ENTER TO RETRY.'
-    : exiting
-      ? 'ENTERING SHELL...'
-      : waitingForDesktop
-        ? 'LOADING DESKTOP SHELL...'
-        : desktopReady
-          ? 'DESKTOP CACHE READY.'
-          : 'PRESS ENTER TO LOAD DESKTOP.';
-  const runtimeStatus = desktopReady
-    ? 'DESKTOP CACHE READY'
-    : waitingForDesktop
-      ? 'LINKING SHELL...'
-      : 'STANDBY';
+  const enterButtonLabel = exiting ? 'ENTERING...' : 'ENTER';
+  const enterStatus = exiting ? 'ENTERING SHELL...' : 'PRESS ENTER TO LOAD DESKTOP.';
+  const runtimeStatus = exiting ? 'LINKING SHELL...' : 'STANDBY';
 
   return (
     <>
@@ -178,11 +70,11 @@ const App: React.FC = () => {
             <section
               className={landingStyles.landingFrame}
               aria-label="ENTER.EXE"
-              aria-busy={waitingForDesktop}
+              aria-busy={exiting}
             >
               <header className={landingStyles.landingHeader}>[ENTER.EXE]</header>
               <div className={landingStyles.landingBody}>
-                <div className={landingStyles.videoBox} data-loading={waitingForDesktop ? 'true' : 'false'}>
+                <div className={landingStyles.videoBox} data-loading={exiting ? 'true' : 'false'}>
                   <div className={landingStyles.sceneField} aria-hidden="true">
                     <div className={landingStyles.sceneGlow} />
                     <div className={landingStyles.sceneGrid} />
@@ -201,8 +93,8 @@ const App: React.FC = () => {
                     className={landingStyles.enterBtn}
                     onClick={triggerEnter}
                     aria-label="Enter Terminal-OS"
-                    aria-busy={waitingForDesktop}
-                    disabled={waitingForDesktop || exiting}
+                    aria-busy={exiting}
+                    disabled={exiting}
                   >
                     {enterButtonLabel}
                   </button>
@@ -212,9 +104,7 @@ const App: React.FC = () => {
           </div>
         </div>
       ) : (
-        <Suspense fallback={null}>
-          <DesktopRuntime />
-        </Suspense>
+        <DesktopRuntime />
       )}
     </>
   );
