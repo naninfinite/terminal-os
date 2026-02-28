@@ -62,6 +62,10 @@
         transition: opacity 280ms ease, visibility 280ms ease;
       }
 
+      #boot-shell[data-state='failed'] {
+        pointer-events: auto;
+      }
+
       #boot-shell[data-state='complete'] {
         opacity: 0;
         visibility: hidden;
@@ -121,6 +125,37 @@
         background: rgba(0, 0, 0, 0.28);
       }
 
+      #boot-shell-status {
+        min-height: 1.2em;
+        margin: 0;
+        font-size: 10px;
+        color: var(--boot-text-muted);
+      }
+
+      #boot-shell-actions {
+        display: none;
+        justify-content: flex-end;
+      }
+
+      #boot-shell[data-state='failed'] #boot-shell-actions {
+        display: flex;
+      }
+
+      #boot-shell-reload {
+        border: 1px solid var(--boot-border);
+        background: transparent;
+        color: var(--boot-text);
+        padding: 8px 14px;
+        font: inherit;
+        letter-spacing: inherit;
+        cursor: pointer;
+      }
+
+      #boot-shell-reload:focus-visible {
+        outline: 2px solid var(--boot-border);
+        outline-offset: 2px;
+      }
+
       #boot-shell-fill {
         position: absolute;
         inset: 0 auto 0 0;
@@ -174,6 +209,10 @@
         <div id="boot-shell-meter" aria-hidden="true">
           <span id="boot-shell-fill"></span>
         </div>
+        <p id="boot-shell-status"></p>
+        <div id="boot-shell-actions">
+          <button id="boot-shell-reload" type="button">RELOAD</button>
+        </div>
       </div>
     </div>
     <div id="root"></div>
@@ -186,15 +225,23 @@
         var fill = document.getElementById('boot-shell-fill');
         var labelNode = document.getElementById('boot-shell-label');
         var percentNode = document.getElementById('boot-shell-percent');
+        var statusNode = document.getElementById('boot-shell-status');
+        var reloadButton = document.getElementById('boot-shell-reload');
         var root = document.documentElement;
         var reduceMotion = typeof window.matchMedia === 'function'
           && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         var floorProgress = 0;
         var displayProgress = 0;
         var currentLabel = 'BOOTSTRAP READY';
+        var currentStatus = '';
+        var bootState = 'active';
         var completed = false;
         var rafId = 0;
         var lastTickAt = 0;
+        var warningTimeoutId = 0;
+        var failureTimeoutId = 0;
+        var errorListener = null;
+        var rejectionListener = null;
 
         var readStoredValue = function (key, fallbackValue) {
           try {
@@ -237,6 +284,64 @@
           return 12;
         };
 
+        var normalizeBootErrorMessage = function (value) {
+          if (typeof value === 'string' && value.trim()) return value.trim();
+          if (value && typeof value === 'object' && typeof value.message === 'string' && value.message.trim()) {
+            return value.message.trim();
+          }
+          try {
+            var nextValue = String(value || '').trim();
+            return nextValue || 'Unknown boot failure';
+          } catch (error) {
+            return 'Unknown boot failure';
+          }
+        };
+
+        var setBootState = function (state, message) {
+          bootState = state;
+          currentStatus = message || '';
+          if (shell) {
+            shell.setAttribute('data-state', state);
+            if (state === 'complete') {
+              shell.setAttribute('aria-hidden', 'true');
+            } else {
+              shell.removeAttribute('aria-hidden');
+            }
+          }
+          if (statusNode) {
+            statusNode.textContent = currentStatus;
+          }
+        };
+
+        var cleanupBootWatchdog = function () {
+          if (warningTimeoutId) {
+            window.clearTimeout(warningTimeoutId);
+            warningTimeoutId = 0;
+          }
+          if (failureTimeoutId) {
+            window.clearTimeout(failureTimeoutId);
+            failureTimeoutId = 0;
+          }
+          if (errorListener) {
+            window.removeEventListener('error', errorListener);
+            errorListener = null;
+          }
+          if (rejectionListener) {
+            window.removeEventListener('unhandledrejection', rejectionListener);
+            rejectionListener = null;
+          }
+        };
+
+        var failBoot = function (message) {
+          if (completed) return;
+          cleanupBootWatchdog();
+          if (rafId) {
+            window.cancelAnimationFrame(rafId);
+            rafId = 0;
+          }
+          setBootState('failed', message || 'load stalled. reload to retry.');
+        };
+
         var render = function () {
           if (fill) {
             fill.style.transform = 'scaleX(' + (displayProgress / 100) + ')';
@@ -250,7 +355,7 @@
         };
 
         var requestTick = function () {
-          if (completed || rafId) return;
+          if (completed || bootState === 'failed' || rafId) return;
           rafId = window.requestAnimationFrame(tick);
         };
 
@@ -278,6 +383,41 @@
           lastTickAt = now;
         };
 
+        if (reloadButton) {
+          reloadButton.addEventListener('click', function () {
+            window.location.reload();
+          });
+        }
+
+        warningTimeoutId = window.setTimeout(function () {
+          if (completed || bootState === 'failed') return;
+          setBootState('warning', 'still loading...');
+        }, 6000);
+
+        failureTimeoutId = window.setTimeout(function () {
+          failBoot('load stalled. reload to retry.');
+        }, 18000);
+
+        errorListener = function (event) {
+          if (completed) return;
+          var errorMessage = normalizeBootErrorMessage(
+            event && typeof event === 'object' && 'error' in event ? (event.error || event.message) : event
+          );
+          console.error('Boot shell error before app became interactive.', errorMessage, event);
+          failBoot('load stalled. reload to retry.');
+        };
+
+        rejectionListener = function (event) {
+          if (completed) return;
+          var reason = event && typeof event === 'object' && 'reason' in event ? event.reason : event;
+          var errorMessage = normalizeBootErrorMessage(reason);
+          console.error('Boot shell unhandled rejection before app became interactive.', errorMessage, reason);
+          failBoot('load stalled. reload to retry.');
+        };
+
+        window.addEventListener('error', errorListener);
+        window.addEventListener('unhandledrejection', rejectionListener);
+
         window.__TERMINAL_OS_BOOT__ = {
           setProgress: function (progress, label) {
             if (completed) return;
@@ -294,6 +434,7 @@
           complete: function () {
             if (completed) return;
             completed = true;
+            cleanupBootWatchdog();
             if (rafId) {
               window.cancelAnimationFrame(rafId);
               rafId = 0;
@@ -303,8 +444,7 @@
             currentLabel = 'LANDING INTERACTIVE';
             render();
             if (shell) {
-              shell.setAttribute('data-state', 'complete');
-              shell.setAttribute('aria-hidden', 'true');
+              setBootState('complete', '');
               window.setTimeout(function () {
                 if (shell.parentNode) {
                   shell.parentNode.removeChild(shell);
@@ -314,6 +454,7 @@
           }
         };
 
+        setBootState('active', '');
         window.__TERMINAL_OS_BOOT__.setProgress(12, 'BOOTSTRAP READY');
       })();
     </script>
