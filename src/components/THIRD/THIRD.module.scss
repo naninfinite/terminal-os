@@ -274,6 +274,16 @@ button.objectItem,
   background: transparent;
 }
 
+.mobileSheetHandle {
+  width: 42px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--third-text-muted);
+  opacity: 0.72;
+  justify-self: center;
+  margin-top: 8px;
+}
+
 .utilityHeader {
   display: flex;
   align-items: center;
@@ -894,25 +904,38 @@ button.objectItem,
 
   .mobileUtilityDrawer {
     position: absolute;
-    left: 6px;
-    right: 6px;
-    bottom: 6px;
+    left: 0;
+    right: 0;
+    bottom: 0;
     z-index: 3;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
-    border: $border-thin solid var(--third-border);
+    border-top: $border-thin solid var(--third-border);
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
     background: var(--third-panel-bg);
-    max-height: min(58%, 320px);
+    box-shadow: 0 -14px 32px rgb(0 0 0 / 24%);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    max-height: min(64%, 360px);
+    padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
+    overflow: hidden;
   }
 
   .mobileRevealBtn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    left: 6px;
-    right: 6px;
-    bottom: 6px;
+    left: 12px;
+    right: 12px;
+    bottom: max(8px, env(safe-area-inset-bottom, 0px));
     top: auto;
+    min-height: 28px;
+    border-radius: 999px;
+    box-shadow: 0 8px 20px rgb(0 0 0 / 18%);
   }
 
   .viewportMenu {

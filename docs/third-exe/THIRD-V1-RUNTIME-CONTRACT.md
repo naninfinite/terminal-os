@@ -194,7 +194,7 @@ On first load / destructive reset:
 
 ### Mobile utility layout
 
-- Phone layout uses the same unified utility panel as desktop, rendered as one bottom drawer.
+- Phone layout uses the same unified utility panel as desktop, rendered as one bottom sheet anchored to the bottom edge.
 - Drawer tabs match desktop: `SCENE`, `TRANSFORM`, `MATERIAL`, `ANIMATION`, `PHYSICS`, `CAMERA`.
 - Mobile tab strip scrolls horizontally instead of wrapping.
 - First entry defaults to the panel hidden for all users; only the viewport/object is shown until `SHOW PANEL` is used.

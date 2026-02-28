@@ -3539,6 +3539,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
     return (
       <section className={`${styles.utilityPanel} ${options.mobile ? styles.mobilePanel : ''}`.trim()}>
+        {options.mobile ? <div className={styles.mobileSheetHandle} aria-hidden="true" /> : null}
         <header className={styles.utilityHeader}>
           <div className={styles.utilityHeaderMeta}>
             <p className={styles.utilityTitle}>{activeTabLabel}</p>
