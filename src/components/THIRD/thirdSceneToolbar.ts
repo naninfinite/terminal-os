@@ -37,6 +37,15 @@ export type BuildThirdSceneToolbarArgs = {
   showAxes: boolean;
 };
 
+export const shouldShowThirdSceneToolbar = (
+  mobileLayout: boolean,
+  mobileToolbarExpanded: boolean
+): boolean => !mobileLayout || mobileToolbarExpanded;
+
+export const getThirdSceneToolbarToggleLabel = (mobileToolbarExpanded: boolean): string => (
+  mobileToolbarExpanded ? 'HIDE TOOLS' : 'TOOLS'
+);
+
 export const buildThirdSceneToolbar = (
   args: BuildThirdSceneToolbarArgs
 ): ThirdSceneToolbarItem[] => {

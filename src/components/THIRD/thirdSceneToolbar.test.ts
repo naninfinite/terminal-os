@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildThirdSceneToolbar } from './thirdSceneToolbar';
+import {
+  buildThirdSceneToolbar,
+  getThirdSceneToolbarToggleLabel,
+  shouldShowThirdSceneToolbar,
+} from './thirdSceneToolbar';
 
 describe('thirdSceneToolbar model', () => {
   it('returns stable action order', () => {
@@ -127,5 +131,13 @@ describe('thirdSceneToolbar model', () => {
       showAxes: true,
     });
     expect(items.every((item) => item.title.includes('|'))).toBe(true);
+  });
+
+  it('resolves mobile toolbar visibility and trigger labels deterministically', () => {
+    expect(shouldShowThirdSceneToolbar(false, false)).toBe(true);
+    expect(shouldShowThirdSceneToolbar(true, false)).toBe(false);
+    expect(shouldShowThirdSceneToolbar(true, true)).toBe(true);
+    expect(getThirdSceneToolbarToggleLabel(false)).toBe('TOOLS');
+    expect(getThirdSceneToolbarToggleLabel(true)).toBe('HIDE TOOLS');
   });
 });

@@ -123,9 +123,10 @@ On first load / destructive reset:
   - camera preset views (`TOP`/`FRONT`/`RIGHT`),
   - camera reset.
   - items are grouped (`transform` / `scene` / `camera`) with visual separators and consistent tooltip format.
+  - phone layout collapses this toolbar behind a `TOOLS` trigger.
 - Utility section tabs (`TRANSFORM`, `MATERIAL`, `ANIMATION`, `PHYSICS`, `CAMERA`) each render one section at a time.
 - Default section expansion starts with all utility section tabs open.
-- Section open/closed state is preserved while switching tabs.
+- Desktop preserves section open/closed state while switching tabs; phone layout renders section-tab content expanded without a secondary collapse toggle.
 - `TRANSFORM` includes a compact `LOCK` checkbox for the selected object.
 - Rotation fields display degrees and convert to radians in runtime state.
 - Valid numeric inspector edits apply live while typing.

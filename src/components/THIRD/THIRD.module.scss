@@ -45,6 +45,7 @@
 }
 
 .canvas,
+.mobileSceneToolbarToggle,
 .sceneToolbarBtn,
 .utilityRevealBtn,
 .toolBtn,
@@ -200,6 +201,14 @@ button.objectItem,
   outline: none;
 }
 
+.mobileSceneToolbarToggle:hover,
+.mobileSceneToolbarToggle:focus-visible {
+  border-color: var(--third-accent);
+  background: var(--third-surface-hover);
+  color: var(--third-accent);
+  outline: none;
+}
+
 .sceneToolbarBtn:disabled {
   opacity: 0.45;
 }
@@ -224,6 +233,14 @@ button.objectItem,
   height: 13px;
   display: block;
   vector-effect: non-scaling-stroke;
+}
+
+.mobileSceneToolbarToggle {
+  display: none;
+}
+
+.mobileSceneToolbar {
+  max-width: 100%;
 }
 
 .utilityRevealBtn {
@@ -422,6 +439,15 @@ button.objectItem,
 .inspectorSectionToggle:focus-visible {
   outline: 1px solid var(--third-border);
   outline-offset: -1px;
+}
+
+.inspectorSectionHeading {
+  border-bottom: $border-thin solid var(--third-border);
+  color: var(--third-text);
+  padding: 5px 7px;
+  font-size: $font-xs;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
 }
 
 .inspectorSectionBody {
@@ -881,15 +907,49 @@ button.objectItem,
 }
 
 @media (max-width: $bp-phone) {
-  .sceneToolbar {
+  .mobileSceneToolbarToggle {
+    position: absolute;
     top: 6px;
+    left: 6px;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 24px;
+    border: $border-thin solid var(--third-border);
+    background: var(--third-panel-bg);
+    color: var(--third-text);
+    padding: 3px 8px;
+    font-size: $font-xs;
+    letter-spacing: 0.06em;
+    box-shadow: var(--ui-shadow-focus);
+  }
+
+  .mobileSceneToolbarToggleActive {
+    border-color: var(--third-accent);
+    color: var(--third-accent);
+    background: var(--third-surface-strong);
+  }
+
+  .sceneToolbar {
+    top: 36px;
     left: 6px;
     padding: 3px;
     gap: 3px;
   }
 
+  .mobileSceneToolbar {
+    right: 6px;
+    flex-wrap: wrap;
+    max-width: calc(100% - 12px);
+  }
+
   .sceneToolbarDivider {
     margin: 0;
+  }
+
+  .mobileSceneToolbar .sceneToolbarDivider {
+    display: none;
   }
 
   .sceneToolbarBtn {
@@ -979,6 +1039,7 @@ button.objectItem,
   .inspectorEmpty,
   .objectMeta,
   .editTag,
+  .inspectorSectionHeading,
   .inspectorSectionToggle {
     font-size: 9px;
   }

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   createInitialThirdInspectorSectionState,
   createThirdInspectorSectionState,
+  isThirdInspectorSectionCollapsible,
+  isThirdInspectorSectionExpanded,
   THIRD_INSPECTOR_SECTION_IDS,
 } from './thirdInspectorSections';
 
@@ -41,5 +43,14 @@ describe('thirdInspectorSections', () => {
       physics: true,
       camera: true,
     });
+  });
+
+  it('keeps collapse toggles desktop-only and forces mobile sections open', () => {
+    const desktopState = createThirdInspectorSectionState(false);
+
+    expect(isThirdInspectorSectionCollapsible(false)).toBe(true);
+    expect(isThirdInspectorSectionCollapsible(true)).toBe(false);
+    expect(isThirdInspectorSectionExpanded(desktopState, 'animation', false)).toBe(false);
+    expect(isThirdInspectorSectionExpanded(desktopState, 'animation', true)).toBe(true);
   });
 });

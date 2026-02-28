@@ -19,6 +19,8 @@ import {
 } from './thirdHierarchyMenu';
 import {
   buildThirdSceneToolbar,
+  getThirdSceneToolbarToggleLabel,
+  shouldShowThirdSceneToolbar,
   type ThirdSceneToolbarActionId,
 } from './thirdSceneToolbar';
 import {
@@ -27,6 +29,8 @@ import {
 } from './thirdInspectorCameraLayout';
 import {
   createInitialThirdInspectorSectionState,
+  isThirdInspectorSectionCollapsible,
+  isThirdInspectorSectionExpanded,
   type ThirdInspectorSectionId,
   type ThirdInspectorSectionState,
 } from './thirdInspectorSections';
@@ -719,6 +723,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const [mobileLayout, setMobileLayout] = useState<boolean>(
     () => typeof window !== 'undefined' && isThirdMobileUtilityViewport(window.innerWidth)
   );
+  const [mobileToolbarExpanded, setMobileToolbarExpanded] = useState(false);
   const [viewportMenu, setViewportMenu] = useState<ViewportMenuState | null>(null);
   const [hierarchyMenu, setHierarchyMenu] = useState<HierarchyMenuState | null>(null);
   const [hierarchyExpanded, setHierarchyExpanded] = useState(true);
@@ -747,6 +752,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const selectedObjectLocked = selectedObject?.locked === true;
   const canEditSelectedObject = isEditMode && selectedObject != null && !selectedObjectLocked;
   const sceneTabVisible = utilityPanelVisible && activeUtilityTab === 'scene';
+  const sceneToolbarVisible = shouldShowThirdSceneToolbar(mobileLayout, mobileToolbarExpanded);
   const viewportMenuGroups = useMemo(() => buildThirdViewportMenu({
     mode: editorMode,
     snapEnabled,
@@ -899,6 +905,10 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
   const openUtilityPanel = useCallback(() => {
     setUtilityPanelVisible(true);
+  }, []);
+
+  const toggleMobileToolbar = useCallback(() => {
+    setMobileToolbarExpanded((prev) => !prev);
   }, []);
 
   const hideUtilityPanel = useCallback(() => {
@@ -2944,6 +2954,10 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   }, []);
 
   useEffect(() => {
+    setMobileToolbarExpanded(false);
+  }, [mobileLayout]);
+
+  useEffect(() => {
     if (!renamingObjectId) return;
     const rafId = window.requestAnimationFrame(() => {
       const input = renameInputRef.current;
@@ -3100,6 +3114,26 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     })
   );
 
+  const renderInspectorSectionHeader = (
+    section: InspectorSectionId,
+    label: string
+  ): React.ReactNode => {
+    if (isThirdInspectorSectionCollapsible(mobileLayout)) {
+      return (
+        <button
+          type="button"
+          className={styles.inspectorSectionToggle}
+          onClick={() => toggleInspectorSection(section)}
+          aria-expanded={isThirdInspectorSectionExpanded(inspectorSections, section, mobileLayout)}
+        >
+          {label}
+        </button>
+      );
+    }
+
+    return <div className={styles.inspectorSectionHeading}>{label}</div>;
+  };
+
   const renderSceneTabContent = (): React.ReactNode => (
     <>
       <div className={styles.sceneOptionsRow}>
@@ -3216,15 +3250,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
   const renderTransformSection = (): React.ReactNode => (
     <section className={styles.inspectorSection}>
-      <button
-        type="button"
-        className={styles.inspectorSectionToggle}
-        onClick={() => toggleInspectorSection('transform')}
-        aria-expanded={inspectorSections.transform}
-      >
-        TRANSFORM
-      </button>
-      {inspectorSections.transform ? (
+      {renderInspectorSectionHeader('transform', 'TRANSFORM')}
+      {isThirdInspectorSectionExpanded(inspectorSections, 'transform', mobileLayout) ? (
         selectedObject ? (
           <div className={styles.inspectorSectionBody}>
             <div className={styles.toolRow}>
@@ -3282,15 +3309,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
   const renderMaterialSection = (): React.ReactNode => (
     <section className={styles.inspectorSection}>
-      <button
-        type="button"
-        className={styles.inspectorSectionToggle}
-        onClick={() => toggleInspectorSection('material')}
-        aria-expanded={inspectorSections.material}
-      >
-        MATERIAL
-      </button>
-      {inspectorSections.material ? (
+      {renderInspectorSectionHeader('material', 'MATERIAL')}
+      {isThirdInspectorSectionExpanded(inspectorSections, 'material', mobileLayout) ? (
         <div className={styles.inspectorSectionBody}>
           <div className={styles.toolRow}>
             {MATERIAL_PRESETS.map((preset) => (
@@ -3350,15 +3370,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
   const renderAnimationSection = (): React.ReactNode => (
     <section className={styles.inspectorSection}>
-      <button
-        type="button"
-        className={styles.inspectorSectionToggle}
-        onClick={() => toggleInspectorSection('animation')}
-        aria-expanded={inspectorSections.animation}
-      >
-        ANIMATION
-      </button>
-      {inspectorSections.animation ? (
+      {renderInspectorSectionHeader('animation', 'ANIMATION')}
+      {isThirdInspectorSectionExpanded(inspectorSections, 'animation', mobileLayout) ? (
         <div className={styles.inspectorSectionBody}>
           <div className={styles.toolRow}>
             <button
@@ -3404,15 +3417,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
   const renderPhysicsSection = (): React.ReactNode => (
     <section className={styles.inspectorSection}>
-      <button
-        type="button"
-        className={styles.inspectorSectionToggle}
-        onClick={() => toggleInspectorSection('physics')}
-        aria-expanded={inspectorSections.physics}
-      >
-        PHYSICS
-      </button>
-      {inspectorSections.physics ? (
+      {renderInspectorSectionHeader('physics', 'PHYSICS')}
+      {isThirdInspectorSectionExpanded(inspectorSections, 'physics', mobileLayout) ? (
         <div className={styles.inspectorSectionBody}>
           <button
             type="button"
@@ -3434,15 +3440,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
   const renderCameraSection = (): React.ReactNode => (
     <section className={styles.inspectorSection}>
-      <button
-        type="button"
-        className={styles.inspectorSectionToggle}
-        onClick={() => toggleInspectorSection('camera')}
-        aria-expanded={inspectorSections.camera}
-      >
-        CAMERA
-      </button>
-      {inspectorSections.camera ? (
+      {renderInspectorSectionHeader('camera', 'CAMERA')}
+      {isThirdInspectorSectionExpanded(inspectorSections, 'camera', mobileLayout) ? (
         <div className={styles.inspectorSectionBody}>
           {THIRD_INSPECTOR_CAMERA_ROWS.map((row, rowIndex) => (
             <div
@@ -3683,30 +3682,49 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         </div>
       ) : null}
 
-      {/* TODO(THIRD mobile): Make top scene toolbar collapsible to recover viewport space on smaller screens. */}
-      <div className={styles.sceneToolbar} role="toolbar" aria-label="THIRD scene toolbar">
-        {sceneToolbarItems.map((item, index) => {
-          const previous = sceneToolbarItems[index - 1];
-          const showDivider = previous && previous.group !== item.group;
-          return (
-            <React.Fragment key={item.id}>
-              {showDivider ? <span className={styles.sceneToolbarDivider} aria-hidden="true" /> : null}
-              <button
-                type="button"
-                className={`${styles.sceneToolbarBtn} ${item.active ? styles.sceneToolbarBtnActive : ''}`.trim()}
-                onClick={() => runSceneToolbarAction(item.id)}
-                disabled={item.disabled}
-                title={item.title}
-                aria-label={item.title}
-                aria-pressed={item.active}
-                data-toolbar-group={item.group}
-              >
-                <span className={styles.sceneToolbarIcon}>{renderSceneToolbarIcon(item.icon)}</span>
-              </button>
-            </React.Fragment>
-          );
-        })}
-      </div>
+      {mobileLayout ? (
+        <button
+          id={`third-scene-toolbar-trigger-${mode}`}
+          type="button"
+          className={`${styles.mobileSceneToolbarToggle} ${mobileToolbarExpanded ? styles.mobileSceneToolbarToggleActive : ''}`.trim()}
+          onClick={toggleMobileToolbar}
+          aria-expanded={mobileToolbarExpanded}
+          aria-controls={`third-scene-toolbar-${mode}`}
+        >
+          {getThirdSceneToolbarToggleLabel(mobileToolbarExpanded)}
+        </button>
+      ) : null}
+
+      {sceneToolbarVisible ? (
+        <div
+          id={`third-scene-toolbar-${mode}`}
+          className={`${styles.sceneToolbar} ${mobileLayout ? styles.mobileSceneToolbar : ''}`.trim()}
+          role="toolbar"
+          aria-label="THIRD scene toolbar"
+        >
+          {sceneToolbarItems.map((item, index) => {
+            const previous = sceneToolbarItems[index - 1];
+            const showDivider = previous && previous.group !== item.group;
+            return (
+              <React.Fragment key={item.id}>
+                {showDivider ? <span className={styles.sceneToolbarDivider} aria-hidden="true" /> : null}
+                <button
+                  type="button"
+                  className={`${styles.sceneToolbarBtn} ${item.active ? styles.sceneToolbarBtnActive : ''}`.trim()}
+                  onClick={() => runSceneToolbarAction(item.id)}
+                  disabled={item.disabled}
+                  title={item.title}
+                  aria-label={item.title}
+                  aria-pressed={item.active}
+                  data-toolbar-group={item.group}
+                >
+                  <span className={styles.sceneToolbarIcon}>{renderSceneToolbarIcon(item.icon)}</span>
+                </button>
+              </React.Fragment>
+            );
+          })}
+        </div>
+      ) : null}
 
       {!utilityPanelVisible ? (
         <button

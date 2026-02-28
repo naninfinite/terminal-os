@@ -21,3 +21,13 @@ export const createThirdInspectorSectionState = (
 export const createInitialThirdInspectorSectionState = (): ThirdInspectorSectionState => (
   createThirdInspectorSectionState(true)
 );
+
+export const isThirdInspectorSectionCollapsible = (mobileLayout: boolean): boolean => !mobileLayout;
+
+export const isThirdInspectorSectionExpanded = (
+  sectionState: ThirdInspectorSectionState,
+  section: ThirdInspectorSectionId,
+  mobileLayout: boolean
+): boolean => (
+  mobileLayout || sectionState[section]
+);
