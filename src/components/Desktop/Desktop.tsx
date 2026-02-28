@@ -3,23 +3,24 @@
  * Responsive behavior is handled in `Desktop.module.scss`; this component only
  * composes app panels and passes panel-specific layout flags.
  */
-import React, { useCallback } from 'react';
+import React, { Suspense, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import Panel from '../Panel/Panel';
 import ME from '../ME/ME';
 import YOU from '../YOU/YOU';
-import THIRD from '../THIRD/THIRD';
 import CONNECT from '../CONNECT/CONNECT';
 import styles from './Desktop.module.scss';
 import { useMeOs } from '../../meos/shell/MeOsProvider';
 import { useThirdRuntime } from '../../third/ThirdProvider';
 import { useConnectRuntime } from '../../connect/ConnectProvider';
+import { loadThirdSurface, ThirdLoadingSurface } from '../THIRD/loadThirdSurface';
 import {
   SUBSYSTEM_CONTEXT_MENU_EVENT,
   type SubsystemContextMenuEventDetail,
 } from '../StatusBar/subsystemContextMenu';
 
 type DesktopPanelScope = 'me' | 'you' | 'third' | 'connect';
+const ThirdSurface = React.lazy(loadThirdSurface);
 
 const Desktop: React.FC = () => {
   const { setActiveScope } = useMeOs();
@@ -101,7 +102,11 @@ const Desktop: React.FC = () => {
           });
         }}
       >
-        {thirdDisplayMode === 'fullscreen' ? null : <THIRD mode="panel" />}
+        {thirdDisplayMode === 'fullscreen' ? null : (
+          <Suspense fallback={<ThirdLoadingSurface mode="panel" />}>
+            <ThirdSurface mode="panel" />
+          </Suspense>
+        )}
       </Panel>
       {/* ASCII banner / contact panel. */}
       <Panel

@@ -1,8 +1,10 @@
-import React, { useEffect } from 'react';
-import THIRD from './THIRD';
+import React, { Suspense, useEffect } from 'react';
 import styles from './THIRD.module.scss';
+import { loadThirdSurface, ThirdLoadingSurface } from './loadThirdSurface';
 import { useThirdRuntime } from '../../third/ThirdProvider';
 import { useMeOs } from '../../meos/shell/MeOsProvider';
+
+const ThirdSurface = React.lazy(loadThirdSurface);
 
 export const ThirdFullscreenLayer: React.FC = () => {
   const { displayMode, closeFullscreen } = useThirdRuntime();
@@ -44,7 +46,9 @@ export const ThirdFullscreenLayer: React.FC = () => {
           </button>
         </header>
         <div className={styles.fullscreenBody}>
-          <THIRD mode="fullscreen" />
+          <Suspense fallback={<ThirdLoadingSurface mode="fullscreen" />}>
+            <ThirdSurface mode="fullscreen" />
+          </Suspense>
         </div>
       </div>
     </div>

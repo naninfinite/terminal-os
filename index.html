@@ -9,10 +9,259 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="color-scheme" content="dark" />
     <title>TERMINAL-OS</title>
+    <style>
+      :root {
+        --boot-bg: #000000;
+        --boot-surface: rgba(0, 17, 0, 0.94);
+        --boot-text: #00ff66;
+        --boot-text-muted: #66ffcc;
+        --boot-border: #00ff66;
+        --boot-shadow: 0 0 0 1px rgba(0, 255, 102, 0.18) inset;
+      }
+
+      :root[data-theme='light'] {
+        --boot-bg: #f5f4ef;
+        --boot-surface: rgba(255, 255, 255, 0.96);
+        --boot-text: #101010;
+        --boot-text-muted: #3f3f3f;
+        --boot-border: #101010;
+        --boot-shadow: 0 0 0 1px rgba(16, 16, 16, 0.12) inset;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--boot-bg);
+      }
+
+      body {
+        position: relative;
+      }
+
+      #root {
+        min-height: 100vh;
+        min-height: 100dvh;
+      }
+
+      #boot-shell {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        box-sizing: border-box;
+        background:
+          radial-gradient(circle at 50% 22%, rgba(0, 255, 102, 0.12), transparent 34%),
+          var(--boot-bg);
+        color: var(--boot-text);
+        font-family: 'IBM Plex Mono', 'Iosevka Term', 'Courier New', monospace;
+        letter-spacing: 0.08em;
+        pointer-events: none;
+        transition: opacity 280ms ease, visibility 280ms ease;
+      }
+
+      #boot-shell[data-state='complete'] {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      #boot-shell::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(to right, rgba(0, 255, 102, 0.08) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(0, 255, 102, 0.08) 1px, transparent 1px);
+        background-size: 24px 24px;
+        opacity: 0.18;
+      }
+
+      #boot-shell-frame {
+        position: relative;
+        width: min(560px, 100%);
+        display: grid;
+        gap: 14px;
+        border: 2px solid var(--boot-border);
+        background: var(--boot-surface);
+        box-shadow: var(--boot-shadow);
+        padding: 16px;
+        box-sizing: border-box;
+      }
+
+      #boot-shell-title {
+        border-bottom: 1px solid var(--boot-border);
+        padding-bottom: 6px;
+        font-size: 12px;
+      }
+
+      #boot-shell-copy {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 11px;
+        color: var(--boot-text-muted);
+      }
+
+      #boot-shell-label {
+        color: var(--boot-text);
+      }
+
+      #boot-shell-percent {
+        flex: 0 0 auto;
+      }
+
+      #boot-shell-meter {
+        position: relative;
+        height: 12px;
+        overflow: hidden;
+        border: 1px solid var(--boot-border);
+        background: rgba(0, 0, 0, 0.28);
+      }
+
+      #boot-shell-fill {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 100%;
+        transform: scaleX(0.12);
+        transform-origin: left center;
+        background: linear-gradient(90deg, rgba(0, 255, 102, 0.18), var(--boot-text), rgba(0, 255, 102, 0.3));
+        transition: transform 220ms ease;
+      }
+
+      #boot-shell-fill::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+          90deg,
+          transparent 0 12px,
+          rgba(255, 255, 255, 0.18) 12px 24px
+        );
+        animation: boot-shell-stride 1.1s linear infinite;
+        mix-blend-mode: screen;
+      }
+
+      @keyframes boot-shell-stride {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(24px);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #boot-shell,
+        #boot-shell-fill {
+          transition: none;
+        }
+
+        #boot-shell-fill::after {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
+    <div id="boot-shell" data-state="active">
+      <div id="boot-shell-frame" role="status" aria-live="polite" aria-atomic="true">
+        <div id="boot-shell-title">[BOOT]</div>
+        <div id="boot-shell-copy">
+          <span id="boot-shell-label">BOOTSTRAP READY</span>
+          <span id="boot-shell-percent">012%</span>
+        </div>
+        <div id="boot-shell-meter" aria-hidden="true">
+          <span id="boot-shell-fill"></span>
+        </div>
+      </div>
+    </div>
     <div id="root"></div>
+    <script>
+      (function () {
+        var THEME_STORAGE_KEY = 'terminalOS.ui.v1.theme';
+        var TEXT_CASE_STORAGE_KEY = 'terminalOS.ui.v1.textCase';
+        var LEGACY_LOCATION_CASE_STORAGE_KEY = 'terminalOS.ui.v1.locationCase';
+        var shell = document.getElementById('boot-shell');
+        var fill = document.getElementById('boot-shell-fill');
+        var labelNode = document.getElementById('boot-shell-label');
+        var percentNode = document.getElementById('boot-shell-percent');
+        var root = document.documentElement;
+        var currentProgress = 0;
+        var completed = false;
+
+        var readStoredValue = function (key, fallbackValue) {
+          try {
+            var raw = window.localStorage.getItem(key);
+            if (raw == null) return fallbackValue;
+            return JSON.parse(raw);
+          } catch (error) {
+            return fallbackValue;
+          }
+        };
+
+        var themeMode = readStoredValue(THEME_STORAGE_KEY, 'auto');
+        var textCaseMode = readStoredValue(TEXT_CASE_STORAGE_KEY, null);
+        var legacyTextCaseMode = readStoredValue(LEGACY_LOCATION_CASE_STORAGE_KEY, 'upper');
+        var prefersDark = typeof window.matchMedia === 'function'
+          && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var resolvedTheme = themeMode === 'light'
+          ? 'light'
+          : themeMode === 'dark'
+            ? 'dark'
+            : (prefersDark ? 'dark' : 'light');
+        var resolvedTextCase = textCaseMode === 'lower' || legacyTextCaseMode === 'lower'
+          ? 'lower'
+          : 'upper';
+
+        root.setAttribute('data-theme', resolvedTheme);
+        root.setAttribute('data-text-case', resolvedTextCase);
+        root.style.setProperty('color-scheme', resolvedTheme);
+
+        var clampProgress = function (value) {
+          if (!Number.isFinite(value)) return currentProgress;
+          return Math.max(0, Math.min(100, Math.round(value)));
+        };
+
+        var render = function (progress, label) {
+          currentProgress = Math.max(currentProgress, clampProgress(progress));
+          if (fill) {
+            fill.style.transform = 'scaleX(' + (currentProgress / 100) + ')';
+          }
+          if (labelNode) {
+            labelNode.textContent = label;
+          }
+          if (percentNode) {
+            percentNode.textContent = String(currentProgress).padStart(3, '0') + '%';
+          }
+        };
+
+        window.__TERMINAL_OS_BOOT__ = {
+          setProgress: function (progress, label) {
+            if (completed) return;
+            render(progress, label || 'BOOTSTRAP READY');
+          },
+          complete: function () {
+            if (completed) return;
+            completed = true;
+            render(100, 'LANDING INTERACTIVE');
+            if (shell) {
+              shell.setAttribute('data-state', 'complete');
+              shell.setAttribute('aria-hidden', 'true');
+              window.setTimeout(function () {
+                if (shell.parentNode) {
+                  shell.parentNode.removeChild(shell);
+                }
+              }, 420);
+            }
+          }
+        };
+
+        window.__TERMINAL_OS_BOOT__.setProgress(12, 'BOOTSTRAP READY');
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
   </html>
-

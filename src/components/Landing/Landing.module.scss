@@ -90,14 +90,18 @@
 }
 
 .videoBox {
-  /* 16:9 media well with framed border and centered overlay content. */
+  /* 16:9 landing scene well with framed border and centered overlay content. */
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: $bg-black;
+  background:
+    radial-gradient(circle at 50% 28%, rgb(0 255 102 / 0.14), transparent 34%),
+    linear-gradient(180deg, rgb(0 255 102 / 0.06), transparent 30%, rgb(0 255 102 / 0.03)),
+    $bg-black;
   border: $border;
   display: grid;
   place-items: center;
+  overflow: hidden;
 }
 
 .video {
@@ -109,6 +113,72 @@
   z-index: 0;
 }
 
+.sceneField {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.sceneGlow {
+  position: absolute;
+  inset: 16% 18%;
+  background: radial-gradient(circle, rgb(0 255 102 / 0.26), transparent 64%);
+  filter: blur(18px);
+  opacity: 0.75;
+}
+
+.sceneGrid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgb(0 255 102 / 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(0 255 102 / 0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(180deg, transparent, #000 22%, #000 82%, transparent);
+  opacity: 0.78;
+}
+
+.sceneSweep {
+  position: absolute;
+  inset: -30% 0;
+  background: linear-gradient(180deg, transparent 36%, rgb(0 255 102 / 0.18) 50%, transparent 64%);
+  animation: landing-sweep 2.8s linear infinite;
+  opacity: 0.72;
+}
+
+.sceneTelemetry {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: grid;
+  gap: 7px;
+  font-size: $font-xs;
+  letter-spacing: 0.12em;
+  color: $phosphor-green;
+  text-shadow: $glow;
+}
+
+.enterStatus {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 54px;
+  z-index: 1;
+  margin: 0;
+  padding: 4px 10px;
+  border: $border-thin solid $phosphor-green;
+  background: rgb(0 0 0 / 0.56);
+  color: $text-dim;
+  text-align: center;
+  font-size: $font-xs;
+  letter-spacing: 0.08em;
+}
+
+.videoBox[data-loading='true'] .sceneSweep {
+  animation-duration: 1.3s;
+  opacity: 0.94;
+}
+
 .enterBtn {
   /* Primary entry CTA pinned near bottom of video frame. */
   appearance: none;
@@ -116,7 +186,7 @@
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 10px;
+  bottom: 12px;
   border: $border;
   background: transparent;
   color: $phosphor-green;
@@ -137,6 +207,10 @@
 .enterBtn:focus-visible {
   outline: 1px dashed var(--ui-border);
   outline-offset: 2px;
+}
+
+.enterBtn:disabled {
+  opacity: 0.74;
 }
 
 /* Ensure button text matches site typography and sizing */
@@ -203,4 +277,37 @@
   /* Legacy subtitle/token text for alternate landing composition. */
   font-size: clamp(12px, 1.6vw, 16px);
   color: $color-fg-dim;
+}
+
+@keyframes landing-sweep {
+  from {
+    transform: translateY(-48%);
+  }
+  to {
+    transform: translateY(48%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sceneSweep {
+    animation: none;
+    opacity: 0.3;
+  }
+}
+
+@media (max-width: 520px) {
+  .sceneTelemetry {
+    top: 12px;
+    left: 12px;
+    gap: 5px;
+    font-size: 9px;
+  }
+
+  .enterStatus {
+    left: 10px;
+    right: 10px;
+    bottom: 50px;
+    padding: 4px 8px;
+    font-size: 9px;
+  }
 }

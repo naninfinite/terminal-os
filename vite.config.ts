@@ -6,7 +6,7 @@ export default defineConfig({
   server: { 
     host: true, 
     allowedHosts: [
-      "adjacent-ins-infectious-since.trycloudflare.com",
+      "suggestions-updates-red-genetic.trycloudflare.com",
     ],
     port: 5173,
     strictPort: true
