@@ -24,21 +24,16 @@ export const isThirdMobileUtilityViewport = (width: number): boolean => (
   Number.isFinite(width) && width <= THIRD_MOBILE_UTILITY_MAX_WIDTH_PX
 );
 
-export const createDefaultThirdUtilityPanelSession = (
-  windowWidth: number | null | undefined
-): ThirdUtilityPanelSession => ({
-  panelVisible: typeof windowWidth === 'number'
-    ? !isThirdMobileUtilityViewport(windowWidth)
-    : true,
+export const createDefaultThirdUtilityPanelSession = (): ThirdUtilityPanelSession => ({
+  panelVisible: false,
   activeTab: THIRD_DEFAULT_UTILITY_TAB_ID,
 });
 
 export const resolveInitialThirdUtilityPanelSession = (
-  windowWidth: number | null | undefined,
   session: ThirdUtilityPanelSession | null
 ): ThirdUtilityPanelSession => {
   if (!session) {
-    return createDefaultThirdUtilityPanelSession(windowWidth);
+    return createDefaultThirdUtilityPanelSession();
   }
 
   return {

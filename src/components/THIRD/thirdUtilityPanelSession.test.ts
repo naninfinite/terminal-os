@@ -20,13 +20,9 @@ describe('thirdUtilityPanelSession', () => {
     expect(isThirdMobileUtilityViewport(THIRD_MOBILE_UTILITY_MAX_WIDTH_PX + 1)).toBe(false);
   });
 
-  it('creates hidden mobile defaults and visible desktop defaults', () => {
-    expect(createDefaultThirdUtilityPanelSession(560)).toEqual({
+  it('creates a hidden default session for first entry', () => {
+    expect(createDefaultThirdUtilityPanelSession()).toEqual({
       panelVisible: false,
-      activeTab: 'scene',
-    });
-    expect(createDefaultThirdUtilityPanelSession(561)).toEqual({
-      panelVisible: true,
       activeTab: 'scene',
     });
   });
@@ -37,8 +33,7 @@ describe('thirdUtilityPanelSession', () => {
       activeTab: 'physics',
     };
 
-    expect(resolveInitialThirdUtilityPanelSession(999, session)).toEqual(session);
-    expect(resolveInitialThirdUtilityPanelSession(320, session)).toEqual(session);
+    expect(resolveInitialThirdUtilityPanelSession(session)).toEqual(session);
   });
 
   it('stores and returns session state safely', () => {
@@ -59,7 +54,7 @@ describe('thirdUtilityPanelSession', () => {
       activeTab: 'scene',
     });
 
-    expect(resolveInitialThirdUtilityPanelSession(900, {
+    expect(resolveInitialThirdUtilityPanelSession({
       panelVisible: false,
       activeTab: 'scene',
     })).toEqual({

@@ -700,10 +700,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const projectionModeRef = useRef<ThirdProjectionMode>(cameraState.projectionMode);
   const utilityTabRefsRef = useRef<Partial<Record<ThirdUtilityTabId, HTMLButtonElement | null>>>({});
   const initialUtilityPanelSession = useMemo<ThirdUtilityPanelSession>(
-    () => resolveInitialThirdUtilityPanelSession(
-      typeof window === 'undefined' ? null : window.innerWidth,
-      getThirdUtilityPanelSession()
-    ),
+    () => resolveInitialThirdUtilityPanelSession(getThirdUtilityPanelSession()),
     []
   );
 

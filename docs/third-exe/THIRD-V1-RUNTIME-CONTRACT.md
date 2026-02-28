@@ -197,8 +197,11 @@ On first load / destructive reset:
 - Phone layout uses the same unified utility panel as desktop, rendered as one bottom drawer.
 - Drawer tabs match desktop: `SCENE`, `TRANSFORM`, `MATERIAL`, `ANIMATION`, `PHYSICS`, `CAMERA`.
 - Mobile tab strip scrolls horizontally instead of wrapping.
+- First entry defaults to the panel hidden for all users; only the viewport/object is shown until `SHOW PANEL` is used.
 - Default active tab is `SCENE`.
 - Panel visibility and active tab are runtime-local only (not persisted).
+- Same-page remount restores the last panel visibility and active tab from in-memory session state.
+- Browser reload resets the panel to hidden with `SCENE` as the active tab.
 
 ## 6) Preset Animations
 
