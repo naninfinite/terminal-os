@@ -1,7 +1,7 @@
 # Terminal-OS Conversation Log
 
 Purpose: running summary of user/assistant decisions and direction.
-Updated: 2026-02-26
+Updated: 2026-03-01
 
 ---
 
@@ -1758,3 +1758,23 @@ Why it matters:
 
 Risks / Notes:
 - Toolbar still uses temporary two-letter glyph labels; SVG icon upgrade remains deferred.
+
+---
+
+## Entry 83 - THIRD Grid + Bounds Snapping
+
+Summary:
+- Upgraded the existing `SNAP` toggle into a single edit-mode snap system:
+  - move now grid-snaps at `1.0`,
+  - nearby objects can override grid alignment with bounds-to-bounds snapping on the active drag axes.
+- Kept rotate/scale snap behavior unchanged at `15deg` and `0.1`.
+- Added deterministic snap helper coverage plus regression checks for toolbar copy and runtime-only snap persistence.
+
+Why it matters:
+- Aligns transform movement with the visible grid instead of the previous half-step mismatch.
+- Makes layout work faster by allowing face-to-face object alignment without adding extra editor modes or UI complexity.
+- Preserves the existing one-toggle workflow and keeps snap state out of persistence.
+
+Risks / Notes:
+- Object snapping uses world-axis-aligned primitive bounds only; it does not attempt oriented-box, vertex, or surface snapping.
+- Ancestors/descendants are intentionally excluded from snap targets to avoid unstable hierarchy self-snapping.

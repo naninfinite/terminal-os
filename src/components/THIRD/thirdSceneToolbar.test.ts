@@ -119,6 +119,7 @@ describe('thirdSceneToolbar model', () => {
     expect(items.find((item) => item.id === 'camera_view_front')?.active).toBe(false);
     expect(items.find((item) => item.id === 'camera_view_right')?.active).toBe(false);
     expect(items.find((item) => item.id === 'camera_reset')?.active).toBe(false);
+    expect(items.find((item) => item.id === 'scene_toggle_snap')?.title).toBe('SNAP | ON | GRID 1.0 + OBJECT | G');
   });
 
   it('uses consistent toolbar tooltip format', () => {

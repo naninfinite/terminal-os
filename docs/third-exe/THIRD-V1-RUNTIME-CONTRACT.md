@@ -1,6 +1,6 @@
 # THIRD.EXE V1 Runtime Contract
 
-Date: 2026-02-26  
+Date: 2026-03-01  
 Status: Implemented baseline (V1)
 
 ## 1) Scope
@@ -150,9 +150,14 @@ On first load / destructive reset:
   - camera applies a slight vertical bias (`+2Y`) for readability,
   - orthographic mode also updates zoom to keep the object visible.
 - Snap toggle applies:
-  - translation: `0.5`,
+  - translation: `1.0` grid snap,
+  - translation also performs bounds-to-bounds object snapping on the active drag axes,
+  - object snap overrides grid alignment on axes with a valid nearby bounds match,
   - rotation: `15deg`,
   - scale: `0.1`.
+- Translation object snap uses world-axis-aligned primitive bounds only:
+  - self, ancestors, and descendants are excluded as snap targets,
+  - locked and physics-enabled objects remain valid snap anchors.
 - Active `EDIT` badge is always shown while in edit mode.
 - Preset animation buttons are enabled only in `EDIT`.
 - Material controls are enabled only in `EDIT` for the selected object:
@@ -236,7 +241,7 @@ Persisted payload:
 
 Not persisted:
 - binary skybox assets/HDR files,
-- runtime-only control state.
+- runtime-only control state (`snapEnabled`, panel visibility, active utility tab, history stacks).
 
 Persistence behavior:
 - autosave debounce,

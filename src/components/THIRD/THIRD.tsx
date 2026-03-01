@@ -76,6 +76,15 @@ import {
   shouldCloseThirdMobileDrawer,
   shouldOpenThirdMobileDrawer,
 } from './thirdMobileDrawerGesture';
+import {
+  THIRD_GRID_CELL_SIZE,
+  THIRD_ROTATION_SNAP_RADIANS,
+  THIRD_SCALE_SNAP_STEP,
+  resolveActiveSnapAxes,
+  resolveBoundsSnapDelta,
+  type ThirdSnapAxis,
+  type ThirdSnapBounds,
+} from './thirdSnap';
 import { useThirdRuntime } from '../../third/ThirdProvider';
 import {
   THIRD_DEFAULT_CAMERA_STATE,
@@ -101,9 +110,9 @@ const TOUCH_CONTEXT_MENU_OPEN_TOLERANCE_PX = CONTEXT_MOVE_TOLERANCE_PX;
 const MIN_CAMERA_DISTANCE = 1.2;
 const SCENE_CAMERA_FAR_PLANE = 5000;
 const ORTHOGRAPHIC_FRUSTUM_HEIGHT = 11;
-const SCENE_GRID_CELL_SIZE = 1;
 const SCENE_GRID_DIVISIONS = 1024;
-const SCENE_GRID_SIZE = SCENE_GRID_CELL_SIZE * SCENE_GRID_DIVISIONS;
+const SCENE_GRID_SIZE = THIRD_GRID_CELL_SIZE * SCENE_GRID_DIVISIONS;
+const SNAP_POSITION_EPSILON = 0.0001;
 const HIERARCHY_ROOT_DROP_TARGET = '__root__' as const;
 const MATERIAL_PRESETS: ReadonlyArray<ThirdMaterialPreset> = ['matte', 'gloss', 'glass', 'neon'];
 const MATERIAL_SWATCHES: ReadonlyArray<string> = [
@@ -219,12 +228,82 @@ const applyMaterialParams = (
 };
 
 const snapGridAnchor = (value: number): number => (
-  Math.round(value / SCENE_GRID_CELL_SIZE) * SCENE_GRID_CELL_SIZE
+  Math.round(value / THIRD_GRID_CELL_SIZE) * THIRD_GRID_CELL_SIZE
 );
 
 const syncGridToTarget = (grid: THREE.GridHelper, target: THREE.Vector3): void => {
   grid.position.set(snapGridAnchor(target.x), 0, snapGridAnchor(target.z));
 };
+
+const box3ToSnapBounds = (value: THREE.Box3): ThirdSnapBounds => ({
+  min: {
+    x: value.min.x,
+    y: value.min.y,
+    z: value.min.z,
+  },
+  max: {
+    x: value.max.x,
+    y: value.max.y,
+    z: value.max.z,
+  },
+});
+
+const resolveMeshWorldBounds = (entry: {
+  geometry: THREE.BufferGeometry;
+  mesh: THREE.Mesh;
+}): ThirdSnapBounds | null => {
+  if (!entry.geometry.boundingBox) {
+    entry.geometry.computeBoundingBox();
+  }
+  if (!entry.geometry.boundingBox) return null;
+  return box3ToSnapBounds(entry.geometry.boundingBox.clone().applyMatrix4(entry.mesh.matrixWorld));
+};
+
+const buildSnapExclusionSet = (
+  objects: ThirdSceneObject[],
+  selectedId: string
+): Set<string> => {
+  const excluded = new Set<string>([selectedId]);
+  const objectById = new Map(objects.map((object) => [object.id, object]));
+  const childrenByParent = new Map<string, string[]>();
+
+  objects.forEach((object) => {
+    if (!object.parentId) return;
+    const childIds = childrenByParent.get(object.parentId);
+    if (childIds) {
+      childIds.push(object.id);
+      return;
+    }
+    childrenByParent.set(object.parentId, [object.id]);
+  });
+
+  let currentAncestorId = objectById.get(selectedId)?.parentId ?? null;
+  while (currentAncestorId) {
+    if (excluded.has(currentAncestorId)) break;
+    excluded.add(currentAncestorId);
+    currentAncestorId = objectById.get(currentAncestorId)?.parentId ?? null;
+  }
+
+  const pendingIds = [selectedId];
+  while (pendingIds.length > 0) {
+    const currentId = pendingIds.pop();
+    if (!currentId) continue;
+    const childIds = childrenByParent.get(currentId) ?? [];
+    childIds.forEach((childId) => {
+      if (excluded.has(childId)) return;
+      excluded.add(childId);
+      pendingIds.push(childId);
+    });
+  }
+
+  return excluded;
+};
+
+const hasSnapDelta = (
+  delta: Partial<Record<ThirdSnapAxis, number>>
+): boolean => (
+  delta.x != null || delta.y != null || delta.z != null
+);
 
 const vec3FromThree = (value: THREE.Vector3): ThirdVec3 => ({
   x: value.x,
@@ -706,11 +785,13 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const engineRef = useRef<RuntimeEngine | null>(null);
   const rafRef = useRef(0);
   const modeRef = useRef(editorMode);
+  const objectsRef = useRef(objects);
   const objectPhysicsRef = useRef(new Map<string, boolean>());
   const objectLockedRef = useRef(new Map<string, boolean>());
   const selectionIdRef = useRef(selectionId);
   const transformModeRef = useRef(transformMode);
   const snapEnabledRef = useRef(snapEnabled);
+  const applyingTransformSnapCorrectionRef = useRef(false);
   const cameraSaveTimerRef = useRef<number | null>(null);
   const physicsCommitAccumulatorRef = useRef(0);
   const releaseGrabRef = useRef<(pointerId?: number) => void>(() => {});
@@ -1790,6 +1871,10 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   }, [objects]);
 
   useEffect(() => {
+    objectsRef.current = objects;
+  }, [objects]);
+
+  useEffect(() => {
     objectLockedRef.current = new Map(objects.map((object) => [object.id, object.locked]));
   }, [objects]);
 
@@ -1994,6 +2079,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const bodyWorldQuaternion = new THREE.Quaternion();
     const parentWorldQuaternion = new THREE.Quaternion();
     const localQuaternion = new THREE.Quaternion();
+    const snappedWorldPosition = new THREE.Vector3();
+    const snappedLocalPosition = new THREE.Vector3();
     let physicsAccumulator = 0;
     let elapsedSeconds = 0;
 
@@ -2219,9 +2306,9 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       transform.attach(selected.mesh);
       transform.setMode(transformModeRef.current);
       if (snapEnabledRef.current) {
-        transform.setTranslationSnap(0.5);
-        transform.setRotationSnap(Math.PI / 12);
-        transform.setScaleSnap(0.1);
+        transform.setTranslationSnap(THIRD_GRID_CELL_SIZE);
+        transform.setRotationSnap(THIRD_ROTATION_SNAP_RADIANS);
+        transform.setScaleSnap(THIRD_SCALE_SNAP_STEP);
       } else {
         transform.setTranslationSnap(null);
         transform.setRotationSnap(null);
@@ -2236,11 +2323,69 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     };
 
     const onTransformObjectChange = () => {
+      if (applyingTransformSnapCorrectionRef.current) return;
       const selectedId = selectionIdRef.current;
       if (!selectedId) return;
       if (objectLockedRef.current.get(selectedId) === true) return;
       const selected = engine.entries.get(selectedId);
       if (!selected) return;
+
+      if (snapEnabledRef.current && transformModeRef.current === 'translate') {
+        const activeAxes = resolveActiveSnapAxes(
+          (transform as TransformControls & { axis?: string | null }).axis
+        );
+
+        if (activeAxes.length > 0) {
+          engine.scene.updateMatrixWorld(true);
+          const subjectBounds = resolveMeshWorldBounds(selected);
+          if (subjectBounds) {
+            const excludedIds = buildSnapExclusionSet(objectsRef.current, selectedId);
+            const candidates = objectsRef.current.flatMap((object) => {
+              const entry = engine.entries.get(object.id);
+              if (!entry) return [];
+              const bounds = resolveMeshWorldBounds(entry);
+              return bounds ? [{ id: object.id, bounds }] : [];
+            });
+            const snapDelta = resolveBoundsSnapDelta({
+              activeAxes,
+              subjectBounds,
+              candidates,
+              excludedIds,
+            });
+
+            if (hasSnapDelta(snapDelta)) {
+              selected.mesh.getWorldPosition(snappedWorldPosition);
+              let didApplySnapCorrection = false;
+
+              activeAxes.forEach((axis) => {
+                const axisDelta = snapDelta[axis];
+                if (axisDelta == null || Math.abs(axisDelta) <= SNAP_POSITION_EPSILON) return;
+                snappedWorldPosition[axis] += axisDelta;
+                didApplySnapCorrection = true;
+              });
+
+              if (didApplySnapCorrection) {
+                snappedLocalPosition.copy(snappedWorldPosition);
+                const meshParent = selected.mesh.parent;
+                if (meshParent && meshParent !== scene) {
+                  meshParent.updateMatrixWorld(true);
+                  meshParent.worldToLocal(snappedLocalPosition);
+                }
+
+                applyingTransformSnapCorrectionRef.current = true;
+                try {
+                  selected.mesh.position.copy(snappedLocalPosition);
+                  selected.mesh.updateMatrixWorld(true);
+                  engine.scene.updateMatrixWorld(true);
+                } finally {
+                  applyingTransformSnapCorrectionRef.current = false;
+                }
+              }
+            }
+          }
+        }
+      }
+
       syncBaseFromMesh(selected);
       pendingTransformPatchRef.current = {
         id: selected.id,
@@ -2760,9 +2905,9 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
     engine.transform.setMode(transformMode);
     if (snapEnabled) {
-      engine.transform.setTranslationSnap(0.5);
-      engine.transform.setRotationSnap(Math.PI / 12);
-      engine.transform.setScaleSnap(0.1);
+      engine.transform.setTranslationSnap(THIRD_GRID_CELL_SIZE);
+      engine.transform.setRotationSnap(THIRD_ROTATION_SNAP_RADIANS);
+      engine.transform.setScaleSnap(THIRD_SCALE_SNAP_STEP);
     } else {
       engine.transform.setTranslationSnap(null);
       engine.transform.setRotationSnap(null);
@@ -3287,6 +3432,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         </button>
       </div>
       <span className={styles.inlineStatus}>OBJECT ACTIONS VIA HIERARCHY CONTEXT MENU.</span>
+      <span className={styles.inlineStatus}>SNAP: 1.0 GRID + OBJECT BOUNDS IN MOVE MODE.</span>
       <div
         className={styles.objectList}
         aria-label="THIRD object hierarchy"

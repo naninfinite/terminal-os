@@ -18,6 +18,7 @@ import {
   setShowAxes,
   setShowGrid,
   setSelection,
+  toggleSnap,
   toggleShowAxes,
   toggleShowGrid,
   updateObjectTransform,
@@ -132,6 +133,17 @@ describe('third state helpers', () => {
     const hydrated = hydrateStateFromPersistence(persisted);
     expect(hydrated.showGrid).toBe(true);
     expect(hydrated.showAxes).toBe(true);
+  });
+
+  it('keeps snap as runtime-only state across serialization and hydration', () => {
+    const seeded = toggleSnap(createDefaultThirdRuntimeState());
+    expect(seeded.snapEnabled).toBe(true);
+
+    const persisted = serializeStateForPersistence(seeded);
+    expect('snapEnabled' in persisted).toBe(false);
+
+    const hydrated = hydrateStateFromPersistence(persisted);
+    expect(hydrated.snapEnabled).toBe(false);
   });
 
   it('updates object material preset and color with sanitization', () => {

@@ -93,7 +93,7 @@ export const buildThirdSceneToolbar = (
       group: 'transform',
       icon: 'scene_toggle_snap',
       label: 'SNAP',
-      title: `SNAP | ${args.snapEnabled ? 'ON' : 'OFF'} | G`,
+      title: `SNAP | ${args.snapEnabled ? 'ON' : 'OFF'} | GRID 1.0 + OBJECT | G`,
       active: args.snapEnabled,
       disabled: !isEditMode,
     },
