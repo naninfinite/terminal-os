@@ -5,6 +5,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './YOU.module.scss';
 import { useYouBoard } from '../../you/YouProvider';
+import { formatYouMessageTimestamp, msUntilNextLocalMidnight } from './messageTimestamp';
 import { PANEL_PREVIEW_DEFAULT_COUNT, derivePanelPreviewFit, type PanelPreviewFit } from './panelPreview';
 import type { YouMessage } from '../../you/types';
 
@@ -20,17 +21,6 @@ const DEFAULT_PANEL_PREVIEW_FIT: PanelPreviewFit = {
   hasSpareSpace: false,
 };
 
-const formatTimestamp = (iso: string): string => {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return '--:--';
-  return new Intl.DateTimeFormat(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  }).format(date);
-};
-
 const readLengthPx = (value: string): number => {
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -42,11 +32,14 @@ const isSamePanelPreviewFit = (left: PanelPreviewFit, right: PanelPreviewFit): b
   && left.hasSpareSpace === right.hasSpareSpace
 );
 
-const MessageCard: React.FC<{ message: YouMessage }> = ({ message }) => (
+const MessageCard: React.FC<{ message: YouMessage; nowForTimestamp: Date }> = ({
+  message,
+  nowForTimestamp,
+}) => (
   <article className={styles.message} data-you-panel-message="true">
     <header className={styles.messageHead}>
       <span className={styles.author}>{message.isAnon ? 'ANON' : (message.displayName ?? 'ANON')}</span>
-      <span className={styles.time}>{formatTimestamp(message.createdAt)}</span>
+      <span className={styles.time}>{formatYouMessageTimestamp(message.createdAt, { now: nowForTimestamp })}</span>
     </header>
     <p className={styles.body}>{message.body}</p>
   </article>
@@ -79,6 +72,7 @@ const YOU: React.FC<YouProps> = ({ mode = 'panel' }) => {
   const panelMeasureFeedRef = useRef<HTMLDivElement | null>(null);
   const panelAutoBackfillKeyRef = useRef<string | null>(null);
   const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const [nowForTimestamp, setNowForTimestamp] = useState<Date>(() => new Date());
   const [panelPreviewFit, setPanelPreviewFit] = useState<PanelPreviewFit>(DEFAULT_PANEL_PREVIEW_FIT);
   const isPanelMode = mode === 'panel';
   const panelVisibleCount = isPanelMode
@@ -122,6 +116,25 @@ const YOU: React.FC<YouProps> = ({ mode = 'panel' }) => {
       window.removeEventListener('terminalos:you:type-message', onTypeMessage as EventListener);
     };
   }, [displayMode, mode]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setNowForTimestamp(new Date());
+    }, msUntilNextLocalMidnight(nowForTimestamp));
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        setNowForTimestamp(new Date());
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [nowForTimestamp]);
 
   useEffect(() => {
     if (!isPanelMode) {
@@ -272,7 +285,7 @@ const YOU: React.FC<YouProps> = ({ mode = 'panel' }) => {
             {loadingInitial ? <p className={styles.empty}>LOADING BOARD...</p> : null}
             {!loadingInitial && visibleMessages.length === 0 ? <p className={styles.empty}>NO MESSAGES YET.</p> : null}
             {visibleMessages.map((message) => (
-              <MessageCard key={message.id} message={message} />
+              <MessageCard key={message.id} message={message} nowForTimestamp={nowForTimestamp} />
             ))}
           </div>
 
@@ -283,7 +296,7 @@ const YOU: React.FC<YouProps> = ({ mode = 'panel' }) => {
               aria-hidden="true"
             >
               {messages.map((message) => (
-                <MessageCard key={`measure-${message.id}`} message={message} />
+                <MessageCard key={`measure-${message.id}`} message={message} nowForTimestamp={nowForTimestamp} />
               ))}
             </div>
           ) : null}
