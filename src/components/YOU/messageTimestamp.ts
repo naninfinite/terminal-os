@@ -1,6 +1,6 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export type YouMessageTimestampKind = 'time' | 'yesterday' | 'date' | 'invalid';
+export type YouMessageTimestampKind = 'time' | 'yesterday' | 'daysAgo' | 'invalid';
 
 const getValidDate = (value: string | Date | undefined): Date | null => {
   if (value instanceof Date) {
@@ -27,7 +27,7 @@ export const getYouMessageTimestampKind = (
   const dayDelta = getLocalDayOrdinal(current) - getLocalDayOrdinal(createdAt);
   if (dayDelta <= 0) return 'time';
   if (dayDelta === 1) return 'yesterday';
-  return 'date';
+  return 'daysAgo';
 };
 
 export const formatYouMessageTimestamp = (
@@ -41,12 +41,9 @@ export const formatYouMessageTimestamp = (
 
   if (kind === 'yesterday') return 'Yesterday';
 
-  if (kind === 'date') {
-    return new Intl.DateTimeFormat(options?.locale, {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    }).format(createdAt);
+  if (kind === 'daysAgo') {
+    const dayDelta = getLocalDayOrdinal(current) - getLocalDayOrdinal(createdAt);
+    return `${dayDelta} days ago`;
   }
 
   return new Intl.DateTimeFormat(options?.locale, {

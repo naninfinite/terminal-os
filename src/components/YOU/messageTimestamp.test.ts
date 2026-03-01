@@ -27,12 +27,20 @@ describe('YOU message timestamp helpers', () => {
     expect(formatYouMessageTimestamp(postedLateYesterday, { now: justAfterMidnight })).toBe('Yesterday');
   });
 
-  it('formats older messages as date-only labels', () => {
+  it('formats older messages as day-count labels', () => {
     const now = new Date(2026, 1, 26, 10, 0, 0, 0);
     const createdAt = new Date(2026, 1, 24, 12, 30, 0, 0).toISOString();
 
-    expect(getYouMessageTimestampKind(createdAt, now)).toBe('date');
-    expect(formatYouMessageTimestamp(createdAt, { now, locale: 'en-GB' })).toBe('24 Feb 2026');
+    expect(getYouMessageTimestampKind(createdAt, now)).toBe('daysAgo');
+    expect(formatYouMessageTimestamp(createdAt, { now, locale: 'en-GB' })).toBe('2 days ago');
+  });
+
+  it('keeps the exact local day count for older posts', () => {
+    const now = new Date(2026, 2, 1, 10, 0, 0, 0);
+    const createdAt = new Date(2026, 1, 14, 23, 30, 0, 0).toISOString();
+
+    expect(getYouMessageTimestampKind(createdAt, now)).toBe('daysAgo');
+    expect(formatYouMessageTimestamp(createdAt, { now })).toBe('15 days ago');
   });
 
   it('keeps future-dated timestamps in the time bucket', () => {
