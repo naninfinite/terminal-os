@@ -8,6 +8,23 @@ describe('menu scopes', () => {
     expect(ids).toContain('third_reset_scene');
   });
 
+  it('uses finder-style ME commands in desktop and me scopes', () => {
+    expect(MENU_SCOPE_CONFIG.desktop.items.map((item) => item.id)).toEqual([
+      'open_meos',
+      'open_home',
+      'toggle_theme',
+    ]);
+    expect(MENU_SCOPE_CONFIG.meos.items.map((item) => item.id)).toEqual([
+      'open_home',
+      'open_projects',
+      'open_media',
+      'open_about',
+      'open_contact',
+      'exit_meos',
+      'toggle_theme',
+    ]);
+  });
+
   it('resolves desktop/meos/scope modes deterministically', () => {
     expect(resolveMenuScope({ displayMode: 'panel' })).toBe('desktop');
     expect(resolveMenuScope({ displayMode: 'panel', activeScope: 'third' })).toBe('third');

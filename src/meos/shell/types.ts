@@ -5,11 +5,33 @@
 
 export type MeOsDisplayMode = 'panel' | 'fullscreen';
 
-export type MeOsViewerKind = 'text' | 'image' | 'video' | 'project';
+export type MeOsViewerKind = 'text' | 'image' | 'video' | 'project' | 'contact';
 
-export type MeOsFixedAppId = 'file' | 'about' | 'projects' | 'media';
+export type MeOsDesktopEntryId =
+  | 'home'
+  | 'projects'
+  | 'media'
+  | 'about'
+  | 'contact'
+  | 'archive'
+  | 'readme';
 
-export type MeOsAppId = MeOsFixedAppId | 'viewer_text' | 'viewer_image' | 'viewer_video' | 'viewer_project';
+export type MeOsDesktopEntry = {
+  id: MeOsDesktopEntryId;
+  label: string;
+  nodeId: string;
+  iconVariant: 'folder' | 'document' | 'contact';
+  alias: boolean;
+};
+
+export type MeOsAppId =
+  | 'folder'
+  | 'info'
+  | 'viewer_text'
+  | 'viewer_image'
+  | 'viewer_video'
+  | 'viewer_project'
+  | 'viewer_contact';
 
 export type MeOsWindowRect = {
   x: number;
@@ -32,11 +54,15 @@ export type MeOsWindow = {
   restoreRect?: MeOsWindowRect;
   nodeId?: string;
   viewerKind?: MeOsViewerKind;
+  desktopEntryId?: MeOsDesktopEntryId;
 };
 
-export type MeOsWindowTemplate = Omit<MeOsWindow, 'zIndex' | 'minimized' | 'maximized' | 'restoreRect' | 'nodeId' | 'viewerKind'>;
+export type MeOsWindowTemplate = Omit<
+  MeOsWindow,
+  'zIndex' | 'minimized' | 'maximized' | 'restoreRect' | 'nodeId' | 'viewerKind' | 'desktopEntryId'
+>;
 
 export type MeOsPersistedSnapshot = {
-  version: 1;
+  version: 2;
   windows: MeOsWindow[];
 };

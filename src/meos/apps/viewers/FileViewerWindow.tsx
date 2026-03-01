@@ -1,5 +1,5 @@
 /**
- * File-backed viewer window for M4.
+ * File-backed viewer window.
  * Renders directly from VFS node metadata instead of name-based placeholders.
  */
 import React, { useRef, useState } from 'react';
@@ -50,6 +50,7 @@ const createFallbackImage = (label: string, theme: ResolvedTheme): string => {
 
 const fallbackText = (name: string): string => `No inline text content configured for "${name}".`;
 const getKindLabel = (kind: string): string => kind.toUpperCase();
+
 const formatVideoTime = (seconds: number): string => {
   if (!Number.isFinite(seconds) || seconds < 0) return '00:00';
   const total = Math.floor(seconds);
@@ -187,10 +188,6 @@ const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
   if (!node || node.type !== 'file') {
     return (
       <div className={styles.viewer}>
-        <header className={styles.viewerHeader}>
-          <span className={styles.viewerKind}>MISSING</span>
-          <span className={styles.viewerName}>UNKNOWN.FILE</span>
-        </header>
         <div className={styles.missing}>
           <p>FILE NOT FOUND</p>
           <p>It may have been deleted or moved.</p>
@@ -279,16 +276,76 @@ const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
     );
   }
 
+  if (kind === 'contact') {
+    const contact = node.contactMeta;
+    return (
+      <div className={styles.viewer}>
+        <article className={styles.contactCard} data-allow-select="true">
+          <div className={styles.contactHero}>
+            <div className={styles.contactAvatarPlaceholder} aria-hidden="true">
+              <span>AV</span>
+            </div>
+            <div className={styles.contactIntro}>
+              <p className={styles.projectLabel}>CONTACT CARD</p>
+              <h2 className={styles.contactTitle}>{node.name}</h2>
+              <p className={styles.metaCopy}>
+                {contact?.status || 'Add status copy for this contact card.'}
+              </p>
+            </div>
+          </div>
+          <p className={styles.metaCopy}>{node.textContent || fallbackText(node.name)}</p>
+          <div className={styles.contactActions}>
+            <a className={styles.linkCard} href={`mailto:${contact?.email || 'add-email@example.com'}`}>
+              <span className={styles.linkCardLabel}>Email</span>
+              <span className={styles.linkCardValue}>{contact?.email || 'add-email@example.com'}</span>
+            </a>
+            <a className={styles.linkCard} href={contact?.githubUrl || 'https://github.com/your-handle'} target="_blank" rel="noreferrer">
+              <span className={styles.linkCardLabel}>GitHub</span>
+              <span className={styles.linkCardValue}>{contact?.githubUrl || 'https://github.com/your-handle'}</span>
+            </a>
+            <a className={styles.linkCard} href={contact?.instagramUrl || 'https://instagram.com/your-handle'} target="_blank" rel="noreferrer">
+              <span className={styles.linkCardLabel}>Instagram</span>
+              <span className={styles.linkCardValue}>{contact?.instagramUrl || 'https://instagram.com/your-handle'}</span>
+            </a>
+          </div>
+        </article>
+      </div>
+    );
+  }
+
+  if (node.documentLayout === 'about') {
+    return (
+      <div className={styles.viewer}>
+        <article className={styles.aboutDoc} data-allow-select="true">
+          <section className={styles.aboutHero}>
+            <div className={styles.aboutHeroPlaceholder} aria-hidden="true">
+              <span>PORTRAIT</span>
+            </div>
+            <div className={styles.aboutHeroCopy}>
+              <p className={styles.projectLabel}>ABOUT</p>
+              <h2 className={styles.contactTitle}>{node.name}</h2>
+              <p className={styles.metaCopy}>{node.textContent || fallbackText(node.name)}</p>
+            </div>
+          </section>
+          <section className={styles.aboutSections}>
+            {(node.documentSections ?? []).map((section) => (
+              <article key={section.title} className={styles.aboutSection}>
+                <h3 className={styles.aboutSectionTitle}>{section.title}</h3>
+                <p className={styles.metaCopy}>{section.body}</p>
+              </article>
+            ))}
+          </section>
+        </article>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.viewer}>
-      <header className={styles.viewerHeader}>
-        <span className={styles.viewerKind}>{getKindLabel(kind)}</span>
-        <span className={styles.viewerName}>{node.name}</span>
-      </header>
-      <div className={styles.textWrap}>
+      <article className={styles.document} data-allow-select="true">
         <p className={styles.metaTitle}>{node.name}</p>
         <pre className={styles.pre}>{node.textContent || fallbackText(node.name)}</pre>
-      </div>
+      </article>
     </div>
   );
 };

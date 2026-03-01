@@ -1,90 +1,128 @@
-import type { VfsNode, VfsSnapshot } from './types';
+import type { VfsContactMeta, VfsDocumentSection, VfsNode, VfsSnapshot } from './types';
 
-/**
- * Canonical seed for M2 VFS.
- * This is intentionally minimal and portfolio-focused.
- */
-const seedNodes: VfsNode[] = [
-  { id: 'root', name: '/', type: 'folder', parentId: null },
-  { id: 'home', name: 'Home', type: 'folder', parentId: 'root' },
-  { id: 'projects', name: 'Projects', type: 'folder', parentId: 'root' },
-  { id: 'media', name: 'Media', type: 'folder', parentId: 'root' },
-  { id: 'about', name: 'About', type: 'folder', parentId: 'root' },
-  { id: 'contact', name: 'Contact', type: 'folder', parentId: 'root' },
-  { id: 'archive', name: 'Archive', type: 'folder', parentId: 'root' },
+export const ROOT_ID = 'root';
+export const HOME_ID = 'home';
+export const PROJECTS_ID = 'projects';
+export const MEDIA_ID = 'media';
+export const ARCHIVE_ID = 'archive';
+export const ABOUT_DOC_ID = 'about_doc';
+export const CONTACT_CARD_ID = 'contact_card';
+export const README_ID = 'readme_txt';
+export const PORTRAIT_ID = 'portrait_png';
+export const REEL_ID = 'reel_mp4';
+export const PROJECT_TERMINAL_OS_ID = 'project_terminalos';
+export const PROJECT_PROZILLA_ID = 'project_prozilla';
+export const ARCHIVE_LEGACY_ID = 'archive_legacy';
+
+const ABOUT_SECTIONS: VfsDocumentSection[] = [
   {
-    id: 'readme_txt',
+    title: 'Practice',
+    body: 'Building interface systems that feel authored, tactile, and slightly strange without losing clarity.',
+  },
+  {
+    title: 'Systems',
+    body: 'Exploring browser-based operating systems, durable UI metaphors, and playful interaction patterns that still behave predictably.',
+  },
+  {
+    title: 'Current Focus',
+    body: 'Sharpening Terminal-OS into a portfolio surface that feels closer to a real desktop than a stack of panels.',
+  },
+];
+
+const CONTACT_META: VfsContactMeta = {
+  email: 'add-email@example.com',
+  githubUrl: 'https://github.com/your-handle',
+  instagramUrl: 'https://instagram.com/your-handle',
+  status: 'Available for projects and collaborations.',
+  avatarPlaceholder: true,
+};
+
+const seedNodes: VfsNode[] = [
+  { id: ROOT_ID, name: '/', type: 'folder', parentId: null },
+  { id: HOME_ID, name: 'Home', type: 'folder', parentId: ROOT_ID },
+  { id: PROJECTS_ID, name: 'Projects', type: 'folder', parentId: ROOT_ID },
+  { id: MEDIA_ID, name: 'Media', type: 'folder', parentId: ROOT_ID },
+  { id: ARCHIVE_ID, name: 'Archive', type: 'folder', parentId: ROOT_ID },
+  {
+    id: ABOUT_DOC_ID,
+    name: 'About',
+    type: 'file',
+    parentId: HOME_ID,
+    kind: 'text',
+    documentLayout: 'about',
+    heroPlaceholder: true,
+    textContent: 'Creative developer building interface systems, interactive environments, and OS-flavored web work.',
+    documentSections: ABOUT_SECTIONS,
+  },
+  {
+    id: CONTACT_CARD_ID,
+    name: 'Contact',
+    type: 'file',
+    parentId: HOME_ID,
+    kind: 'contact',
+    textContent: 'Reach out through the channels below. Replace placeholders with final values when ready.',
+    contactMeta: CONTACT_META,
+  },
+  {
+    id: README_ID,
     name: 'README.txt',
     type: 'file',
-    parentId: 'home',
+    parentId: HOME_ID,
     kind: 'text',
+    documentLayout: 'standard',
     textContent: [
-      'Welcome to ME.OS.',
+      'Welcome to ME.EXE.',
       '',
-      'This environment is the portfolio layer for Terminal-OS.',
-      'Use FILE.EXE to browse folders and open files.',
+      'This desktop is the portfolio layer for Terminal-OS.',
+      'Open folders and documents directly from the desktop to browse the work.',
       '',
       'Current milestone:',
-      '- FileMan list/grid navigation',
-      '- Viewer windows for text, image, video, and project cards',
+      '- Finder-style desktop entry model',
+      '- Folder and document windows',
+      '- Existing image, video, and project viewers preserved',
     ].join('\n'),
   },
   {
-    id: 'about_txt',
-    name: 'ABOUT.txt',
-    type: 'file',
-    parentId: 'about',
-    kind: 'text',
-    textContent: [
-      'Naninfinite / Terminal-OS',
-      '',
-      'Creative developer exploring OS-style web interfaces,',
-      'interactive systems, and visual storytelling.',
-      '',
-      'Open Projects and Media for deeper work samples.',
-    ].join('\n'),
-  },
-  {
-    id: 'portrait_png',
+    id: PORTRAIT_ID,
     name: 'Portrait.png',
     type: 'file',
-    parentId: 'media',
+    parentId: MEDIA_ID,
     kind: 'image',
     assetSrc: '',
-    textContent: 'Primary portrait asset placeholder. Swap `assetSrc` with bundled media when available.',
+    textContent: 'Portrait placeholder. Swap `assetSrc` with a final image later.',
   },
   {
-    id: 'reel_mp4',
+    id: REEL_ID,
     name: 'Reel.mp4',
     type: 'file',
-    parentId: 'media',
+    parentId: MEDIA_ID,
     kind: 'video',
     assetSrc: 'src/assets/videos/mp4/juno-echo_web.mp4',
     posterSrc: '',
-    textContent: 'Showreel slot. Attach a video source URL/path in `assetSrc` when media is available.',
+    textContent: 'Showreel slot. Attach a different `assetSrc` when a final reel is ready.',
   },
   {
-    id: 'project_terminalos',
+    id: PROJECT_TERMINAL_OS_ID,
     name: 'Terminal-OS.card',
     type: 'file',
-    parentId: 'projects',
+    parentId: PROJECTS_ID,
     kind: 'project',
     projectMeta: {
       title: 'Terminal-OS',
-      summary: 'Pseudo operating-system portfolio shell with panel/fullscreen subsystem runtime and FileMan workflows.',
+      summary: 'Pseudo operating-system portfolio shell with panel/fullscreen subsystem runtime and folder-document workflows.',
       stack: ['React', 'TypeScript', 'SCSS', 'Vite'],
       repoUrl: 'https://github.com/naninfinite/terminal-os',
     },
   },
   {
-    id: 'project_prozilla',
+    id: PROJECT_PROZILLA_ID,
     name: 'ProzillaOS.card',
     type: 'file',
-    parentId: 'projects',
+    parentId: PROJECTS_ID,
     kind: 'project',
     projectMeta: {
       title: 'ProzillaOS',
-      summary: 'Prior OS-interface experiment used as a reference for explorer interaction patterns and event-driven UI updates.',
+      summary: 'Earlier OS-interface experiment used as a reference for windowing, explorer behavior, and desktop structure.',
       stack: ['React', 'TypeScript'],
       repoUrl: 'https://github.com/naninfinite/ProzillaOS',
     },
@@ -96,11 +134,19 @@ export const createSeedSnapshot = (): VfsSnapshot => {
   const children: Record<string, string[]> = {};
 
   for (const node of seedNodes) {
-    nodes[node.id] = { ...node };
+    nodes[node.id] = {
+      ...node,
+      documentSections: node.documentSections?.map((section) => ({ ...section })),
+      contactMeta: node.contactMeta ? { ...node.contactMeta } : undefined,
+      projectMeta: node.projectMeta
+        ? { ...node.projectMeta, stack: [...node.projectMeta.stack] }
+        : undefined,
+    };
     if (node.type === 'folder') {
       children[node.id] = [];
     }
   }
+
   for (const node of seedNodes) {
     if (!node.parentId) continue;
     children[node.parentId] ??= [];
@@ -108,8 +154,8 @@ export const createSeedSnapshot = (): VfsSnapshot => {
   }
 
   return {
-    version: 1,
-    rootId: 'root',
+    version: 2,
+    rootId: ROOT_ID,
     nodes,
     children,
   };

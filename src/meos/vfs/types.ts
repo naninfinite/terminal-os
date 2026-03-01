@@ -4,7 +4,14 @@
 
 export type VfsNodeType = 'folder' | 'file';
 
-export type VfsFileKind = 'text' | 'image' | 'video' | 'project';
+export type VfsFileKind = 'text' | 'image' | 'video' | 'project' | 'contact';
+
+export type VfsDocumentLayout = 'standard' | 'about';
+
+export type VfsDocumentSection = {
+  title: string;
+  body: string;
+};
 
 export type VfsProjectMeta = {
   title: string;
@@ -12,6 +19,14 @@ export type VfsProjectMeta = {
   stack: string[];
   demoUrl?: string;
   repoUrl?: string;
+};
+
+export type VfsContactMeta = {
+  email?: string;
+  githubUrl?: string;
+  instagramUrl?: string;
+  status?: string;
+  avatarPlaceholder?: boolean;
 };
 
 export type VfsNode = {
@@ -24,10 +39,14 @@ export type VfsNode = {
   assetSrc?: string;
   posterSrc?: string;
   projectMeta?: VfsProjectMeta;
+  documentLayout?: VfsDocumentLayout;
+  documentSections?: VfsDocumentSection[];
+  heroPlaceholder?: boolean;
+  contactMeta?: VfsContactMeta;
 };
 
 export type VfsSnapshot = {
-  version: 1;
+  version: 2;
   rootId: string;
   nodes: Record<string, VfsNode>;
   children: Record<string, string[]>;

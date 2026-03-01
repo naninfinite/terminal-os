@@ -22,6 +22,8 @@ describe('subsystemContextMenu model', () => {
       'action',
       'action',
       'action',
+      'action',
+      'action',
     ]);
 
     const actionIds = model.rows
@@ -29,13 +31,15 @@ describe('subsystemContextMenu model', () => {
       .map((row) => row.id);
     expect(actionIds).toEqual([
       'open_me',
-      'open_file',
+      'open_home',
       'open_projects',
       'open_media',
+      'open_about',
+      'open_contact',
     ]);
   });
 
-  it('builds expanded ME panel menu rows with create/recent actions', () => {
+  it('builds expanded ME panel menu rows with recent and direct open actions', () => {
     const model = buildSubsystemContextMenu({
       scope: 'me',
       origin: 'panel',
@@ -54,7 +58,6 @@ describe('subsystemContextMenu model', () => {
       'divider',
       'action',
       'action',
-      'divider',
       'action',
       'action',
       'action',
@@ -66,11 +69,11 @@ describe('subsystemContextMenu model', () => {
     expect(actionIds).toEqual([
       'open_me',
       'open_me_recent',
-      'me_new_file',
-      'me_new_folder',
-      'open_file',
+      'open_home',
       'open_projects',
       'open_media',
+      'open_about',
+      'open_contact',
     ]);
   });
 

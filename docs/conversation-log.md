@@ -1778,3 +1778,24 @@ Why it matters:
 Risks / Notes:
 - Object snapping uses world-axis-aligned primitive bounds only; it does not attempt oriented-box, vertex, or surface snapping.
 - Ancestors/descendants are intentionally excluded from snap targets to avoid unstable hierarchy self-snapping.
+
+---
+
+## Entry 84 - ME.EXE Finder Reset Implemented
+
+Summary:
+- Rebuilt `ME.EXE` away from the centered launcher shelf and toward a sparse desktop metaphor.
+- Desktop now presents a fixed icon lane: `Home`, `Projects`, `Media`, `About`, `Contact`, `Archive`, `README.txt`.
+- Replaced the visible FileMan/browser-authoring surface with minimal folder windows that only expose icon-grid browsing plus a bottom status strip.
+- Added canonical `Home` documents for `About`, `Contact`, and `README.txt`, with desktop aliases pointing at those canonical files.
+- Added read-only `Get Info` windows and node-backed deterministic window ids for folders, viewers, and alias-info surfaces.
+- Updated shell/VFS persistence migrations so older ME windows and old root `About`/`Contact` folders migrate safely into the new model.
+
+Why it matters:
+- Restores the intended OS feel by making folders/files and windows the primary affordance instead of launcher buttons.
+- Simplifies the visible ME shell and removes the bloated browser chrome that had drifted away from the original Finder-like goal.
+- Keeps architecture sound by preserving the VFS/service boundary while replacing only the user-facing runtime model.
+
+Risks / Notes:
+- Dedicated gallery/video browsing is still intentionally deferred; `Media` continues to rely on the existing viewer windows for now.
+- `docs/me-exe-finder-reset-spec.md` is now the source of truth for active ME desktop UX, while `docs/fileman-v2-build-spec.md` remains historical for architecture boundaries.

@@ -1,6 +1,6 @@
-# ME.EXE Evolution Plan (Styling-First, Iterative)
+# ME.EXE Evolution Plan (Finder Reset Baseline)
 
-Date: 2026-02-08  
+Date: 2026-03-01  
 Status: Active direction  
 Owner: Terminal-OS
 
@@ -17,12 +17,14 @@ Owner: Terminal-OS
 3. Do not replace background/chrome language abruptly.
 4. ME.EXE should evolve into an OS experience through small, concise iterations.
 5. Behavioral improvements are welcome, but visual identity must remain Terminal-OS.
+6. The centered launcher shelf is retired; desktop icons and windows are now the baseline ME interaction model.
 
 ## 3) What We Will Not Do
 
 - No sudden full visual overhauls.
 - No giant grid/block redesigns that replace current style language.
 - No multi-system aesthetic swap in a single pass.
+- No return to visible FileMan authoring chrome without explicit re-approval.
 
 ## 4) Iteration Method (Required)
 
@@ -37,9 +39,9 @@ Each pass must be small and isolated:
 ## 5) Implementation Priorities
 
 1. Preserve current shell styling and status bar behavior.
-2. Incrementally improve ME.EXE desktop semantics.
-3. Add/adjust icon and window behavior in small steps.
-4. Keep panel/fullscreen shared-state behavior stable.
+2. Keep ME.EXE readable as a sparse desktop, not a launcher dashboard.
+3. Preserve panel/fullscreen shared-state behavior.
+4. Keep folders, files, and windows as the primary ME affordances.
 5. Validate non-ME scopes (`YOU`, `THIRD`, `CONNECT`) are unaffected.
 
 ## 6) Acceptance Rules Per Iteration
@@ -56,26 +58,23 @@ When proposing future ME.EXE changes:
 
 - Propose in concise micro-steps.
 - Avoid broad visual experimentation in one shot.
-- Keep decisions anchored to this document unless explicitly re-approved.
+- Keep decisions anchored to this document and `docs/me-exe-finder-reset-spec.md` unless explicitly re-approved.
 
-## 8) Near-Term UX Queue (M5 / M5.x)
+## 8) Current Finder Reset Lock (2026-03-01)
 
-1. Edge/corner resize baseline complete: `N/E/S/W` + corner handles, including full top-edge and top-right hit coverage.
-2. Drag remains header-only; action buttons are protected from drag starts.
-3. Per-window maximize baseline complete: all ME windows support maximize/restore with persisted state.
-4. Maximize first-pass bounds lock: maximized windows fill ME stage only (below `[ME.EXE]`, above footer status line).
-5. Launcher persistence complete: `FILE / ABOUT / PROJECTS / MEDIA` remains visible while windows are open.
-6. Desktop-panel runtime parity complete: panel now renders all active non-minimized ME windows with real content (no lightweight secondary preview path).
-7. Task-strip grouping baseline complete: show individual ME tasks only in `ME.EXE` scope and a collapsed `ME.EXE (n)` master item in non-ME scopes.
-8. Panel interaction lock complete: windows are fully interactive in panel mode (drag, resize, minimize, maximize, close); launchers open/focus on single click in panel.
-9. Fullscreen-entry lock complete: panel enters fullscreen via background-only double gesture (desktop double-click / touch double-tap), with keyboard fallback retained.
-10. Right status cluster location baseline complete: live `location | time` token with geolocation source and timezone fallback.
-11. Fullscreen footer removed: ME fullscreen now renders header + stage only.
-12. Status-language hierarchy resolved: `SYS: READY` is the sole readiness token; ME shows no local readiness/count footer token.
-13. Maximize control polish complete: maximize glyph now uses square icon treatment.
-14. Edge-to-edge ME framing complete: outer ME panel/fullscreen inset padding removed while internal window body spacing remains unchanged.
-15. FileMan toolbar icon polish complete: icon + text controls are now CSS/ASCII-safe (no external icon assets), including `RESET`.
-16. Cross-surface mobile/tablet hardening complete: shared responsive breakpoints and safe-area-aware layout behavior now cover shell/status bar + `ME`, `YOU`, `CONNECT`, FileMan, and viewer surfaces while preserving desktop behavior above tablet width.
+1. Sparse desktop icon lane complete: `Home`, `Projects`, `Media`, `About`, `Contact`, `Archive`, `README.txt`.
+2. Desktop semantics complete: pointer single-click selects, double-click opens; touch single tap opens; keyboard navigation remains active.
+3. Background-only fullscreen entry complete: icon/window interactions never trigger fullscreen.
+4. Desktop-panel runtime parity complete: panel renders the same ME runtime and active windows as fullscreen.
+5. Folder/file baseline complete: centered launcher shelf removed in favor of folder/document windows.
+6. Deterministic window ids complete: folders, viewers, and info windows focus existing windows when reopened.
+7. Canonical `Home` docs complete: `About`, `Contact`, and `README.txt` live in `Home` and appear on the desktop as aliases.
+8. Minimal folder-window contract complete: no toolbar, sidebar, path input, or visible authoring controls.
+9. Finder-leaning chrome complete: centered titles, quieter resize affordances, classic-style controls, Terminal-OS palette preserved.
+10. Task-strip grouping baseline complete: show individual ME tasks only in `ME.EXE` scope and a collapsed `ME.EXE (n)` master item in non-ME scopes.
+11. Session restore + shell/VFS v2 migrations complete.
+12. Cross-surface mobile/tablet hardening remains a required baseline for the new shell.
+13. Dedicated gallery/video browsing is explicitly deferred to a later ME pass.
 
 ## 9) Theme Split Lock (Auto / Dark / Light)
 

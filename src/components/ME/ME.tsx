@@ -9,21 +9,11 @@ import styles from './ME.module.scss';
 
 const ME: React.FC = () => {
   const { openFullscreen } = useMeOs();
-  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      openFullscreen();
-    }
-  };
 
   return (
-    <div 
+    <div
       className={styles.root}
-      role="button"
-      tabIndex={0}
-      aria-label="Open ME.EXE fullscreen"
-      onKeyDown={onKeyDown}
-      >
+    >
       <MeOsViewport mode="panel" onPanelBackgroundEnterFullscreen={openFullscreen} />
     </div>
   );

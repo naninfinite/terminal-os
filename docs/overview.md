@@ -10,11 +10,13 @@ Current Status:
 - Phase 0 implemented. Replace assets in `public/assets/` as needed.
 - Phase 1 skeleton implemented (App shell, Desktop layout, StatusBar, scanlines overlay).
 - Phase 2 implemented: panel placeholders and core behaviors. See `docs/phase-2.md` for details.
+- ME.EXE Finder Reset baseline implemented: sparse desktop icon lane, minimal folder windows, richer `About`/`Contact` document surfaces, read-only info windows, and updated shell/VFS migrations.
 
 Recent updates:
 - Implemented custom retro green mouse cursor with larger-on-hover behavior; hidden on touch devices; respects `prefers-reduced-motion`.
 - Fixed landing page responsive video box sizing and enter transition cleanup.
-- Added cross-surface mobile/tablet hardening (shell, status bar, ME shell, YOU, FileMan, viewers, CONNECT) with shared breakpoints and safe-area-aware fullscreen/status behavior.
+- Added cross-surface mobile/tablet hardening (shell, status bar, ME shell, folder windows, viewers, YOU, CONNECT) with shared breakpoints and safe-area-aware fullscreen/status behavior.
+- Rebuilt `ME.EXE` around a Finder-style desktop metaphor while keeping Terminal-OS styling.
 
 Assets:
 - `landing-bg.mp4` (looping)
@@ -23,28 +25,22 @@ Assets:
 
 ---
 
-## Direction Update (2026-02-08)
+## Direction Update (2026-03-01)
 
-- `ME.EXE` is now intended to evolve into `ME.OS`: a portfolio-focused pseudo OS.
-- Desktop behavior target:
-- `ME.OS` is visible in miniature inside the `ME.EXE` panel.
-- Clicking `ME.EXE` expands the same live instance to fullscreen.
-- Returning to desktop keeps the same live state visible in the panel.
+- `ME.EXE` now runs as a live miniature `ME.OS` inside the panel and expands to fullscreen without resetting state.
+- Desktop behavior is folder/file-first:
+- `Home`, `Projects`, `Media`, and `Archive` open as folder windows.
+- `About`, `Contact`, and `README.txt` live canonically in `Home` and appear on the desktop as aliases.
+- `Get Info` windows expose read-only item metadata, including alias target paths.
 - Global status bar remains fixed at the bottom.
-- Menu behavior target:
-- One Start-like menu button with context-aware entries by active scope.
-- Desktop scope: core panels/system actions.
-- `ME.OS` scope: portfolio/file manager/viewer actions.
-- Other scopes (for example `THIRD`): domain-specific actions.
-- Implementation status:
-- M1 shell foundation is now implemented (shared `ME.OS` state, panel preview, fullscreen expansion, persisted shell windows).
-- M2 VFS foundation is now implemented (versioned VFS service, seed/reset/migration, unit tests).
-- M3 FileMan is now implemented (FileMan window app, list/grid views, navigation/actions, viewer launch routing).
+- One Start-like menu button remains context-aware by active scope.
+- Gallery/video browsing remains a deferred follow-up; current media/project viewers stay in place.
 
 Related docs:
 - `docs/phase-3.md`
 - `docs/ADR Index`
 - `docs/conversation-log.md`
+- `docs/me-exe-finder-reset-spec.md`
 - `docs/fileman-v2-build-spec.md`
 - `docs/me-exe-evolution-plan.md`
 - `docs/responsive-mobile-tablet-baseline.md`

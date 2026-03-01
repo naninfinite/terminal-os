@@ -11,10 +11,12 @@ import { useYouBoard } from '../../you/YouProvider';
 import { useThirdRuntime } from '../../third/ThirdProvider';
 import { useConnectRuntime } from '../../connect/ConnectProvider';
 import {
-  FILEMAN_COMMAND_EVENT,
-  type FileManCommandDetail,
-  type FileManCommandId,
-} from '../../meos/apps/fileman/commands';
+  ABOUT_DOC_ID,
+  CONTACT_CARD_ID,
+  HOME_ID,
+  MEDIA_ID,
+  PROJECTS_ID,
+} from '../../meos/vfs/seed';
 import { useContextTrigger } from '../shared/useContextTrigger';
 import { nextLocationCaseMode } from './locationCase';
 import { getNextThemeMode, getThemeToggleLabel } from './themeMenu';
@@ -72,7 +74,7 @@ const StatusBar: React.FC = () => {
     windows,
     openFullscreen: openMeFullscreen,
     closeFullscreen: closeMeFullscreen,
-    openApp,
+    openNode,
     restoreWindow,
   } = useMeOs();
   const {
@@ -301,9 +303,9 @@ const StatusBar: React.FC = () => {
     };
   }, [shouldLockMobileFullscreenScroll]);
 
-  const openAppForScope = (appId: Parameters<typeof openApp>[0]) => {
+  const openNodeForScope = (nodeId: string) => {
     if (scope === 'desktop') openMeFullscreen();
-    openApp(appId);
+    openNode(nodeId);
   };
 
   const focusPanel = (scopeId: DesktopPanelScope) => {
@@ -323,21 +325,6 @@ const StatusBar: React.FC = () => {
         dispatchShellEvent('terminalos:you:type-message');
       });
     });
-  };
-
-  const dispatchFileManCommand = (commandId: FileManCommandId) => {
-    const emit = () => {
-      window.dispatchEvent(new CustomEvent<FileManCommandDetail>(FILEMAN_COMMAND_EVENT, {
-        detail: { id: commandId },
-      }));
-    };
-    const fileWindowOpen = orderedWindows.some((win) => win.appId === 'file');
-    if (!fileWindowOpen) {
-      openAppForScope('file');
-      window.requestAnimationFrame(() => window.requestAnimationFrame(emit));
-      return;
-    }
-    emit();
   };
 
   const closeAllFullscreen = () => {
@@ -399,7 +386,7 @@ const StatusBar: React.FC = () => {
     setSubsystemMenu(null);
     const recentWindow = meWindowsLadder[0];
     if (!recentWindow) {
-      openAppForScope('file');
+      openNodeForScope(HOME_ID);
       return;
     }
     focusMeWindowFromDock(recentWindow.id);
@@ -441,14 +428,20 @@ const StatusBar: React.FC = () => {
       case 'exit_meos':
         closeMeFullscreen();
         break;
-      case 'open_file':
-        openAppForScope('file');
+      case 'open_home':
+        openNodeForScope(HOME_ID);
         break;
       case 'open_projects':
-        openAppForScope('projects');
+        openNodeForScope(PROJECTS_ID);
         break;
       case 'open_media':
-        openAppForScope('media');
+        openNodeForScope(MEDIA_ID);
+        break;
+      case 'open_about':
+        openNodeForScope(ABOUT_DOC_ID);
+        break;
+      case 'open_contact':
+        openNodeForScope(CONTACT_CARD_ID);
         break;
       case 'toggle_theme':
         setThemeMode(getNextThemeMode(resolvedTheme));
@@ -505,20 +498,20 @@ const StatusBar: React.FC = () => {
       case 'open_connect':
         onSubsystemDockClick('connect');
         return;
-      case 'me_new_file':
-        dispatchFileManCommand('new_file');
-        break;
-      case 'me_new_folder':
-        dispatchFileManCommand('new_folder');
-        break;
-      case 'open_file':
-        openAppForScope('file');
+      case 'open_home':
+        openNodeForScope(HOME_ID);
         break;
       case 'open_projects':
-        openAppForScope('projects');
+        openNodeForScope(PROJECTS_ID);
         break;
       case 'open_media':
-        openAppForScope('media');
+        openNodeForScope(MEDIA_ID);
+        break;
+      case 'open_about':
+        openNodeForScope(ABOUT_DOC_ID);
+        break;
+      case 'open_contact':
+        openNodeForScope(CONTACT_CARD_ID);
         break;
       case 'you_save_input':
         dispatchShellEvent('terminalos:you:save-input');

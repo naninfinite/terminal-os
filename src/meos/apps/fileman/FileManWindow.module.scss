@@ -1,413 +1,137 @@
 @use '../../../styles/variables' as *;
 
 .root {
+  position: relative;
   display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 8px;
+  grid-template-rows: minmax(0, 1fr) auto;
   height: 100%;
   min-height: 0;
+  background: transparent;
 }
 
-.toolbar {
-  display: grid;
-  grid-template-columns: auto auto auto 1fr auto auto auto auto auto;
-  gap: 6px;
-  align-items: center;
-  min-width: 0;
-}
-
-.btn {
-  border: $border;
-  background: $bg-black;
-  color: $phosphor-green;
-  padding: 3px 8px;
-  font-size: $font-xs;
-  overflow: hidden;
-}
-
-.btn:disabled {
-  opacity: 0.58;
-}
-
-.btnContent {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  max-width: 100%;
-}
-
-.btnIcon {
-  width: 12px;
-  height: 12px;
-  position: relative;
-  display: inline-block;
-  flex: 0 0 12px;
-  box-sizing: border-box;
-  color: currentColor;
-}
-
-.btnIcon::before,
-.btnIcon::after {
-  content: '';
-  position: absolute;
-  box-sizing: border-box;
-}
-
-.btnLabel {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.btnActive {
-  background: var(--ui-fill-strong);
-}
-
-.iconBack::before {
-  left: 2px;
-  right: 1px;
-  top: 5px;
-  border-top: 1px solid currentColor;
-}
-
-.iconBack::after {
-  left: 2px;
-  top: 3px;
-  width: 4px;
-  height: 4px;
-  border-left: 1px solid currentColor;
-  border-bottom: 1px solid currentColor;
-  transform: rotate(45deg);
-}
-
-.iconForward::before {
-  left: 1px;
-  right: 2px;
-  top: 5px;
-  border-top: 1px solid currentColor;
-}
-
-.iconForward::after {
-  right: 2px;
-  top: 3px;
-  width: 4px;
-  height: 4px;
-  border-right: 1px solid currentColor;
-  border-top: 1px solid currentColor;
-  transform: rotate(45deg);
-}
-
-.iconUp::before {
-  left: 5px;
-  top: 2px;
-  bottom: 1px;
-  border-left: 1px solid currentColor;
-}
-
-.iconUp::after {
-  left: 3px;
-  top: 2px;
-  width: 4px;
-  height: 4px;
-  border-left: 1px solid currentColor;
-  border-top: 1px solid currentColor;
-  transform: rotate(45deg);
-}
-
-.iconNewFolder {
-  width: 11px;
-  height: 8px;
-  margin-top: 3px;
-  border: 1px solid currentColor;
-  border-radius: 1px;
-}
-
-.iconNewFolder::before {
-  left: 1px;
-  top: -4px;
-  width: 6px;
-  height: 3px;
-  border: 1px solid currentColor;
-  border-bottom: none;
-  border-radius: 1px 1px 0 0;
-}
-
-.iconNewFolder::after {
-  right: -1px;
-  top: 1px;
-  width: 5px;
-  height: 5px;
-  background:
-    linear-gradient(currentColor, currentColor) center / 1px 5px no-repeat,
-    linear-gradient(currentColor, currentColor) center / 5px 1px no-repeat;
-}
-
-.iconNewFile {
-  border: 1px solid currentColor;
-  border-radius: 1px;
-}
-
-.iconNewFile::before {
-  right: -1px;
-  top: -1px;
-  width: 4px;
-  height: 4px;
-  background: var(--ui-bg, #000);
-  border-left: 1px solid currentColor;
-  border-bottom: 1px solid currentColor;
-}
-
-.iconNewFile::after {
-  left: 1px;
-  bottom: 1px;
-  width: 5px;
-  height: 5px;
-  background:
-    linear-gradient(currentColor, currentColor) center / 1px 5px no-repeat,
-    linear-gradient(currentColor, currentColor) center / 5px 1px no-repeat;
-}
-
-.iconList::before {
-  left: 1px;
-  right: 1px;
-  top: 2px;
-  bottom: 2px;
-  background:
-    linear-gradient(currentColor, currentColor) 0 0 / 100% 1px no-repeat,
-    linear-gradient(currentColor, currentColor) 0 50% / 100% 1px no-repeat,
-    linear-gradient(currentColor, currentColor) 0 100% / 100% 1px no-repeat;
-}
-
-.iconGrid::before {
-  left: 1px;
-  top: 1px;
-  right: 1px;
-  bottom: 1px;
-  background:
-    linear-gradient(currentColor, currentColor) 0 0 / 4px 4px no-repeat,
-    linear-gradient(currentColor, currentColor) 100% 0 / 4px 4px no-repeat,
-    linear-gradient(currentColor, currentColor) 0 100% / 4px 4px no-repeat,
-    linear-gradient(currentColor, currentColor) 100% 100% / 4px 4px no-repeat;
-}
-
-.iconReset::before {
-  left: 1px;
-  top: 1px;
-  right: 1px;
-  bottom: 1px;
-  border: 1px solid currentColor;
-  border-right-color: transparent;
-  border-radius: 999px;
-}
-
-.iconReset::after {
-  right: 1px;
-  top: 1px;
-  width: 4px;
-  height: 4px;
-  border-top: 1px solid currentColor;
-  border-right: 1px solid currentColor;
-  transform: rotate(15deg);
-}
-
-.path {
-  border: $border;
-  background: $bg-black;
-  color: $phosphor-green;
-  padding: 3px 8px;
-  width: 100%;
-  min-width: 0;
-}
-
-.body {
-  display: grid;
-  grid-template-columns: 160px 1fr;
-  gap: 8px;
-  min-height: 0;
-}
-
-.sidebar {
-  border: $border;
-  padding: 6px;
-  display: grid;
-  gap: 6px;
-  align-content: start;
+.contents {
   min-height: 0;
   overflow: auto;
-}
-
-.sidebar,
-.list {
+  display: grid;
+  align-content: start;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 12px 10px;
+  padding: 6px 2px 10px;
   scrollbar-width: thin;
   scrollbar-color: $phosphor-green $bg-black;
 }
 
-.sidebar::-webkit-scrollbar,
-.list::-webkit-scrollbar {
+.contents::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 
-.sidebar::-webkit-scrollbar-track,
-.list::-webkit-scrollbar-track {
+.contents::-webkit-scrollbar-track {
   background: $bg-black;
   border-left: 1px solid var(--ui-border-soft);
 }
 
-.sidebar::-webkit-scrollbar-thumb,
-.list::-webkit-scrollbar-thumb {
+.contents::-webkit-scrollbar-thumb {
   background: var(--ui-fill-strong);
   border: 2px solid $bg-black;
 }
 
-.sidebar::-webkit-scrollbar-thumb:hover,
-.list::-webkit-scrollbar-thumb:hover {
-  background: var(--ui-fill-focus);
-}
-
-.navBtn {
-  border: $border;
-  background: $bg-black;
+.entry {
+  border: 1px solid transparent;
+  background: transparent;
   color: $phosphor-green;
-  padding: 4px 8px;
-  text-align: left;
-}
-
-.main {
-  border: $border;
-  min-height: 0;
   display: grid;
-  grid-template-rows: auto 1fr;
-}
-
-.pathReadout {
-  border-bottom: $border-thin solid $phosphor-green;
-  padding: 4px 8px;
-  font-size: $font-xs;
-  opacity: 0.9;
-}
-
-.list {
-  min-height: 0;
-  overflow: auto;
-  padding: 6px;
-  display: grid;
-}
-
-/* Traditional explorer rows. */
-.listList {
-  align-content: start;
-  gap: 4px;
-  grid-template-columns: 1fr;
-}
-
-/* Responsive card grid for media-style browsing. */
-.listGrid {
-  align-content: start;
+  justify-items: center;
   gap: 8px;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  align-content: start;
+  padding: 6px 4px 8px;
+  min-height: 110px;
 }
 
-.row {
-  border: 1px solid var(--ui-border-soft);
-  background: var(--ui-fill-soft);
-  color: $phosphor-green;
-  padding: 5px 7px;
-  text-align: left;
-  transition: background 120ms ease, border-color 120ms ease;
-  min-width: 0;
+.entry:hover,
+.entry:focus-visible {
+  border-color: var(--ui-border-soft);
+  background: rgb(var(--ui-scanline-rgb, 0 255 102) / 0.05);
 }
 
-.row:hover {
+.entryActive {
   border-color: var(--ui-border);
-  background: var(--ui-fill-hover);
 }
 
-.rowList {
+.entryIcon {
+  width: 58px;
+  height: 46px;
+  border: 2px solid currentColor;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  place-items: center;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.entryGlyph {
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: 0.12em;
+}
+
+.entryType {
+  position: absolute;
+  bottom: 4px;
+  right: 5px;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+}
+
+.entryLabel {
+  font-size: $font-xs;
+  text-align: center;
+  line-height: 1.25;
+  padding: 1px 5px;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+.entryActive .entryLabel,
+.entry:focus-visible .entryLabel {
+  background: $phosphor-green;
+  color: $bg-black;
+}
+
+.status {
+  border-top: 1px solid var(--ui-border-soft);
+  padding: 5px 8px;
+  display: flex;
   gap: 8px;
   align-items: center;
+  min-width: 0;
+  font-size: $font-xs;
 }
 
-/* Grid cards stack metadata vertically to preserve readability in narrow columns. */
-.rowGrid {
-  display: grid;
-  grid-template-columns: 1fr;
-  align-content: start;
-  gap: 6px;
-  min-height: 108px;
-}
-
-.rowGrid .renameInput {
-  width: 100%;
-}
-
-.rowList .icon {
-  min-width: 42px;
-}
-
-.rowGrid .icon,
-.rowGrid .kind {
-  opacity: 0.85;
-}
-
-.rowActive {
-  outline: 1px dashed $phosphor-green;
-  border-color: var(--ui-border);
-  background: var(--ui-fill-strong);
-}
-
-.icon {
-  display: inline-grid;
-  gap: 2px;
-}
-
-.iconGlyph {
-  font-size: $font-sm;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-}
-
-.iconType {
-  font-size: 10px;
-  opacity: 0.75;
-  letter-spacing: 0.06em;
-}
-
-.name {
-  font-size: $font-sm;
+.path {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.kind {
-  font-size: $font-xs;
-  opacity: 0.95;
-  border: 1px solid var(--ui-border-soft);
-  padding: 1px 6px;
-  letter-spacing: 0.04em;
-  justify-self: start;
-}
-
-.rowList .kind {
-  justify-self: end;
-}
-
-.renameInput {
-  border: $border;
-  background: $bg-black;
-  color: $phosphor-green;
-  padding: 3px 6px;
+.empty,
+.missing {
+  border: 1px dashed var(--ui-border-soft);
+  padding: 12px;
   font-size: $font-sm;
 }
 
-.empty {
-  padding: 12px 8px;
-  font-size: $font-xs;
-  opacity: 0.8;
+.missing {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  height: 100%;
+}
+
+.missingTitle,
+.missingCopy {
+  margin: 0;
 }
 
 .contextMenu {
@@ -420,39 +144,34 @@
   padding: 4px;
 }
 
-.contextMenu button {
-  border: none;
+.contextAction {
+  border: 1px solid transparent;
   background: transparent;
   color: $phosphor-green;
   text-align: left;
-  padding: 4px 8px;
+  padding: 4px 10px;
+  font-size: $font-xs;
 }
 
-@media (max-width: $bp-tablet) {
-  .toolbar {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .path {
-    grid-column: 1 / -1;
-  }
-
-  .body {
-    grid-template-columns: 1fr;
-  }
+.contextAction:hover,
+.contextAction:focus-visible {
+  border-color: var(--ui-border-soft);
+  background: var(--ui-fill-hover);
 }
 
 @media (max-width: $bp-phone) {
-  .toolbar {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 4px;
+  .contents {
+    grid-template-columns: repeat(auto-fill, minmax(102px, 1fr));
+    gap: 10px 8px;
   }
 
-  .btn {
-    padding: 2px 6px;
+  .entry {
+    min-height: 96px;
+    gap: 6px;
   }
 
-  .btnContent {
-    gap: 4px;
+  .entryIcon {
+    width: 50px;
+    height: 40px;
   }
 }

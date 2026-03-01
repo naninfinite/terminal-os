@@ -4,25 +4,27 @@
  * Responsibilities:
  * - Manage panel/fullscreen display mode.
  * - Manage internal ME.OS windows (open/focus/move/minimize/close/restore).
- * - Open fixed apps and dynamic viewer windows.
+ * - Open folder, document, and info windows from canonical VFS nodes.
  * - Persist shell window state to a namespaced versioned key.
  */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { getItemSafe, setItemSafe } from '../../utils/storage';
+import { ABOUT_DOC_ID, HOME_ID, MEDIA_ID, PROJECTS_ID } from '../vfs/seed';
+import { getMeOsVfsService } from '../vfs/service';
+import type { VfsNode } from '../vfs/types';
 import type {
   MeOsAppId,
+  MeOsDesktopEntryId,
   MeOsDisplayMode,
-  MeOsFixedAppId,
   MeOsPersistedSnapshot,
   MeOsViewerKind,
   MeOsWindow,
   MeOsWindowRect,
-  MeOsWindowTemplate,
 } from './types';
 import { sanitizePersistedWindowState, toggleWindowMaximize } from './windowState';
 
 const STORAGE_KEY = 'terminalOS.meos.v1.shell';
-const STORAGE_VERSION = 1 as const;
+const STORAGE_VERSION = 2 as const;
 const STATUS_BAR_HEIGHT = 28;
 const SPAWN_MARGIN = 12;
 const SPAWN_CASCADE_STEP = 18;
@@ -33,116 +35,63 @@ const VIEWPORT_GUTTER_X = 48;
 const VIEWPORT_GUTTER_Y = 96;
 const WINDOW_EDGE_BUFFER = 8;
 
-const WINDOW_TEMPLATES: Record<MeOsFixedAppId, MeOsWindowTemplate> = {
-  file: {
-    id: 'meos_fileman',
-    title: 'FILE.EXE',
-    appId: 'file',
-    x: 36,
-    y: 30,
-    width: 700,
-    height: 430,
-  },
-  about: {
-    id: 'meos_about',
-    title: 'ABOUT.TXT',
-    appId: 'about',
-    x: 120,
-    y: 70,
-    width: 430,
-    height: 280,
-  },
-  projects: {
-    id: 'meos_projects',
-    title: 'PROJECTS.DIR',
-    appId: 'projects',
-    x: 160,
-    y: 90,
-    width: 470,
-    height: 300,
-  },
-  media: {
-    id: 'meos_media',
-    title: 'MEDIA.DIR',
-    appId: 'media',
-    x: 210,
-    y: 120,
-    width: 480,
-    height: 300,
-  },
+const FOLDER_WINDOW_RECTS: Record<string, { x: number; y: number; width: number; height: number }> = {
+  [HOME_ID]: { x: 48, y: 34, width: 700, height: 440 },
+  [PROJECTS_ID]: { x: 118, y: 66, width: 560, height: 380 },
+  [MEDIA_ID]: { x: 156, y: 92, width: 580, height: 392 },
+  archive: { x: 198, y: 118, width: 500, height: 340 },
 };
-
-const createDefaultWindows = (): MeOsWindow[] => [
-  // Start with a clean desktop surface; windows open on demand.
-];
 
 const VIEWER_APP_BY_KIND: Record<MeOsViewerKind, MeOsAppId> = {
   text: 'viewer_text',
   image: 'viewer_image',
   video: 'viewer_video',
   project: 'viewer_project',
+  contact: 'viewer_contact',
 };
 
 const VIEWER_SIZE_BY_KIND: Record<MeOsViewerKind, { width: number; height: number }> = {
-  text: { width: 560, height: 360 },
+  text: { width: 560, height: 390 },
   image: { width: 620, height: 400 },
   video: { width: 740, height: 460 },
   project: { width: 560, height: 360 },
+  contact: { width: 500, height: 340 },
 };
+
+const INFO_WINDOW_RECT = { x: 88, y: 72, width: 340, height: 260 };
+
+type LegacyAppId = MeOsAppId | 'file' | 'about' | 'projects' | 'media' | 'fileman';
+
+type LegacyWindow = Omit<MeOsWindow, 'appId'> & {
+  appId: LegacyAppId;
+};
+
+const createDefaultWindows = (): MeOsWindow[] => [];
 
 const asNumber = (value: unknown, fallback: number): number => (
   typeof value === 'number' && Number.isFinite(value) ? value : fallback
 );
 
-const sanitizeWindow = (raw: unknown): MeOsWindow | null => {
-  if (!raw || typeof raw !== 'object') return null;
-  const data = raw as Record<string, unknown>;
-  const rawAppId = data.appId;
-  const appId = rawAppId === 'fileman' ? 'file' : rawAppId;
-  if (
-    appId !== 'file'
-    && appId !== 'about'
-    && appId !== 'projects'
-    && appId !== 'media'
-    && appId !== 'viewer_text'
-    && appId !== 'viewer_image'
-    && appId !== 'viewer_video'
-    && appId !== 'viewer_project'
-  ) return null;
-  const id = typeof data.id === 'string' ? data.id : '';
-  const title = typeof data.title === 'string' ? data.title : '';
-  if (!id || !title) return null;
-  const nodeId = typeof data.nodeId === 'string' ? data.nodeId : undefined;
-  const viewerKind = (
-    data.viewerKind === 'text'
-    || data.viewerKind === 'image'
-    || data.viewerKind === 'video'
-    || data.viewerKind === 'project'
-  ) ? data.viewerKind : undefined;
-  const persistedState = sanitizePersistedWindowState({
-    maximized: data.maximized,
-    restoreRect: data.restoreRect,
-  });
-  return {
-    id,
-    title,
-    appId,
-    x: asNumber(data.x, 24),
-    y: asNumber(data.y, 24),
-    width: Math.max(MIN_WINDOW_WIDTH, asNumber(data.width, 420)),
-    height: Math.max(MIN_WINDOW_HEIGHT, asNumber(data.height, 240)),
-    zIndex: Math.max(1, asNumber(data.zIndex, 1)),
-    minimized: Boolean(data.minimized),
-    maximized: persistedState.maximized,
-    restoreRect: persistedState.restoreRect,
-    nodeId,
-    viewerKind,
-  };
-};
+const isLegacyAppId = (value: unknown): value is LegacyAppId => (
+  value === 'folder'
+  || value === 'info'
+  || value === 'viewer_text'
+  || value === 'viewer_image'
+  || value === 'viewer_video'
+  || value === 'viewer_project'
+  || value === 'viewer_contact'
+  || value === 'file'
+  || value === 'about'
+  || value === 'projects'
+  || value === 'media'
+  || value === 'fileman'
+);
 
-const sortByZ = (windows: MeOsWindow[]): MeOsWindow[] => [...windows].sort((a, b) => a.zIndex - b.zIndex);
+const normalizeWindowId = (raw: string, fallback: string): string => raw.trim() || fallback;
 
 const getMaxZ = (windows: MeOsWindow[]): number => windows.reduce((max, w) => Math.max(max, w.zIndex), 1);
+
+const sortByZ = (windows: MeOsWindow[]): MeOsWindow[] => [...windows].sort((a, b) => a.zIndex - b.zIndex);
 
 const getSpawnViewport = (): { width: number; height: number } => {
   if (typeof window === 'undefined') {
@@ -190,24 +139,229 @@ const normalizeWindowRect = (args: {
   };
 };
 
-const loadPersistedWindows = (): MeOsWindow[] => {
-  const snapshot = getItemSafe<MeOsPersistedSnapshot | null>(STORAGE_KEY, null);
-  if (!snapshot || snapshot.version !== STORAGE_VERSION || !Array.isArray(snapshot.windows)) {
-    return createDefaultWindows();
+const getCascadeOffset = (windows: MeOsWindow[]): number => Math.min(SPAWN_CASCADE_MAX, windows.length * SPAWN_CASCADE_STEP);
+
+const withRect = (win: MeOsWindow): MeOsWindow => ({
+  ...win,
+  ...normalizeWindowRect(win),
+  restoreRect: win.restoreRect ? normalizeWindowRect(win.restoreRect) : undefined,
+});
+
+const dedupeWindows = (windows: MeOsWindow[]): MeOsWindow[] => {
+  const byId = new Map<string, MeOsWindow>();
+  for (const win of sortByZ(windows)) {
+    byId.set(win.id, win);
   }
-  const parsed = snapshot.windows
-    .map(sanitizeWindow)
-    .filter((w): w is MeOsWindow => w != null)
-    .map((w) => ({
-      ...w,
-      ...normalizeWindowRect(w),
-      restoreRect: w.restoreRect ? normalizeWindowRect(w.restoreRect) : undefined,
-    }));
-  if (parsed.length === 0) return createDefaultWindows();
-  return sortByZ(parsed);
+  return sortByZ([...byId.values()]);
 };
 
-const getCascadeOffset = (windows: MeOsWindow[]): number => Math.min(SPAWN_CASCADE_MAX, windows.length * SPAWN_CASCADE_STEP);
+export const getFolderWindowId = (nodeId: string): string => `folder_${nodeId}`;
+export const getViewerWindowId = (nodeId: string): string => `viewer_${nodeId}`;
+export const getInfoWindowId = (args: { nodeId: string; desktopEntryId?: MeOsDesktopEntryId }): string => (
+  args.desktopEntryId ? `info_entry_${args.desktopEntryId}` : `info_node_${args.nodeId}`
+);
+
+const getViewerKindForNode = (node: VfsNode): MeOsViewerKind => (
+  node.kind === 'image'
+  || node.kind === 'video'
+  || node.kind === 'project'
+  || node.kind === 'contact'
+    ? node.kind
+    : 'text'
+);
+
+const getFolderRectForNode = (nodeId: string): { x: number; y: number; width: number; height: number } => (
+  FOLDER_WINDOW_RECTS[nodeId] ?? { x: 120, y: 80, width: 540, height: 360 }
+);
+
+const createFolderWindow = (node: VfsNode, zIndex: number, existingWindows: MeOsWindow[]): MeOsWindow => {
+  const offset = getCascadeOffset(existingWindows);
+  const baseRect = getFolderRectForNode(node.id);
+  const rect = normalizeWindowRect({
+    x: baseRect.x + offset,
+    y: baseRect.y + offset,
+    width: baseRect.width,
+    height: baseRect.height,
+  });
+  return {
+    id: getFolderWindowId(node.id),
+    title: node.name,
+    appId: 'folder',
+    nodeId: node.id,
+    x: rect.x,
+    y: rect.y,
+    width: rect.width,
+    height: rect.height,
+    zIndex,
+    minimized: false,
+    maximized: false,
+  };
+};
+
+const createViewerWindow = (node: VfsNode, zIndex: number, existingWindows: MeOsWindow[]): MeOsWindow => {
+  const kind = getViewerKindForNode(node);
+  const offset = getCascadeOffset(existingWindows);
+  const size = VIEWER_SIZE_BY_KIND[kind];
+  const rect = normalizeWindowRect({
+    x: 120 + offset,
+    y: 80 + offset,
+    width: size.width,
+    height: size.height,
+  });
+  return {
+    id: getViewerWindowId(node.id),
+    title: node.name,
+    appId: VIEWER_APP_BY_KIND[kind],
+    nodeId: node.id,
+    viewerKind: kind,
+    x: rect.x,
+    y: rect.y,
+    width: rect.width,
+    height: rect.height,
+    zIndex,
+    minimized: false,
+    maximized: false,
+  };
+};
+
+const createInfoWindow = (args: {
+  nodeId: string;
+  label: string;
+  desktopEntryId?: MeOsDesktopEntryId;
+  zIndex: number;
+  existingWindows: MeOsWindow[];
+}): MeOsWindow => {
+  const offset = getCascadeOffset(args.existingWindows);
+  const rect = normalizeWindowRect({
+    x: INFO_WINDOW_RECT.x + offset,
+    y: INFO_WINDOW_RECT.y + offset,
+    width: INFO_WINDOW_RECT.width,
+    height: INFO_WINDOW_RECT.height,
+  });
+  return {
+    id: getInfoWindowId({ nodeId: args.nodeId, desktopEntryId: args.desktopEntryId }),
+    title: `${args.label} Info`,
+    appId: 'info',
+    nodeId: args.nodeId,
+    desktopEntryId: args.desktopEntryId,
+    x: rect.x,
+    y: rect.y,
+    width: rect.width,
+    height: rect.height,
+    zIndex: args.zIndex,
+    minimized: false,
+    maximized: false,
+  };
+};
+
+const sanitizeWindow = (raw: unknown): LegacyWindow | null => {
+  if (!raw || typeof raw !== 'object') return null;
+  const data = raw as Record<string, unknown>;
+  if (!isLegacyAppId(data.appId)) return null;
+  const id = normalizeWindowId(typeof data.id === 'string' ? data.id : '', `legacy_${String(data.appId)}`);
+  const title = typeof data.title === 'string' ? data.title : '';
+  const persistedState = sanitizePersistedWindowState({
+    maximized: data.maximized,
+    restoreRect: data.restoreRect,
+  });
+  const desktopEntryId = (
+    data.desktopEntryId === 'home'
+    || data.desktopEntryId === 'projects'
+    || data.desktopEntryId === 'media'
+    || data.desktopEntryId === 'about'
+    || data.desktopEntryId === 'contact'
+    || data.desktopEntryId === 'archive'
+    || data.desktopEntryId === 'readme'
+  ) ? data.desktopEntryId : undefined;
+  const viewerKind = (
+    data.viewerKind === 'text'
+    || data.viewerKind === 'image'
+    || data.viewerKind === 'video'
+    || data.viewerKind === 'project'
+    || data.viewerKind === 'contact'
+  ) ? data.viewerKind : undefined;
+
+  return {
+    id,
+    title,
+    appId: data.appId,
+    x: asNumber(data.x, 24),
+    y: asNumber(data.y, 24),
+    width: Math.max(MIN_WINDOW_WIDTH, asNumber(data.width, 420)),
+    height: Math.max(MIN_WINDOW_HEIGHT, asNumber(data.height, 240)),
+    zIndex: Math.max(1, asNumber(data.zIndex, 1)),
+    minimized: Boolean(data.minimized),
+    maximized: persistedState.maximized,
+    restoreRect: persistedState.restoreRect,
+    nodeId: typeof data.nodeId === 'string' ? data.nodeId : undefined,
+    viewerKind,
+    desktopEntryId,
+  };
+};
+
+export const migratePersistedWindows = (windows: LegacyWindow[], nodes: Record<string, VfsNode>): MeOsWindow[] => {
+  const migrated = windows
+    .map((win): MeOsWindow | null => {
+      const legacyNodeId = win.appId === 'file' || win.appId === 'fileman'
+        ? HOME_ID
+        : win.appId === 'projects'
+          ? PROJECTS_ID
+          : win.appId === 'media'
+            ? MEDIA_ID
+            : win.appId === 'about'
+              ? ABOUT_DOC_ID
+              : win.nodeId;
+
+      if ((win.appId === 'folder' || win.appId === 'file' || win.appId === 'fileman' || win.appId === 'projects' || win.appId === 'media')) {
+        if (!legacyNodeId || nodes[legacyNodeId]?.type !== 'folder') return null;
+        const node = nodes[legacyNodeId];
+        return withRect({
+          ...win,
+          id: getFolderWindowId(node.id),
+          title: node.name,
+          appId: 'folder',
+          nodeId: node.id,
+          viewerKind: undefined,
+          desktopEntryId: undefined,
+        });
+      }
+
+      if (win.appId === 'info') {
+        return withRect({
+          ...win,
+          id: getInfoWindowId({ nodeId: win.nodeId ?? HOME_ID, desktopEntryId: win.desktopEntryId }),
+          appId: 'info',
+        });
+      }
+
+      if (!legacyNodeId || nodes[legacyNodeId]?.type !== 'file') return null;
+      const node = nodes[legacyNodeId];
+      const viewerKind = getViewerKindForNode(node);
+      return withRect({
+        ...win,
+        id: getViewerWindowId(node.id),
+        title: node.name,
+        appId: VIEWER_APP_BY_KIND[viewerKind],
+        nodeId: node.id,
+        viewerKind,
+        desktopEntryId: undefined,
+      });
+    })
+    .filter((win): win is MeOsWindow => win != null);
+
+  return dedupeWindows(migrated);
+};
+
+const loadPersistedWindows = (): MeOsWindow[] => {
+  const snapshot = getItemSafe<MeOsPersistedSnapshot | { version: 1; windows: unknown[] } | null>(STORAGE_KEY, null);
+  if (!snapshot || !Array.isArray(snapshot.windows)) return createDefaultWindows();
+  const parsed = snapshot.windows
+    .map(sanitizeWindow)
+    .filter((win): win is LegacyWindow => win != null);
+  if (parsed.length === 0) return createDefaultWindows();
+  const vfsSnapshot = getMeOsVfsService().getSnapshot();
+  return migratePersistedWindows(parsed, vfsSnapshot.nodes);
+};
 
 type MeOsContextValue = {
   displayMode: MeOsDisplayMode;
@@ -216,8 +370,9 @@ type MeOsContextValue = {
   setActiveScope: (scope: 'you' | 'third' | 'connect' | null) => void;
   openFullscreen: () => void;
   closeFullscreen: () => void;
-  openApp: (appId: MeOsFixedAppId) => void;
-  openViewer: (args: { nodeId: string; title: string; kind: MeOsViewerKind }) => void;
+  openNode: (nodeId: string) => void;
+  openFolder: (nodeId: string) => void;
+  openInfo: (args: { nodeId: string; desktopEntryId?: MeOsDesktopEntryId; label: string }) => void;
   focusWindow: (id: string) => void;
   moveWindow: (id: string, x: number, y: number) => void;
   resizeWindow: (id: string, args: { width: number; height: number; x?: number; y?: number }) => void;
@@ -230,6 +385,7 @@ type MeOsContextValue = {
 const MeOsContext = createContext<MeOsContextValue | null>(null);
 
 export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const vfsService = useMemo(() => getMeOsVfsService(), []);
   const [displayMode, setDisplayMode] = useState<MeOsDisplayMode>('panel');
   const [windows, setWindows] = useState<MeOsWindow[]>(() => loadPersistedWindows());
   const [activeScope, setActiveScopeState] = useState<'you' | 'third' | 'connect' | null>(null);
@@ -245,7 +401,7 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const onResize = () => {
-      setWindows((prev) => prev.map((w) => ({ ...w, ...normalizeWindowRect(w) })));
+      setWindows((prev) => prev.map((win) => withRect(win)));
     };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
@@ -259,14 +415,15 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setDisplayMode('fullscreen');
     setActiveScopeState(null);
   }, []);
+
   const closeFullscreen = useCallback(() => setDisplayMode('panel'), []);
 
   const bringToFront = useCallback((id: string) => {
     setWindows((prev) => {
-      if (!prev.some((w) => w.id === id)) return prev;
+      if (!prev.some((win) => win.id === id)) return prev;
       const nextZ = zRef.current + 1;
       zRef.current = nextZ;
-      return prev.map((w) => (w.id === id ? { ...w, zIndex: nextZ, minimized: false } : w));
+      return prev.map((win) => (win.id === id ? { ...win, zIndex: nextZ, minimized: false } : win));
     });
   }, []);
 
@@ -274,139 +431,124 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     bringToFront(id);
   }, [bringToFront]);
 
-  const openApp = useCallback((appId: MeOsFixedAppId) => {
-    const template = WINDOW_TEMPLATES[appId];
+  const openFolder = useCallback((nodeId: string) => {
+    const node = vfsService.getNode(nodeId);
+    if (!node || node.type !== 'folder') return;
+    const windowId = getFolderWindowId(node.id);
     setWindows((prev) => {
-      const existing = prev.find((w) => w.id === template.id);
-      if (existing) {
-        const nextZ = zRef.current + 1;
-        zRef.current = nextZ;
-        return prev.map((w) => (
-          w.id === template.id
-            ? {
-              ...w,
-              zIndex: nextZ,
-              minimized: false,
-              x: appId === 'file' && !w.maximized ? template.x : w.x,
-              y: appId === 'file' && !w.maximized ? template.y : w.y,
-            }
-            : w
-        ));
-      }
+      const existing = prev.find((win) => win.id === windowId);
       const nextZ = zRef.current + 1;
       zRef.current = nextZ;
-      const offset = getCascadeOffset(prev);
-      const nextRect = normalizeWindowRect({
-        x: template.x + offset,
-        y: template.y + offset,
-        width: template.width,
-        height: template.height,
-      });
-      const next: MeOsWindow = {
-        ...template,
-        x: nextRect.x,
-        y: nextRect.y,
-        width: nextRect.width,
-        height: nextRect.height,
-        zIndex: nextZ,
-        minimized: false,
-        maximized: false,
-        };
-      return [...prev, next];
-    });
-  }, []);
-
-  const openViewer = useCallback((args: { nodeId: string; title: string; kind: MeOsViewerKind }) => {
-    const { nodeId, title, kind } = args;
-    const viewerId = `viewer_${nodeId}`;
-    const viewerAppId = VIEWER_APP_BY_KIND[kind];
-    const viewerSize = VIEWER_SIZE_BY_KIND[kind];
-    setWindows((prev) => {
-      const existing = prev.find((w) => w.id === viewerId);
       if (existing) {
-        const nextZ = zRef.current + 1;
-        zRef.current = nextZ;
-        return prev.map((w) => (
-          w.id === viewerId
+        return prev.map((win) => (
+          win.id === windowId
+            ? { ...win, title: node.name, zIndex: nextZ, minimized: false, nodeId: node.id }
+            : win
+        ));
+      }
+      return [...prev, createFolderWindow(node, nextZ, prev)];
+    });
+  }, [vfsService]);
+
+  const openNode = useCallback((nodeId: string) => {
+    const node = vfsService.getNode(nodeId);
+    if (!node) return;
+    if (node.type === 'folder') {
+      openFolder(node.id);
+      return;
+    }
+
+    const viewerKind = getViewerKindForNode(node);
+    const windowId = getViewerWindowId(node.id);
+    const viewerSize = VIEWER_SIZE_BY_KIND[viewerKind];
+    setWindows((prev) => {
+      const existing = prev.find((win) => win.id === windowId);
+      const nextZ = zRef.current + 1;
+      zRef.current = nextZ;
+      if (existing) {
+        return prev.map((win) => (
+          win.id === windowId
             ? {
-              ...w,
+              ...win,
+              title: node.name,
+              appId: VIEWER_APP_BY_KIND[viewerKind],
+              nodeId: node.id,
+              viewerKind,
               zIndex: nextZ,
               minimized: false,
-              title,
-              appId: viewerAppId,
-              nodeId,
-              viewerKind: kind,
               width: Math.max(existing.width, viewerSize.width),
               height: Math.max(existing.height, viewerSize.height),
             }
-            : w
+            : win
         ));
       }
+      return [...prev, createViewerWindow(node, nextZ, prev)];
+    });
+  }, [openFolder, vfsService]);
 
+  const openInfo = useCallback((args: { nodeId: string; desktopEntryId?: MeOsDesktopEntryId; label: string }) => {
+    const node = vfsService.getNode(args.nodeId);
+    if (!node) return;
+    const windowId = getInfoWindowId({ nodeId: args.nodeId, desktopEntryId: args.desktopEntryId });
+    setWindows((prev) => {
+      const existing = prev.find((win) => win.id === windowId);
       const nextZ = zRef.current + 1;
       zRef.current = nextZ;
-      const offset = getCascadeOffset(prev);
-      const nextRect = normalizeWindowRect({
-        x: 120 + offset,
-        y: 80 + offset,
-        width: viewerSize.width,
-        height: viewerSize.height,
-      });
-      const next: MeOsWindow = {
-        id: viewerId,
-        title,
-        appId: viewerAppId,
-        x: nextRect.x,
-        y: nextRect.y,
-        width: nextRect.width,
-        height: nextRect.height,
-        zIndex: nextZ,
-        minimized: false,
-        maximized: false,
-        nodeId,
-        viewerKind: kind,
-      };
-      return [...prev, next];
+      if (existing) {
+        return prev.map((win) => (
+          win.id === windowId
+            ? {
+              ...win,
+              title: `${args.label} Info`,
+              nodeId: args.nodeId,
+              desktopEntryId: args.desktopEntryId,
+              zIndex: nextZ,
+              minimized: false,
+            }
+            : win
+        ));
+      }
+      return [...prev, createInfoWindow({ ...args, zIndex: nextZ, existingWindows: prev })];
     });
-  }, []);
+  }, [vfsService]);
 
   const moveWindow = useCallback((id: string, x: number, y: number) => {
-    setWindows((prev) => prev.map((w) => (
-      w.id === id && !w.maximized ? { ...w, ...normalizeWindowRect({ ...w, x, y }) } : w
+    setWindows((prev) => prev.map((win) => (
+      win.id === id && !win.maximized ? { ...win, ...normalizeWindowRect({ ...win, x, y }) } : win
     )));
   }, []);
 
   const resizeWindow = useCallback((id: string, args: { width: number; height: number; x?: number; y?: number }) => {
-    setWindows((prev) => prev.map((w) => (
-      w.id === id && !w.maximized
+    setWindows((prev) => prev.map((win) => (
+      win.id === id && !win.maximized
         ? {
-          ...w,
+          ...win,
           ...normalizeWindowRect({
-            ...w,
+            ...win,
             width: args.width,
             height: args.height,
-            x: args.x ?? w.x,
-            y: args.y ?? w.y,
+            x: args.x ?? win.x,
+            y: args.y ?? win.y,
           }),
         }
-        : w
+        : win
     )));
   }, []);
 
   const toggleMaximizeWindow = useCallback((id: string) => {
-    setWindows((prev) => prev.map((w) => {
-      if (w.id !== id) return w;
+    setWindows((prev) => prev.map((win) => {
+      if (win.id !== id) return win;
 
       const nextZ = zRef.current + 1;
       zRef.current = nextZ;
       const currentRect: MeOsWindowRect = normalizeWindowRect({
-        x: w.x,
-        y: w.y,
-        width: w.width,
-        height: w.height,
+        x: win.x,
+        y: win.y,
+        width: win.width,
+        height: win.height,
       });
       const toggled = toggleWindowMaximize(
-        { ...w, ...currentRect },
+        { ...win, ...currentRect },
         currentRect
       );
 
@@ -435,7 +577,7 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const minimizeWindow = useCallback((id: string) => {
-    setWindows((prev) => prev.map((w) => (w.id === id ? { ...w, minimized: true } : w)));
+    setWindows((prev) => prev.map((win) => (win.id === id ? { ...win, minimized: true } : win)));
   }, []);
 
   const restoreWindow = useCallback((id: string) => {
@@ -444,7 +586,7 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const closeWindow = useCallback((id: string) => {
     setWindows((prev) => {
-      const next = prev.filter((w) => w.id !== id);
+      const next = prev.filter((win) => win.id !== id);
       if (next.length === 0) zRef.current = 1;
       return next;
     });
@@ -457,8 +599,9 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActiveScope,
     openFullscreen,
     closeFullscreen,
-    openApp,
-    openViewer,
+    openNode,
+    openFolder,
+    openInfo,
     focusWindow,
     moveWindow,
     resizeWindow,
@@ -467,16 +610,17 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     restoreWindow,
     closeWindow,
   }), [
+    activeScope,
     closeFullscreen,
     closeWindow,
-    activeScope,
     displayMode,
     focusWindow,
     minimizeWindow,
     moveWindow,
-    openApp,
-    openViewer,
+    openFolder,
     openFullscreen,
+    openInfo,
+    openNode,
     resizeWindow,
     restoreWindow,
     setActiveScope,

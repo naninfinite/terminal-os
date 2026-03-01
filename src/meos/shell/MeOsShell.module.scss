@@ -1,17 +1,18 @@
 @use '../../styles/variables' as *;
 
 .viewport {
-  /* ME.OS shell frame with title bar, window stage, and status strip. */
   width: 100%;
   height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto 1fr;
   background: $bg-black;
 }
 
-.viewport,
-.viewport button {
+.viewport button,
+.chromeHeader,
+.windowHeader,
+.desktopSurface {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
@@ -19,68 +20,180 @@
 }
 
 .panelMode {
-  /* Panel mode keeps native sizing so desktop preview matches fullscreen scale. */
-  --meos-scale: 1;
   grid-template-rows: 1fr;
 }
 
 .fullscreenMode {
-  --meos-scale: 1;
   grid-template-rows: auto 1fr;
 }
 
 .chromeHeader {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   padding: 4px 8px;
-  border-bottom: $border-thin solid $phosphor-green;
+  border-bottom: $border;
+  background: $bg-black;
+}
+
+.chromeControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chromeSpacer {
+  width: 26px;
 }
 
 .chromeTitle {
+  text-align: center;
   font-size: $font-sm;
-  letter-spacing: $letter-spacing;
-}
-
-.chromeActions {
-  display: flex;
-  gap: 6px;
+  letter-spacing: 0.08em;
 }
 
 .chromeBtn {
   border: $border;
   background: $bg-black;
   color: $phosphor-green;
-  padding: 2px 8px;
+  width: 26px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .stageViewport {
-  /* Outer clipping region for scaled or full-size internal window stage. */
   min-height: 0;
   overflow: hidden;
-  background: var(--ui-fill-soft);
   position: relative;
+  background:
+    linear-gradient(180deg, rgb(var(--ui-scanline-rgb, 0 255 102) / 0.05), transparent 18%),
+    $bg-black;
 }
 
 .stage {
-  /* Logical ME.OS desktop area where internal windows are positioned. */
   position: relative;
   width: 100%;
   height: 100%;
   min-height: 0;
+  overflow: hidden;
+  outline: none;
 }
 
-.panelMode .stage {
-  /* Scale down the same logical stage to keep panel and fullscreen state aligned. */
-  width: calc(100% / var(--meos-scale));
-  height: calc(100% / var(--meos-scale));
-  transform: scale(var(--meos-scale));
-  transform-origin: top left;
+.desktopSurface {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  width: min(196px, calc(100% - 24px));
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(var(--desktop-rows, 7), min-content);
+  grid-auto-columns: minmax(86px, 1fr);
+  gap: 8px 10px;
+  z-index: 1;
+  align-content: start;
 }
 
-.panelMode .window {
-  contain: layout paint style;
+.desktopEntry {
+  border: 1px solid transparent;
+  background: transparent;
+  color: $phosphor-green;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  align-content: start;
+  padding: 4px 2px 6px;
+  position: relative;
+}
+
+.desktopEntry:hover,
+.desktopEntry:focus-visible {
+  border-color: var(--ui-border-soft);
+}
+
+.desktopEntryActive {
+  border-color: var(--ui-border);
+}
+
+.desktopEntryIcon {
+  width: 54px;
+  height: 42px;
+  border: $border;
+  display: grid;
+  place-items: center;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.desktopEntryGlyph {
+  font-size: 16px;
+  line-height: 1;
+  letter-spacing: 0.12em;
+}
+
+.desktopEntryType {
+  position: absolute;
+  right: 4px;
+  bottom: 3px;
+  font-size: 9px;
+  opacity: 0.8;
+  letter-spacing: 0.08em;
+}
+
+.desktopEntryLabel {
+  font-size: $font-xs;
+  padding: 1px 4px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.desktopEntryActive .desktopEntryLabel,
+.desktopEntry:focus-visible .desktopEntryLabel {
+  background: $phosphor-green;
+  color: $bg-black;
+}
+
+.desktopEntryAliasHint {
+  position: absolute;
+  right: 4px;
+  top: 0;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.desktopEntry:hover .desktopEntryAliasHint,
+.desktopEntry:focus-visible .desktopEntryAliasHint {
+  opacity: 0.75;
+}
+
+.desktopContextMenu {
+  position: fixed;
+  z-index: 999;
+  border: $border;
+  background: $bg-black;
+  display: grid;
+  gap: 4px;
+  padding: 4px;
+}
+
+.desktopContextAction {
+  border: 1px solid transparent;
+  background: transparent;
+  color: $phosphor-green;
+  text-align: left;
+  padding: 4px 10px;
+  font-size: $font-xs;
+}
+
+.desktopContextAction:hover,
+.desktopContextAction:focus-visible {
+  border-color: var(--ui-border-soft);
+  background: var(--ui-fill-hover);
 }
 
 .window {
@@ -92,8 +205,8 @@
   min-width: 240px;
   min-height: 170px;
   box-sizing: border-box;
-  box-shadow: 0 0 0 1px var(--ui-border-soft);
   overflow: hidden;
+  box-shadow: 0 0 0 1px rgb(var(--ui-scanline-rgb, 0 255 102) / 0.16);
 }
 
 .windowMaximized {
@@ -104,73 +217,102 @@
 }
 
 .windowHeader {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 8px;
   padding: 4px 6px;
-  border-bottom: $border-thin solid $phosphor-green;
+  border-bottom: $border;
   cursor: move;
   min-width: 0;
-}
-
-.windowTitle {
-  font-size: $font-xs;
-  letter-spacing: $letter-spacing;
-  min-width: 0;
-  flex: 1 1 auto;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  background:
+    linear-gradient(180deg, transparent 0%, transparent 42%, rgb(var(--ui-scanline-rgb, 0 255 102) / 0.16) 42%, rgb(var(--ui-scanline-rgb, 0 255 102) / 0.16) 48%, transparent 48%, transparent 100%);
 }
 
 .windowActions {
   display: flex;
   gap: 4px;
-  flex: 0 0 auto;
+  align-items: center;
+}
+
+.windowHeaderSpacer {
+  width: 74px;
+}
+
+.windowTitle {
+  font-size: $font-xs;
+  letter-spacing: 0.08em;
+  min-width: 0;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .windowBtn {
   border: $border;
   background: $bg-black;
   color: $phosphor-green;
-  padding: 0 6px;
-  min-width: 22px;
-  min-height: 16px;
+  width: 20px;
+  height: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
 }
 
-.windowBtnSquare {
-  width: 9px;
-  height: 9px;
-  border: 1px solid currentColor;
-  box-sizing: border-box;
-  position: relative;
+.windowGlyph {
   display: block;
+  position: relative;
+  width: 10px;
+  height: 10px;
 }
 
-.windowBtnSquareRestore::after {
+.windowGlyphClose::before,
+.windowGlyphClose::after {
   content: '';
   position: absolute;
-  width: 7px;
-  height: 7px;
-  left: -3px;
-  top: 2px;
+  left: 4px;
+  top: 0;
+  width: 1px;
+  height: 10px;
+  background: currentColor;
+}
+
+.windowGlyphClose::before {
+  transform: rotate(45deg);
+}
+
+.windowGlyphClose::after {
+  transform: rotate(-45deg);
+}
+
+.windowGlyphMinimize::before {
+  content: '';
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  bottom: 2px;
+  border-top: 1px solid currentColor;
+}
+
+.windowGlyphZoom::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
   border: 1px solid currentColor;
-  background: $bg-black;
-  box-sizing: border-box;
 }
 
 .windowBody {
   padding: 8px;
-  overflow: auto;
   min-height: 0;
+  overflow: hidden;
 }
 
-.windowBodyNoScroll {
-  overflow: hidden;
+.windowBody [data-allow-select='true'],
+.windowBody [data-allow-select='true'] * {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .windowResizeHandle {
@@ -189,7 +331,6 @@
   right: 0;
   width: auto;
   height: 6px;
-  border-top: 1px solid var(--ui-border);
   cursor: ns-resize;
 }
 
@@ -199,7 +340,6 @@
   bottom: 10px;
   width: 6px;
   height: auto;
-  border-right: 1px solid var(--ui-border);
   cursor: ew-resize;
 }
 
@@ -209,7 +349,6 @@
   right: 10px;
   width: auto;
   height: 6px;
-  border-bottom: 1px solid var(--ui-border);
   cursor: ns-resize;
 }
 
@@ -219,7 +358,6 @@
   bottom: 10px;
   width: 6px;
   height: auto;
-  border-left: 1px solid var(--ui-border);
   cursor: ew-resize;
 }
 
@@ -228,8 +366,6 @@
   bottom: 0;
   width: 10px;
   height: 10px;
-  border-right: 1px solid var(--ui-border);
-  border-bottom: 1px solid var(--ui-border);
   cursor: nwse-resize;
 }
 
@@ -238,8 +374,6 @@
   top: 0;
   width: 8px;
   height: 8px;
-  border-left: 1px solid var(--ui-border);
-  border-top: 1px solid var(--ui-border);
   cursor: nwse-resize;
 }
 
@@ -248,8 +382,6 @@
   top: 0;
   width: 8px;
   height: 8px;
-  border-right: 1px solid var(--ui-border);
-  border-top: 1px solid var(--ui-border);
   cursor: nesw-resize;
 }
 
@@ -258,158 +390,16 @@
   bottom: 0;
   width: 10px;
   height: 10px;
-  border-left: 1px solid var(--ui-border);
-  border-bottom: 1px solid var(--ui-border);
   cursor: nesw-resize;
 }
 
 .window:hover .windowResizeHandle,
 .window:focus-within .windowResizeHandle {
-  opacity: 0.85;
+  opacity: 0.7;
   pointer-events: auto;
-}
-
-.homeContent {
-  display: grid;
-  gap: 8px;
-}
-
-.docContent {
-  display: grid;
-  gap: 8px;
-}
-
-.copy {
-  margin: 0;
-  font-size: $font-sm;
-}
-
-.copyDim {
-  margin: 0;
-  font-size: $font-xs;
-  opacity: 0.9;
-}
-
-/* Top-row launcher variant (wide, disabled)
-.launcherShelf {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(620px, calc(100% - 24px));
-  z-index: 1;
-}
-
-.launchGrid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-}
-*/
-
-/* Top-row launcher variant (legacy width, disabled)
-.launcherShelf {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  width: 256px;
-  z-index: 1;
-}
-
-.launchGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 8px;
-}
-*/
-
-/* Center-column launcher variant (active) */
-.launcherShelf {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  z-index: 1;
-  pointer-events: none;
-}
-
-.launchGrid {
-  pointer-events: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  width: min(140px, calc(100% - 24px));
-}
-.launchBtn {
-  border: $border;
-  background: $bg-black;
-  color: $phosphor-green;
-  padding: 4px 8px;
-  min-height: 30px;
-  min-width: 120px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
-}
-
-.fullscreenMode .launchBtn:hover,
-.fullscreenMode .launchBtn:focus-visible,
-.panelMode .launchBtn:hover,
-.panelMode .launchBtn:focus-visible {
-  border-color: var(--ui-border);
-  background: var(--ui-fill-hover);
-}
-
-.launchBtnSelected {
-  background: var(--ui-fill-strong);
-}
-
-.list {
-  margin: 0;
-  padding-left: 18px;
-  display: grid;
-  gap: 4px;
-  font-size: $font-sm;
-}
-
-.dirList {
-  display: grid;
-  gap: 4px;
-  border: 1px solid var(--ui-border-soft);
-  padding: 6px;
-  background: var(--ui-fill-soft);
-}
-
-.dirRow {
-  display: flex;
-  gap: 8px;
-  font-size: $font-xs;
-}
-
-.emptyState {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-content: center;
-  gap: 8px;
-  text-align: center;
-  pointer-events: none;
-}
-
-.startBtn {
-  border: $border;
-  background: $bg-black;
-  color: $phosphor-green;
-  padding: 2px 8px;
 }
 
 .fullscreenLayer {
-  /* Fullscreen ME.OS overlay mounted above desktop shell. */
   position: fixed;
   inset: 0 0 calc(#{$status-height} + env(safe-area-inset-bottom, 0px)) 0;
   z-index: 40;
@@ -421,51 +411,35 @@
 }
 
 @media (max-width: $bp-tablet) {
-  .launchGrid {
-    width: min(130px, calc(100% - 16px));
-  }
-
-  .launchBtn {
-    min-height: 28px;
-    min-width: 112px;
-    padding: 3px 6px;
+  .desktopSurface {
+    width: min(182px, calc(100% - 24px));
   }
 
   .windowHeader {
     padding: 3px 5px;
     gap: 6px;
   }
+}
+
+@media (max-width: $bp-phone) {
+  .desktopSurface {
+    width: min(168px, calc(100% - 18px));
+    left: 8px;
+    top: 8px;
+    gap: 6px 8px;
+  }
+
+  .desktopEntryIcon {
+    width: 48px;
+    height: 38px;
+  }
 
   .windowBody {
     padding: 6px;
   }
-}
 
-@media (max-width: $bp-phone) {
-  .launchGrid {
-    width: min(116px, calc(100% - 12px));
-    gap: 6px;
-  }
-
-  .launchBtn {
-    min-height: 26px;
-    min-width: 102px;
-    padding: 2px 6px;
-  }
-
-  .windowHeader {
-    padding: 2px 4px;
-    gap: 4px;
-  }
-
-  .windowActions {
-    gap: 2px;
-  }
-
-  .windowBtn {
-    min-width: 18px;
-    min-height: 14px;
-    padding: 0 4px;
+  .windowHeaderSpacer {
+    width: 66px;
   }
 }
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ABOUT_DOC_ID, ARCHIVE_LEGACY_ID, CONTACT_CARD_ID, HOME_ID, README_ID } from './seed';
 import { LEGACY_PHASE3_KEY, MeOsVfsService, VFS_STORAGE_KEY, type VfsStorageAdapter } from './service';
 
 const createMemoryStorage = (initial?: Record<string, string>): VfsStorageAdapter => {
@@ -18,6 +19,12 @@ describe('MeOsVfsService', () => {
     expect(rootChildren).toContain('Home');
     expect(rootChildren).toContain('Projects');
     expect(rootChildren).toContain('Media');
+    expect(rootChildren).toContain('Archive');
+    expect(service.listChildren(HOME_ID).map((node) => node.id)).toEqual([
+      ABOUT_DOC_ID,
+      CONTACT_CARD_ID,
+      README_ID,
+    ]);
   });
 
   it('persists create/rename/delete operations', () => {
@@ -72,5 +79,43 @@ describe('MeOsVfsService', () => {
     expect(names).toContain('ABOUT.TXT');
     expect(storage.getItem(VFS_STORAGE_KEY)).toBeTruthy();
   });
-});
 
+  it('migrates v1 snapshots to canonical Home docs and archives old about/contact folders', () => {
+    const legacySnapshot = {
+      version: 1,
+      rootId: 'root',
+      nodes: {
+        root: { id: 'root', name: '/', type: 'folder', parentId: null },
+        home: { id: 'home', name: 'Home', type: 'folder', parentId: 'root' },
+        projects: { id: 'projects', name: 'Projects', type: 'folder', parentId: 'root' },
+        media: { id: 'media', name: 'Media', type: 'folder', parentId: 'root' },
+        archive: { id: 'archive', name: 'Archive', type: 'folder', parentId: 'root' },
+        about: { id: 'about', name: 'About', type: 'folder', parentId: 'root' },
+        contact: { id: 'contact', name: 'Contact', type: 'folder', parentId: 'root' },
+        about_txt: { id: 'about_txt', name: 'ABOUT.txt', type: 'file', parentId: 'about', kind: 'text', textContent: 'Legacy about copy.' },
+        readme_txt: { id: 'readme_txt', name: 'README.txt', type: 'file', parentId: 'home', kind: 'text', textContent: 'Existing README.' },
+      },
+      children: {
+        root: ['home', 'projects', 'media', 'archive', 'about', 'contact'],
+        home: ['readme_txt'],
+        projects: [],
+        media: [],
+        archive: [],
+        about: ['about_txt'],
+        contact: [],
+      },
+    };
+    const storage = createMemoryStorage({
+      [VFS_STORAGE_KEY]: JSON.stringify(legacySnapshot),
+    });
+    const service = new MeOsVfsService(storage);
+    const snapshot = service.getSnapshot();
+
+    expect(snapshot.version).toBe(2);
+    expect(service.getNode(ABOUT_DOC_ID)?.parentId).toBe(HOME_ID);
+    expect(service.getNode(ABOUT_DOC_ID)?.textContent).toContain('Legacy about copy.');
+    expect(service.getNode(CONTACT_CARD_ID)?.parentId).toBe(HOME_ID);
+    expect(service.getNode(README_ID)?.parentId).toBe(HOME_ID);
+    expect(service.listChildren(ARCHIVE_LEGACY_ID).map((node) => node.id)).toEqual(['about', 'contact']);
+  });
+});

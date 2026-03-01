@@ -8,6 +8,9 @@ import type { VfsFileKind, VfsNode, VfsSnapshot } from './types';
 
 type MeOsVfsContextValue = {
   snapshot: VfsSnapshot;
+  getNode: (nodeId: string) => VfsNode | null;
+  getPath: (nodeId: string) => string | null;
+  getChildCount: (nodeId: string) => number;
   listChildren: (parentId: string) => VfsNode[];
   createFolder: (parentId: string, name: string) => VfsNode | null;
   createFile: (parentId: string, name: string, kind?: VfsFileKind) => VfsNode | null;
@@ -29,6 +32,9 @@ export const MeOsVfsProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const value = useMemo<MeOsVfsContextValue>(() => ({
     snapshot,
+    getNode: (id) => service.getNode(id),
+    getPath: (id) => service.getPath(id),
+    getChildCount: (id) => service.getChildCount(id),
     listChildren: (id) => service.listChildren(id),
     createFolder: (id, name) => service.createFolder(id, name),
     createFile: (id, name, kind) => service.createFile(id, name, kind),
@@ -45,4 +51,3 @@ export const useMeOsVfs = (): MeOsVfsContextValue => {
   if (!ctx) throw new Error('useMeOsVfs must be used within <MeOsVfsProvider>.');
   return ctx;
 };
-

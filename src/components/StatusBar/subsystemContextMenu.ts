@@ -20,11 +20,11 @@ export type SubsystemContextMenuActionId =
   | 'open_you'
   | 'open_third'
   | 'open_connect'
-  | 'me_new_file'
-  | 'me_new_folder'
-  | 'open_file'
+  | 'open_home'
   | 'open_projects'
   | 'open_media'
+  | 'open_about'
+  | 'open_contact'
   | 'you_type_message'
   | 'you_save_input'
   | 'you_clear_input'
@@ -85,9 +85,6 @@ export const buildSubsystemContextMenu = (args: BuildSubsystemContextMenuArgs): 
       const panelRows: SubsystemContextMenuRow[] = args.origin === 'panel'
         ? [
           { key: 'act_open_me_recent', kind: 'action', id: 'open_me_recent', label: 'OPEN RECENT' },
-          { key: 'div_create', kind: 'divider' },
-          { key: 'act_me_new_file', kind: 'action', id: 'me_new_file', label: 'NEW FILE' },
-          { key: 'act_me_new_folder', kind: 'action', id: 'me_new_folder', label: 'NEW FOLDER' },
         ]
         : [];
       return {
@@ -97,9 +94,11 @@ export const buildSubsystemContextMenu = (args: BuildSubsystemContextMenuArgs): 
           { key: 'act_open_me', kind: 'action', id: 'open_me', label: openLabelForScope('me', args.origin) },
           ...panelRows,
           { key: 'div_apps', kind: 'divider' },
-          { key: 'act_open_file', kind: 'action', id: 'open_file', label: 'OPEN FILE' },
+          { key: 'act_open_home', kind: 'action', id: 'open_home', label: 'OPEN HOME' },
           { key: 'act_open_projects', kind: 'action', id: 'open_projects', label: 'OPEN PROJECTS' },
           { key: 'act_open_media', kind: 'action', id: 'open_media', label: 'OPEN MEDIA' },
+          { key: 'act_open_about', kind: 'action', id: 'open_about', label: 'OPEN ABOUT' },
+          { key: 'act_open_contact', kind: 'action', id: 'open_contact', label: 'OPEN CONTACT' },
         ],
       };
     }

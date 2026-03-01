@@ -7,12 +7,5 @@
   min-height: 0;
   min-width: 0;
   display: flex;
-  border: 1px solid transparent;
   box-sizing: border-box;
-}
-
-.root:hover,
-.root:focus-visible {
-  border-color: var(--ui-border);
-  box-shadow: var(--ui-shadow-focus);
 }

@@ -4,8 +4,8 @@ import { sanitizePersistedWindowState, toggleWindowMaximize } from './windowStat
 
 const createWindow = (overrides: Partial<MeOsWindow> = {}): MeOsWindow => ({
   id: 'w1',
-  title: 'FILE.EXE',
-  appId: 'file',
+  title: 'Home',
+  appId: 'folder',
   x: 24,
   y: 24,
   width: 640,

@@ -1,0 +1,50 @@
+@use '../../../styles/variables' as *;
+
+.root {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  align-content: start;
+}
+
+.table {
+  border: $border;
+  display: grid;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 10px;
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--ui-border-soft);
+  min-width: 0;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.label {
+  font-size: $font-xs;
+  opacity: 0.75;
+}
+
+.value {
+  font-size: $font-sm;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.missing {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  border: 1px dashed var(--ui-border-soft);
+  padding: 10px;
+}
+
+.missing p {
+  margin: 0;
+  font-size: $font-sm;
+}
