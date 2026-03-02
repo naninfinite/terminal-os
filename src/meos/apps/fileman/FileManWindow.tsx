@@ -27,10 +27,13 @@ type ContextMenuState = {
   top: number;
 } | null;
 
+type FolderViewMode = 'grid' | 'list';
+
 type FolderEntryButtonProps = {
   node: VfsNode;
   active: boolean;
   gridColumns: number;
+  viewMode: FolderViewMode;
   dragging: boolean;
   dropTarget: boolean;
   theme: ResolvedTheme;
@@ -75,6 +78,10 @@ const getEntryIcon = (node: VfsNode): AppIconName => {
 
 const isMediaFile = (node: VfsNode): boolean => (
   node.type === 'file' && (node.kind === 'image' || node.kind === 'video')
+);
+
+export const shouldUseMediaFrameHighlight = (node: VfsNode, viewMode: FolderViewMode): boolean => (
+  viewMode === 'grid' && isMediaFile(node)
 );
 
 const FolderEntryVisual: React.FC<{ node: VfsNode; theme: ResolvedTheme }> = ({ node, theme }) => {
@@ -139,6 +146,7 @@ const FolderEntryButton: React.FC<FolderEntryButtonProps> = ({
   node,
   active,
   gridColumns,
+  viewMode,
   dragging,
   dropTarget,
   theme,
@@ -169,7 +177,8 @@ const FolderEntryButton: React.FC<FolderEntryButtonProps> = ({
       draggable
       className={[
         styles.entry,
-        isMediaFile(node) ? styles.entryMediaFile : '',
+        viewMode === 'list' ? styles.entryList : '',
+        shouldUseMediaFrameHighlight(node, viewMode) ? styles.entryMediaFile : '',
         active ? styles.entryActive : '',
         dragging ? styles.entryDragging : '',
         dropTarget ? styles.entryDropTarget : '',
@@ -246,6 +255,7 @@ const FileManWindow: React.FC<FileManWindowProps> = ({ win }) => {
   const { resolvedTheme } = useTheme();
   const { getNode, getPath, listChildren } = useMeOsVfs();
   const { openNode, openInfo, getSurfaceItemOrder, reorderSurfaceItem } = useMeOs();
+  const [viewMode, setViewMode] = React.useState<FolderViewMode>('grid');
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [menu, setMenu] = React.useState<ContextMenuState>(null);
   const [gridColumns, setGridColumns] = React.useState(1);
@@ -292,13 +302,13 @@ const FileManWindow: React.FC<FileManWindowProps> = ({ win }) => {
   React.useEffect(() => {
     const target = listRef.current;
     if (!target) return;
-    const update = () => setGridColumns(getGridColumnCount(target));
+    const update = () => setGridColumns(viewMode === 'list' ? 1 : getGridColumnCount(target));
     update();
     if (typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(update);
     observer.observe(target);
     return () => observer.disconnect();
-  }, [entries.length]);
+  }, [entries.length, viewMode]);
 
   const focusEntry = React.useCallback((nodeId: string) => {
     window.requestAnimationFrame(() => {
@@ -354,6 +364,7 @@ const FileManWindow: React.FC<FileManWindowProps> = ({ win }) => {
       <div
         className={[
           styles.contents,
+          viewMode === 'list' ? styles.contentsList : '',
           draggedId && dropIndex === entries.length ? styles.contentsDropTarget : '',
         ].filter(Boolean).join(' ')}
         ref={listRef}
@@ -380,6 +391,7 @@ const FileManWindow: React.FC<FileManWindowProps> = ({ win }) => {
             node={node}
             active={selectedId === node.id}
             gridColumns={gridColumns}
+            viewMode={viewMode}
             dragging={draggedId === node.id}
             dropTarget={dropIndex === index && draggedId !== node.id}
             theme={resolvedTheme}
@@ -429,6 +441,31 @@ const FileManWindow: React.FC<FileManWindowProps> = ({ win }) => {
         <span>{`${entries.length} item${entries.length === 1 ? '' : 's'}`}</span>
         <span aria-hidden="true">|</span>
         <span className={styles.path}>{path}</span>
+        <span className={styles.statusSpacer} aria-hidden="true" />
+        <div className={styles.viewControls} role="group" aria-label="Folder layout">
+          <button
+            type="button"
+            className={[
+              styles.viewButton,
+              viewMode === 'grid' ? styles.viewButtonActive : '',
+            ].filter(Boolean).join(' ')}
+            aria-pressed={viewMode === 'grid'}
+            onClick={() => setViewMode('grid')}
+          >
+            GRID
+          </button>
+          <button
+            type="button"
+            className={[
+              styles.viewButton,
+              viewMode === 'list' ? styles.viewButtonActive : '',
+            ].filter(Boolean).join(' ')}
+            aria-pressed={viewMode === 'list'}
+            onClick={() => setViewMode('list')}
+          >
+            LIST
+          </button>
+        </div>
       </footer>
       {menu ? (
         <div

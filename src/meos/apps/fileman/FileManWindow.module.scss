@@ -22,6 +22,12 @@
   scrollbar-color: $phosphor-green $bg-black;
 }
 
+.contentsList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .contentsDropTarget {
   outline: 1px dashed var(--ui-border);
   outline-offset: -4px;
@@ -54,6 +60,15 @@
   padding: clamp(4px, 0.55vw, 6px) clamp(2px, 0.45vw, 4px);
   min-height: clamp(68px, 8vw, 90px);
   transition: border-color 140ms ease, background-color 140ms ease, opacity 140ms ease, transform 140ms ease;
+}
+
+.entryList {
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  justify-items: start;
+  gap: 8px;
+  min-height: 0;
+  padding: 4px 6px;
 }
 
 .entry:hover,
@@ -97,6 +112,15 @@
   opacity: 0.96;
 }
 
+.entryList .entryIcon {
+  width: 42px;
+  min-height: 0;
+}
+
+.entryList .entryIconGlyph {
+  --icon-size: 1.2rem;
+}
+
 .entryThumb {
   align-self: stretch;
 }
@@ -121,6 +145,14 @@
   border-color: var(--ui-border);
   background: rgb(var(--ui-scanline-rgb, 0 255 102) / 0.12);
   box-shadow: 0 0 0 1px rgb(var(--ui-scanline-rgb, 0 255 102) / 0.18);
+}
+
+.entryList .entryThumb {
+  align-self: center;
+}
+
+.entryList .entryThumbFrame {
+  width: 42px;
 }
 
 .entryThumbImage,
@@ -155,6 +187,11 @@
   word-break: break-word;
 }
 
+.entryList .entryLabel {
+  text-align: left;
+  padding: 0;
+}
+
 .status {
   border-top: 1px solid var(--ui-border-soft);
   padding: 5px 8px;
@@ -170,6 +207,35 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.statusSpacer {
+  flex: 1 1 auto;
+}
+
+.viewControls {
+  display: inline-flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.viewButton {
+  border: 1px solid transparent;
+  background: transparent;
+  color: $phosphor-green;
+  font-size: $font-xs;
+  padding: 2px 6px;
+}
+
+.viewButton:hover,
+.viewButton:focus-visible {
+  border-color: var(--ui-border-soft);
+  background: var(--ui-fill-hover);
+}
+
+.viewButtonActive {
+  border-color: var(--ui-border);
+  background: rgb(var(--ui-scanline-rgb, 0 255 102) / 0.12);
 }
 
 .empty,
@@ -222,6 +288,10 @@
     gap: 8px;
   }
 
+  .contentsList {
+    gap: 3px;
+  }
+
   .entry {
     min-height: 72px;
     gap: 4px;
@@ -237,6 +307,18 @@
 
   .entryThumbFrame {
     width: min(100%, 72px);
+  }
+
+  .entryList {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  .entryList .entryIcon {
+    width: 38px;
+  }
+
+  .entryList .entryThumbFrame {
+    width: 38px;
   }
 }
 
@@ -260,5 +342,19 @@
 
   .entryThumbFrame {
     width: min(100%, 66px);
+  }
+
+  .entryList {
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 6px;
+    padding: 4px 5px;
+  }
+
+  .entryList .entryIcon {
+    width: 34px;
+  }
+
+  .entryList .entryThumbFrame {
+    width: 34px;
   }
 }
