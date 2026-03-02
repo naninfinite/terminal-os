@@ -267,16 +267,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
         <span className={styles.windowHeaderSpacer} aria-hidden="true" />
         <span className={styles.windowTitle}>{win.title}</span>
         <div className={styles.windowActions} onMouseDown={stopHeaderInteraction} data-window-action="true">
-          <button
-            type="button"
-            className={styles.windowBtn}
-            data-window-action="true"
-            onMouseDown={stopHeaderInteraction}
-            onClick={() => closeWindow(win.id)}
-            aria-label={`Close ${win.title}`}
-          >
-            <Icon className={styles.windowBtnIcon} fixedWidth name="close" size="sm" />
-          </button>
+
           <button
             type="button"
             className={styles.windowBtn}
@@ -296,6 +287,16 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
             aria-label={`${win.maximized ? 'Restore' : 'Zoom'} ${win.title}`}
           >
             <Icon className={styles.windowBtnIcon} fixedWidth name="expand" size="sm" />
+          </button>
+                    <button
+            type="button"
+            className={styles.windowBtn}
+            data-window-action="true"
+            onMouseDown={stopHeaderInteraction}
+            onClick={() => closeWindow(win.id)}
+            aria-label={`Close ${win.title}`}
+          >
+            <Icon className={styles.windowBtnIcon} fixedWidth name="close" size="sm" />
           </button>
         </div>
       </div>
