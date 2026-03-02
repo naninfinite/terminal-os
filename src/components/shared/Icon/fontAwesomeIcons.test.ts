@@ -12,6 +12,7 @@ describe('fontAwesomeIcons', () => {
     expect(getFontAwesomeIcon('image')).toBe(FONT_AWESOME_ICONS.image);
     expect(getFontAwesomeIcon('media')).toBe(FONT_AWESOME_ICONS.media);
     expect(getFontAwesomeIcon('minimize')).toBe(FONT_AWESOME_ICONS.minimize);
+    expect(getFontAwesomeIcon('projects')).toBe(FONT_AWESOME_ICONS.projects);
     expect(getFontAwesomeIcon('video')).toBe(FONT_AWESOME_ICONS.video);
   });
 
@@ -26,6 +27,7 @@ describe('fontAwesomeIcons', () => {
       'image',
       'media',
       'minimize',
+      'projects',
       'video',
     ]);
   });

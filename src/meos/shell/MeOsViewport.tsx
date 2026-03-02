@@ -61,6 +61,7 @@ const clamp = (value: number, min: number, max: number): number => Math.min(Math
 const getEntryIcon = (entry: MeOsDesktopEntry): AppIconName => {
   if (entry.id === 'home') return 'home';
   if (entry.id === 'media') return 'media';
+  if (entry.id === 'projects') return 'projects';
   if (entry.iconVariant === 'folder') return 'folder';
   if (entry.iconVariant === 'contact') return 'contact';
   return 'file';

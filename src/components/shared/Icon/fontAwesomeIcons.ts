@@ -7,6 +7,7 @@ import {
   faWindowMinimize as faWindowMinimizeRegular,
 } from '@fortawesome/free-regular-svg-icons';
 import {
+  faBriefcase,
   faCameraRetro,
   faExpand,
   faFilm,
@@ -35,6 +36,7 @@ export const FONT_AWESOME_ICONS = {
   image: faCameraRetro,
   media: faBilibiliBrand,
   minimize: faWindowMinimizeRegular,
+  projects: faBriefcase,
   video: faFilm,
 } satisfies Record<string, IconDefinition>;
 

@@ -4,7 +4,7 @@ import { useMeOs } from '../../shell/MeOsProvider';
 import type { MeOsWindow } from '../../shell/types';
 import { useMeOsVfs } from '../../vfs/MeOsVfsProvider';
 import type { VfsNode } from '../../vfs/types';
-import { HOME_ID, MEDIA_ID } from '../../vfs/seed';
+import { HOME_ID, MEDIA_ID, PROJECTS_ID } from '../../vfs/seed';
 import styles from './FileManWindow.module.scss';
 import { Icon } from '../../../components/shared/Icon';
 import type { AppIconName } from '../../../components/shared/Icon';
@@ -49,6 +49,7 @@ const getGridColumnCount = (element: HTMLElement | null): number => {
 const getEntryIcon = (node: VfsNode): AppIconName => {
   if (node.id === HOME_ID) return 'home';
   if (node.id === MEDIA_ID) return 'media';
+  if (node.id === PROJECTS_ID) return 'projects';
   if (node.type === 'folder') return 'folder';
   if (node.kind === 'contact') return 'contact';
   if (node.kind === 'image') return 'image';
