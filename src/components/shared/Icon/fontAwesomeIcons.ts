@@ -1,7 +1,7 @@
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import {
   faAddressCard as faAddressCardRegular,
-  faFile as faFileRegular,
+  faFileLines as faFileLinesRegular,
   faFolder as faFolderRegular,
   faHouse as faHouseRegular,
   faWindowMinimize as faWindowMinimizeRegular,
@@ -30,7 +30,7 @@ export const FONT_AWESOME_ICONS = {
   close: faXmark,
   contact: faAddressCardRegular,
   expand: faExpand,
-  file: faFileRegular,
+  file: faFileLinesRegular,
   folder: faFolderRegular,
   home: faHouseRegular,
   image: faCameraRetro,
