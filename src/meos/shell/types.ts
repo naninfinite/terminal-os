@@ -16,6 +16,8 @@ export type MeOsDesktopEntryId =
   | 'archive'
   | 'readme';
 
+export type MeOsSurfaceKey = 'desktop' | `folder:${string}`;
+
 export type MeOsDesktopEntry = {
   id: MeOsDesktopEntryId;
   label: string;
@@ -63,6 +65,7 @@ export type MeOsWindowTemplate = Omit<
 >;
 
 export type MeOsPersistedSnapshot = {
-  version: 2;
+  version: 3;
   windows: MeOsWindow[];
+  surfaceItemOrder: Record<string, string[]>;
 };

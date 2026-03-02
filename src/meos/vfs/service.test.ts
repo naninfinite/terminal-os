@@ -1,5 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { ABOUT_DOC_ID, ARCHIVE_LEGACY_ID, CONTACT_CARD_ID, HOME_ID, README_ID } from './seed';
+import {
+  ABOUT_DOC_ID,
+  ARCHIVE_ID,
+  ARCHIVE_LEGACY_ID,
+  CONTACT_CARD_ID,
+  DSC00479_ID,
+  HOME_ID,
+  IDG_20250710_004909_371_ID,
+  IMG_0285_ID,
+  MEDIA_ID,
+  PHOTOS_ID,
+  PORTRAIT_ID,
+  PROJECTS_ID,
+  README_ID,
+  REEL_ID,
+  REEL_THUMBNAIL_ID,
+  VIDEOS_ID,
+} from './seed';
 import { LEGACY_PHASE3_KEY, MeOsVfsService, VFS_STORAGE_KEY, type VfsStorageAdapter } from './service';
 
 const createMemoryStorage = (initial?: Record<string, string>): VfsStorageAdapter => {
@@ -16,15 +33,27 @@ describe('MeOsVfsService', () => {
     const service = new MeOsVfsService(createMemoryStorage());
     const snapshot = service.getSnapshot();
     const rootChildren = service.listChildren(snapshot.rootId).map((node) => node.name);
-    expect(rootChildren).toContain('Home');
-    expect(rootChildren).toContain('Projects');
-    expect(rootChildren).toContain('Media');
-    expect(rootChildren).toContain('Archive');
+    expect(rootChildren).toEqual(['Home']);
     expect(service.listChildren(HOME_ID).map((node) => node.id)).toEqual([
+      PROJECTS_ID,
+      MEDIA_ID,
+      ARCHIVE_ID,
       ABOUT_DOC_ID,
       CONTACT_CARD_ID,
       README_ID,
     ]);
+    expect(service.listChildren(MEDIA_ID).map((node) => node.id)).toEqual([
+      PHOTOS_ID,
+      VIDEOS_ID,
+    ]);
+    expect(service.listChildren(PHOTOS_ID).map((node) => node.id)).toEqual([
+      PORTRAIT_ID,
+      DSC00479_ID,
+      IDG_20250710_004909_371_ID,
+      IMG_0285_ID,
+    ]);
+    expect(service.listChildren(VIDEOS_ID).map((node) => node.id)).toEqual([REEL_ID]);
+    expect(service.getNode(REEL_ID)?.videoThumbnailId).toBe(REEL_THUMBNAIL_ID);
   });
 
   it('persists create/rename/delete operations', () => {
@@ -111,11 +140,58 @@ describe('MeOsVfsService', () => {
     const service = new MeOsVfsService(storage);
     const snapshot = service.getSnapshot();
 
-    expect(snapshot.version).toBe(2);
+    expect(snapshot.version).toBe(3);
+    expect(service.listChildren(snapshot.rootId).map((node) => node.id)).toEqual([HOME_ID]);
     expect(service.getNode(ABOUT_DOC_ID)?.parentId).toBe(HOME_ID);
     expect(service.getNode(ABOUT_DOC_ID)?.textContent).toContain('Legacy about copy.');
     expect(service.getNode(CONTACT_CARD_ID)?.parentId).toBe(HOME_ID);
     expect(service.getNode(README_ID)?.parentId).toBe(HOME_ID);
     expect(service.listChildren(ARCHIVE_LEGACY_ID).map((node) => node.id)).toEqual(['about', 'contact']);
+  });
+
+  it('migrates v2 snapshots into nested Home and Media folders', () => {
+    const v2Snapshot = {
+      version: 2,
+      rootId: 'root',
+      nodes: {
+        root: { id: 'root', name: '/', type: 'folder', parentId: null },
+        home: { id: 'home', name: 'Home', type: 'folder', parentId: 'root' },
+        projects: { id: 'projects', name: 'Projects', type: 'folder', parentId: 'root' },
+        media: { id: 'media', name: 'Media', type: 'folder', parentId: 'root' },
+        archive: { id: 'archive', name: 'Archive', type: 'folder', parentId: 'root' },
+        about_doc: { id: 'about_doc', name: 'About', type: 'file', parentId: 'home', kind: 'text' },
+        contact_card: { id: 'contact_card', name: 'Contact', type: 'file', parentId: 'home', kind: 'contact' },
+        readme_txt: { id: 'readme_txt', name: 'README.txt', type: 'file', parentId: 'home', kind: 'text' },
+        portrait_png: { id: 'portrait_png', name: 'Portrait.png', type: 'file', parentId: 'media', kind: 'image' },
+        reel_mp4: { id: 'reel_mp4', name: 'Reel.mp4', type: 'file', parentId: 'media', kind: 'video', assetSrc: 'src/assets/videos/mp4/juno-echo_web.mp4' },
+      },
+      children: {
+        root: ['home', 'projects', 'media', 'archive'],
+        home: ['about_doc', 'contact_card', 'readme_txt'],
+        projects: [],
+        media: ['portrait_png', 'reel_mp4'],
+        archive: [],
+      },
+    };
+
+    const storage = createMemoryStorage({
+      [VFS_STORAGE_KEY]: JSON.stringify(v2Snapshot),
+    });
+    const service = new MeOsVfsService(storage);
+    const snapshot = service.getSnapshot();
+
+    expect(snapshot.version).toBe(3);
+    expect(service.listChildren(snapshot.rootId).map((node) => node.id)).toEqual([HOME_ID]);
+    expect(service.listChildren(HOME_ID).map((node) => node.id)).toEqual([
+      PROJECTS_ID,
+      MEDIA_ID,
+      ARCHIVE_ID,
+      ABOUT_DOC_ID,
+      CONTACT_CARD_ID,
+      README_ID,
+    ]);
+    expect(service.listChildren(MEDIA_ID).map((node) => node.id)).toEqual([PHOTOS_ID, VIDEOS_ID]);
+    expect(service.listChildren(PHOTOS_ID).map((node) => node.id)).toContain(PORTRAIT_ID);
+    expect(service.listChildren(VIDEOS_ID).map((node) => node.id)).toContain(REEL_ID);
   });
 });

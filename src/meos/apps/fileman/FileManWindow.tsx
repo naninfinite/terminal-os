@@ -1,13 +1,20 @@
 import React from 'react';
 import { useContextTrigger } from '../../../components/shared/useContextTrigger';
+import { useTheme } from '../../../theme/ThemeProvider';
 import { useMeOs } from '../../shell/MeOsProvider';
 import type { MeOsWindow } from '../../shell/types';
 import { useMeOsVfs } from '../../vfs/MeOsVfsProvider';
 import type { VfsNode } from '../../vfs/types';
-import { HOME_ID, MEDIA_ID, PROJECTS_ID } from '../../vfs/seed';
+import { HOME_ID, MEDIA_ID, PHOTOS_ID, PROJECTS_ID, VIDEOS_ID } from '../../vfs/seed';
 import styles from './FileManWindow.module.scss';
 import { Icon } from '../../../components/shared/Icon';
 import type { AppIconName } from '../../../components/shared/Icon';
+import type { ResolvedTheme } from '../../../theme/types';
+import {
+  resolveConfiguredVideoPosterSrc,
+  resolveImagePreviewSrc,
+  resolveVideoPosterSrc,
+} from '../viewers/mediaPreview';
 
 type FileManWindowProps = {
   win: MeOsWindow;
@@ -24,12 +31,19 @@ type FolderEntryButtonProps = {
   node: VfsNode;
   active: boolean;
   gridColumns: number;
+  dragging: boolean;
+  dropTarget: boolean;
+  theme: ResolvedTheme;
   onSelect: (nodeId: string) => void;
   onOpen: (node: VfsNode) => void;
   onGetInfo: (node: VfsNode) => void;
   onMoveSelection: (offset: number) => void;
   onContextOpen: (args: { x: number; y: number; node: VfsNode }) => void;
   registerRef: (nodeId: string, element: HTMLButtonElement | null) => void;
+  onDragStart: (nodeId: string, event: React.DragEvent<HTMLButtonElement>) => void;
+  onDragOver: (event: React.DragEvent<HTMLButtonElement>) => void;
+  onDrop: (event: React.DragEvent<HTMLButtonElement>) => void;
+  onDragEnd: () => void;
 };
 
 const sortEntries = (entries: VfsNode[]): VfsNode[] => [...entries].sort((a, b) => {
@@ -50,6 +64,8 @@ const getEntryIcon = (node: VfsNode): AppIconName => {
   if (node.id === HOME_ID) return 'home';
   if (node.id === MEDIA_ID) return 'media';
   if (node.id === PROJECTS_ID) return 'projects';
+  if (node.id === PHOTOS_ID) return 'image';
+  if (node.id === VIDEOS_ID) return 'video';
   if (node.type === 'folder') return 'folder';
   if (node.kind === 'contact') return 'contact';
   if (node.kind === 'image') return 'image';
@@ -57,16 +73,81 @@ const getEntryIcon = (node: VfsNode): AppIconName => {
   return 'file';
 };
 
+const FolderEntryVisual: React.FC<{ node: VfsNode; theme: ResolvedTheme }> = ({ node, theme }) => {
+  const iconName = getEntryIcon(node);
+  const [videoReady, setVideoReady] = React.useState(false);
+
+  React.useEffect(() => {
+    setVideoReady(false);
+  }, [node.id]);
+
+  if (node.type === 'file' && node.kind === 'image') {
+    return (
+      <span className={`${styles.entryIcon} ${styles.entryThumb}`.trim()} aria-hidden="true">
+        <span className={styles.entryThumbFrame}>
+          <img className={styles.entryThumbImage} src={resolveImagePreviewSrc(node, theme)} alt="" />
+        </span>
+      </span>
+    );
+  }
+
+  if (node.type === 'file' && node.kind === 'video') {
+    const source = node.assetSrc?.trim();
+    const configuredPoster = resolveConfiguredVideoPosterSrc(node);
+    const poster = resolveVideoPosterSrc(node, theme);
+    return (
+      <span className={`${styles.entryIcon} ${styles.entryThumb}`.trim()} aria-hidden="true">
+        <span className={styles.entryThumbFrame}>
+          {configuredPoster ? (
+            <img className={styles.entryThumbImage} src={configuredPoster} alt="" />
+          ) : source ? (
+            <video
+              className={[
+                styles.entryThumbVideo,
+                videoReady ? styles.entryThumbVideoReady : '',
+              ].filter(Boolean).join(' ')}
+              muted
+              playsInline
+              preload="metadata"
+              onLoadedData={() => setVideoReady(true)}
+              onCanPlay={() => setVideoReady(true)}
+              onError={() => setVideoReady(false)}
+            >
+              <source src={source} type="video/mp4" />
+            </video>
+          ) : null}
+          {!videoReady ? (
+            <img className={styles.entryThumbFallback} src={poster} alt="" />
+          ) : null}
+        </span>
+      </span>
+    );
+  }
+
+  return (
+    <span className={styles.entryIcon} aria-hidden="true">
+      <Icon className={styles.entryIconGlyph} fixedWidth name={iconName} size="lg" />
+    </span>
+  );
+};
+
 const FolderEntryButton: React.FC<FolderEntryButtonProps> = ({
   node,
   active,
   gridColumns,
+  dragging,
+  dropTarget,
+  theme,
   onSelect,
   onOpen,
   onGetInfo,
   onMoveSelection,
   onContextOpen,
   registerRef,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
 }) => {
   const ignoreClickRef = React.useRef(false);
   const contextTrigger = useContextTrigger<HTMLButtonElement>({
@@ -76,13 +157,19 @@ const FolderEntryButton: React.FC<FolderEntryButtonProps> = ({
       onContextOpen({ x, y, node });
     },
   });
-  const iconName = getEntryIcon(node);
 
   return (
     <button
       ref={(element) => registerRef(node.id, element)}
       type="button"
-      className={`${styles.entry} ${active ? styles.entryActive : ''}`.trim()}
+      draggable
+      className={[
+        styles.entry,
+        active ? styles.entryActive : '',
+        dragging ? styles.entryDragging : '',
+        dropTarget ? styles.entryDropTarget : '',
+      ].filter(Boolean).join(' ')}
+      data-drop-target={dropTarget ? 'true' : 'false'}
       onFocus={() => onSelect(node.id)}
       onClick={() => {
         if (ignoreClickRef.current) {
@@ -92,6 +179,10 @@ const FolderEntryButton: React.FC<FolderEntryButtonProps> = ({
         onSelect(node.id);
       }}
       onDoubleClick={() => onOpen(node)}
+      onDragStart={(event) => onDragStart(node.id, event)}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
       onContextMenu={contextTrigger.onContextMenu}
       onPointerDown={contextTrigger.onPointerDown}
       onPointerMove={contextTrigger.onPointerMove}
@@ -140,28 +231,38 @@ const FolderEntryButton: React.FC<FolderEntryButtonProps> = ({
         }
       }}
     >
-      <span className={styles.entryIcon} aria-hidden="true">
-        <Icon className={styles.entryIconGlyph} fixedWidth name={iconName} size="lg" />
-      </span>
+      <FolderEntryVisual node={node} theme={theme} />
       <span className={styles.entryLabel}>{node.name}</span>
     </button>
   );
 };
 
 const FileManWindow: React.FC<FileManWindowProps> = ({ win }) => {
+  const { resolvedTheme } = useTheme();
   const { getNode, getPath, listChildren } = useMeOsVfs();
-  const { openNode, openInfo } = useMeOs();
+  const { openNode, openInfo, getSurfaceItemOrder, reorderSurfaceItem } = useMeOs();
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [menu, setMenu] = React.useState<ContextMenuState>(null);
   const [gridColumns, setGridColumns] = React.useState(1);
+  const [draggedId, setDraggedId] = React.useState<string | null>(null);
+  const [dropIndex, setDropIndex] = React.useState<number | null>(null);
   const listRef = React.useRef<HTMLDivElement | null>(null);
   const entryRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
 
   const folder = win.nodeId ? getNode(win.nodeId) : null;
-  const entries = React.useMemo(
+  const surfaceKey = folder?.type === 'folder' ? `folder:${folder.id}` as const : null;
+  const defaultEntries = React.useMemo(
     () => (folder?.type === 'folder' ? sortEntries(listChildren(folder.id)) : []),
     [folder, listChildren]
   );
+  const entries = React.useMemo(() => {
+    if (!surfaceKey) return defaultEntries;
+    const orderedIds = getSurfaceItemOrder(surfaceKey, defaultEntries.map((node) => node.id));
+    const entriesById = new Map(defaultEntries.map((node) => [node.id, node] as const));
+    return orderedIds
+      .map((nodeId) => entriesById.get(nodeId))
+      .filter((node): node is VfsNode => node != null);
+  }, [defaultEntries, getSurfaceItemOrder, surfaceKey]);
   const path = folder?.type === 'folder' ? (getPath(folder.id) ?? '/') : '/';
 
   React.useEffect(() => {
@@ -221,6 +322,19 @@ const FileManWindow: React.FC<FileManWindowProps> = ({ win }) => {
     setMenu(null);
   }, [openInfo]);
 
+  const clearDragState = React.useCallback(() => {
+    setDraggedId(null);
+    setDropIndex(null);
+  }, []);
+
+  const commitDrop = React.useCallback((targetIndex: number) => {
+    if (!surfaceKey || !draggedId) return;
+    reorderSurfaceItem(surfaceKey, draggedId, targetIndex);
+    setSelectedId(draggedId);
+    focusEntry(draggedId);
+    clearDragState();
+  }, [clearDragState, draggedId, focusEntry, reorderSurfaceItem, surfaceKey]);
+
   if (!folder || folder.type !== 'folder') {
     return (
       <div className={styles.missing}>
@@ -232,17 +346,63 @@ const FileManWindow: React.FC<FileManWindowProps> = ({ win }) => {
 
   return (
     <div className={styles.root}>
-      <div className={styles.contents} ref={listRef}>
-        {entries.map((node) => (
+      <div
+        className={[
+          styles.contents,
+          draggedId && dropIndex === entries.length ? styles.contentsDropTarget : '',
+        ].filter(Boolean).join(' ')}
+        ref={listRef}
+        onDragOver={(event) => {
+          if (!draggedId) return;
+          if (event.target !== event.currentTarget) return;
+          event.preventDefault();
+          setDropIndex(entries.length);
+        }}
+        onDragLeave={(event) => {
+          if (event.target !== event.currentTarget) return;
+          setDropIndex(null);
+        }}
+        onDrop={(event) => {
+          if (!draggedId) return;
+          if (event.target !== event.currentTarget) return;
+          event.preventDefault();
+          commitDrop(entries.length);
+        }}
+      >
+        {entries.map((node, index) => (
           <FolderEntryButton
             key={node.id}
             node={node}
             active={selectedId === node.id}
             gridColumns={gridColumns}
+            dragging={draggedId === node.id}
+            dropTarget={dropIndex === index && draggedId !== node.id}
+            theme={resolvedTheme}
             onSelect={setSelectedId}
             onOpen={openTarget}
             onGetInfo={openInfoForNode}
             onMoveSelection={moveSelection}
+            onDragStart={(nodeId, event) => {
+              event.dataTransfer.effectAllowed = 'move';
+              event.dataTransfer.setData('text/plain', nodeId);
+              setSelectedId(nodeId);
+              setMenu(null);
+              setDraggedId(nodeId);
+              setDropIndex(index);
+            }}
+            onDragOver={(event) => {
+              if (!draggedId) return;
+              event.preventDefault();
+              event.stopPropagation();
+              setDropIndex(index);
+            }}
+            onDrop={(event) => {
+              if (!draggedId) return;
+              event.preventDefault();
+              event.stopPropagation();
+              commitDrop(index);
+            }}
+            onDragEnd={clearDragState}
             onContextOpen={({ x, y, node: targetNode }) => {
               setMenu({
                 nodeId: targetNode.id,

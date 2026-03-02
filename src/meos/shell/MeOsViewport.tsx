@@ -39,7 +39,7 @@ type DesktopContextMenuState = {
 type DesktopEntryButtonProps = {
   entry: MeOsDesktopEntry;
   active: boolean;
-  rowCount: number;
+  columnCount: number;
   onSelect: (entryId: MeOsDesktopEntryId) => void;
   onOpen: (entry: MeOsDesktopEntry) => void;
   onGetInfo: (entry: MeOsDesktopEntry) => void;
@@ -51,10 +51,6 @@ type DesktopEntryButtonProps = {
 type ResizeHandle = 'n' | 'e' | 's' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
 
 const PANEL_DOUBLE_TAP_MS = 300;
-const DEFAULT_DESKTOP_ROWS = 7;
-const COMPACT_DESKTOP_ROWS = 4;
-const DESKTOP_COMPACT_WIDTH = 220;
-const DESKTOP_COMPACT_HEIGHT = 340;
 
 const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
 
@@ -70,7 +66,7 @@ const getEntryIcon = (entry: MeOsDesktopEntry): AppIconName => {
 const DesktopEntryButton: React.FC<DesktopEntryButtonProps> = ({
   entry,
   active,
-  rowCount,
+  columnCount,
   onSelect,
   onOpen,
   onGetInfo,
@@ -92,7 +88,11 @@ const DesktopEntryButton: React.FC<DesktopEntryButtonProps> = ({
     <button
       ref={(element) => registerRef(entry.id, element)}
       type="button"
-      className={`${styles.desktopEntry} ${active ? styles.desktopEntryActive : ''}`.trim()}
+      data-desktop-entry={entry.id}
+      className={[
+        styles.desktopEntry,
+        active ? styles.desktopEntryActive : '',
+      ].filter(Boolean).join(' ')}
       onFocus={() => onSelect(entry.id)}
       onClick={() => {
         if (ignoreClickRef.current) {
@@ -123,24 +123,24 @@ const DesktopEntryButton: React.FC<DesktopEntryButtonProps> = ({
           onOpen(entry);
           return;
         }
-        if (event.key === 'ArrowDown') {
+        if (event.key === 'ArrowRight') {
           event.preventDefault();
           onMoveSelection(1);
           return;
         }
-        if (event.key === 'ArrowUp') {
+        if (event.key === 'ArrowLeft') {
           event.preventDefault();
           onMoveSelection(-1);
           return;
         }
-        if (event.key === 'ArrowRight') {
+        if (event.key === 'ArrowDown') {
           event.preventDefault();
-          onMoveSelection(rowCount);
+          onMoveSelection(columnCount);
           return;
         }
-        if (event.key === 'ArrowLeft') {
+        if (event.key === 'ArrowUp') {
           event.preventDefault();
-          onMoveSelection(-rowCount);
+          onMoveSelection(-columnCount);
           return;
         }
         const previousDefaultPrevented = event.defaultPrevented;
@@ -264,6 +264,8 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
       aria-label={win.title}
     >
       <div className={styles.windowHeader} onMouseDown={onDragStart}>
+        <span className={styles.windowHeaderSpacer} aria-hidden="true" />
+        <span className={styles.windowTitle}>{win.title}</span>
         <div className={styles.windowActions} onMouseDown={stopHeaderInteraction} data-window-action="true">
           <button
             type="button"
@@ -296,8 +298,6 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
             <Icon className={styles.windowBtnIcon} fixedWidth name="expand" size="sm" />
           </button>
         </div>
-        <span className={styles.windowTitle}>{win.title}</span>
-        <span className={styles.windowHeaderSpacer} aria-hidden="true" />
       </div>
       <div className={styles.windowBody}>{renderContent()}</div>
       {interactive && !win.maximized ? (
@@ -353,20 +353,10 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode, onPanelBackgro
   const { windows, closeFullscreen, openNode, openInfo } = useMeOs();
   const [selectedDesktopEntryId, setSelectedDesktopEntryId] = React.useState<MeOsDesktopEntryId | null>(null);
   const [desktopMenu, setDesktopMenu] = React.useState<DesktopContextMenuState>(null);
-  const [desktopRows, setDesktopRows] = React.useState(DEFAULT_DESKTOP_ROWS);
   const isFullscreen = mode === 'fullscreen';
   const isPanel = mode === 'panel';
   const panelTapAtRef = React.useRef<number | null>(null);
-  const desktopRef = React.useRef<HTMLDivElement | null>(null);
-  const entryRefs = React.useRef<Record<MeOsDesktopEntryId, HTMLButtonElement | null>>({
-    home: null,
-    projects: null,
-    media: null,
-    about: null,
-    contact: null,
-    archive: null,
-    readme: null,
-  });
+  const entryRefs = React.useRef<Partial<Record<MeOsDesktopEntryId, HTMLButtonElement | null>>>({});
   const entries = React.useMemo(() => createDesktopEntries(snapshot), [snapshot]);
   const activeWindows = React.useMemo(
     () => windows.filter((win) => !win.minimized).sort((a, b) => a.zIndex - b.zIndex),
@@ -391,20 +381,6 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode, onPanelBackgro
       window.removeEventListener('keydown', onKeyDown);
     };
   }, [desktopMenu]);
-
-  React.useEffect(() => {
-    const element = desktopRef.current;
-    if (!element) return;
-    const updateRows = () => {
-      const compact = element.clientWidth <= DESKTOP_COMPACT_WIDTH || element.clientHeight <= DESKTOP_COMPACT_HEIGHT;
-      setDesktopRows(compact ? COMPACT_DESKTOP_ROWS : DEFAULT_DESKTOP_ROWS);
-    };
-    updateRows();
-    if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(updateRows);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
 
   const focusEntry = React.useCallback((entryId: MeOsDesktopEntryId) => {
     window.requestAnimationFrame(() => {
@@ -494,17 +470,13 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode, onPanelBackgro
             onPanelBackgroundEnterFullscreen();
           }}
         >
-          <div
-            ref={desktopRef}
-            className={styles.desktopSurface}
-            style={{ '--desktop-rows': String(desktopRows) } as React.CSSProperties}
-          >
+          <div className={styles.desktopSurface}>
             {entries.map((entry) => (
               <DesktopEntryButton
                 key={entry.id}
                 entry={entry}
                 active={selectedDesktopEntryId === entry.id}
-                rowCount={desktopRows}
+                columnCount={1}
                 onSelect={setSelectedDesktopEntryId}
                 onOpen={openDesktopEntry}
                 onGetInfo={openInfoForDesktopEntry}

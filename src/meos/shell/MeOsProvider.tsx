@@ -12,11 +12,18 @@ import { getItemSafe, setItemSafe } from '../../utils/storage';
 import { ABOUT_DOC_ID, HOME_ID, MEDIA_ID, PROJECTS_ID } from '../vfs/seed';
 import { getMeOsVfsService } from '../vfs/service';
 import type { VfsNode } from '../vfs/types';
+import { createDesktopEntries } from './desktopEntries';
+import {
+  reorderSurfaceItemOrder,
+  resolveSurfaceItemOrder,
+  sanitizeSurfaceItemOrder,
+} from './surfaceItemOrder';
 import type {
   MeOsAppId,
   MeOsDesktopEntryId,
   MeOsDisplayMode,
   MeOsPersistedSnapshot,
+  MeOsSurfaceKey,
   MeOsViewerKind,
   MeOsWindow,
   MeOsWindowRect,
@@ -24,7 +31,7 @@ import type {
 import { sanitizePersistedWindowState, toggleWindowMaximize } from './windowState';
 
 const STORAGE_KEY = 'terminalOS.meos.v1.shell';
-const STORAGE_VERSION = 2 as const;
+const STORAGE_VERSION = 3 as const;
 const STATUS_BAR_HEIGHT = 28;
 const SPAWN_MARGIN = 12;
 const SPAWN_CASCADE_STEP = 18;
@@ -169,6 +176,11 @@ const getViewerKindForNode = (node: VfsNode): MeOsViewerKind => (
     ? node.kind
     : 'text'
 );
+
+const sortSurfaceNodes = (entries: VfsNode[]): VfsNode[] => [...entries].sort((a, b) => {
+  if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+  return a.name.localeCompare(b.name);
+});
 
 const getFolderRectForNode = (nodeId: string): { x: number; y: number; width: number; height: number } => (
   FOLDER_WINDOW_RECTS[nodeId] ?? { x: 120, y: 80, width: 540, height: 360 }
@@ -352,15 +364,45 @@ export const migratePersistedWindows = (windows: LegacyWindow[], nodes: Record<s
   return dedupeWindows(migrated);
 };
 
-const loadPersistedWindows = (): MeOsWindow[] => {
-  const snapshot = getItemSafe<MeOsPersistedSnapshot | { version: 1; windows: unknown[] } | null>(STORAGE_KEY, null);
-  if (!snapshot || !Array.isArray(snapshot.windows)) return createDefaultWindows();
+type LoadedShellState = {
+  windows: MeOsWindow[];
+  surfaceItemOrder: Record<string, string[]>;
+};
+
+const resolveDefaultSurfaceIds = (surfaceKey: MeOsSurfaceKey, vfsService: ReturnType<typeof getMeOsVfsService>): string[] => {
+  if (surfaceKey === 'desktop') {
+    return createDesktopEntries(vfsService.getSnapshot()).map((entry) => entry.id);
+  }
+  if (!surfaceKey.startsWith('folder:')) return [];
+  const folderId = surfaceKey.slice('folder:'.length);
+  return sortSurfaceNodes(vfsService.listChildren(folderId)).map((node) => node.id);
+};
+
+const loadPersistedShellState = (): LoadedShellState => {
+  const snapshot = getItemSafe<
+    MeOsPersistedSnapshot | { version: 1 | 2; windows: unknown[]; surfaceItemOrder?: unknown } | null
+  >(STORAGE_KEY, null);
+  if (!snapshot || !Array.isArray(snapshot.windows)) {
+    return {
+      windows: createDefaultWindows(),
+      surfaceItemOrder: {},
+    };
+  }
   const parsed = snapshot.windows
     .map(sanitizeWindow)
     .filter((win): win is LegacyWindow => win != null);
-  if (parsed.length === 0) return createDefaultWindows();
+  const surfaceItemOrder = sanitizeSurfaceItemOrder((snapshot as { surfaceItemOrder?: unknown }).surfaceItemOrder);
+  if (parsed.length === 0) {
+    return {
+      windows: createDefaultWindows(),
+      surfaceItemOrder,
+    };
+  }
   const vfsSnapshot = getMeOsVfsService().getSnapshot();
-  return migratePersistedWindows(parsed, vfsSnapshot.nodes);
+  return {
+    windows: migratePersistedWindows(parsed, vfsSnapshot.nodes),
+    surfaceItemOrder,
+  };
 };
 
 type MeOsContextValue = {
@@ -380,14 +422,20 @@ type MeOsContextValue = {
   minimizeWindow: (id: string) => void;
   restoreWindow: (id: string) => void;
   closeWindow: (id: string) => void;
+  getSurfaceItemOrder: <T extends string>(surfaceKey: MeOsSurfaceKey, defaultIds: readonly T[]) => T[];
+  reorderSurfaceItem: (surfaceKey: MeOsSurfaceKey, itemId: string, toIndex: number) => void;
 };
 
 const MeOsContext = createContext<MeOsContextValue | null>(null);
 
 export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const vfsService = useMemo(() => getMeOsVfsService(), []);
+  const initialShellState = useMemo(() => loadPersistedShellState(), []);
   const [displayMode, setDisplayMode] = useState<MeOsDisplayMode>('panel');
-  const [windows, setWindows] = useState<MeOsWindow[]>(() => loadPersistedWindows());
+  const [windows, setWindows] = useState<MeOsWindow[]>(() => initialShellState.windows);
+  const [surfaceItemOrder, setSurfaceItemOrder] = useState<Record<string, string[]>>(
+    () => initialShellState.surfaceItemOrder
+  );
   const [activeScope, setActiveScopeState] = useState<'you' | 'third' | 'connect' | null>(null);
   const zRef = useRef<number>(getMaxZ(windows));
 
@@ -396,8 +444,9 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItemSafe<MeOsPersistedSnapshot>(STORAGE_KEY, {
       version: STORAGE_VERSION,
       windows,
+      surfaceItemOrder,
     });
-  }, [windows]);
+  }, [surfaceItemOrder, windows]);
 
   useEffect(() => {
     const onResize = () => {
@@ -592,6 +641,29 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
+  const getSurfaceItemOrder = useCallback(<T extends string>(surfaceKey: MeOsSurfaceKey, defaultIds: readonly T[]) => (
+    resolveSurfaceItemOrder(defaultIds, surfaceItemOrder[surfaceKey])
+  ), [surfaceItemOrder]);
+
+  const reorderSurfaceItem = useCallback((surfaceKey: MeOsSurfaceKey, itemId: string, toIndex: number) => {
+    setSurfaceItemOrder((prev) => {
+      const defaultIds = resolveDefaultSurfaceIds(surfaceKey, vfsService);
+      const current = resolveSurfaceItemOrder(defaultIds, prev[surfaceKey]);
+      const nextOrder = reorderSurfaceItemOrder(current, itemId, toIndex);
+      const existing = prev[surfaceKey] ?? [];
+      if (
+        existing.length === nextOrder.length
+        && existing.every((id, index) => id === nextOrder[index])
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [surfaceKey]: nextOrder,
+      };
+    });
+  }, [vfsService]);
+
   const value = useMemo<MeOsContextValue>(() => ({
     displayMode,
     windows,
@@ -609,18 +681,22 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     minimizeWindow,
     restoreWindow,
     closeWindow,
+    getSurfaceItemOrder,
+    reorderSurfaceItem,
   }), [
     activeScope,
     closeFullscreen,
     closeWindow,
     displayMode,
     focusWindow,
+    getSurfaceItemOrder,
     minimizeWindow,
     moveWindow,
     openFolder,
     openFullscreen,
     openInfo,
     openNode,
+    reorderSurfaceItem,
     resizeWindow,
     restoreWindow,
     setActiveScope,

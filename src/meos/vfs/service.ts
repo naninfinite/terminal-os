@@ -13,6 +13,17 @@ import {
   ARCHIVE_LEGACY_ID,
   CONTACT_CARD_ID,
   HOME_ID,
+  MEDIA_ID,
+  PHOTOS_ID,
+  VIDEOS_ID,
+  PORTRAIT_ID,
+  DSC00479_ID,
+  IDG_20250710_004909_371_ID,
+  IMG_0285_ID,
+  PROJECT_PROZILLA_ID,
+  PROJECT_TERMINAL_OS_ID,
+  PROJECTS_ID,
+  REEL_ID,
   README_ID,
   ROOT_ID,
   createSeedSnapshot,
@@ -29,7 +40,7 @@ import type {
 } from './types';
 
 export const VFS_STORAGE_KEY = 'terminalOS.meos.v1.vfs';
-export const VFS_VERSION = 2 as const;
+export const VFS_VERSION = 3 as const;
 export const LEGACY_PHASE3_KEY = 'terminal_os_fs_v1';
 
 type Listeners = Set<() => void>;
@@ -125,6 +136,7 @@ const sanitizeNode = (raw: unknown): VfsNode | null => {
     textContent: typeof data.textContent === 'string' ? data.textContent : undefined,
     assetSrc: typeof data.assetSrc === 'string' ? data.assetSrc : undefined,
     posterSrc: typeof data.posterSrc === 'string' ? data.posterSrc : undefined,
+    videoThumbnailId: typeof data.videoThumbnailId === 'string' ? data.videoThumbnailId : undefined,
     projectMeta: sanitizeProjectMeta(data.projectMeta),
     documentLayout: isDocumentLayout(data.documentLayout) ? data.documentLayout : undefined,
     documentSections: sanitizeDocumentSections(data.documentSections),
@@ -245,6 +257,21 @@ const removeChild = (children: Record<string, string[]>, parentId: string, child
   children[parentId] = (children[parentId] ?? []).filter((id) => id !== childId);
 };
 
+const rebuildChildren = (snapshot: VfsSnapshot): void => {
+  const children: Record<string, string[]> = {};
+  for (const node of Object.values(snapshot.nodes)) {
+    if (node.type === 'folder') {
+      children[node.id] = [];
+    }
+  }
+  for (const node of Object.values(snapshot.nodes)) {
+    if (node.parentId == null) continue;
+    children[node.parentId] ??= [];
+    children[node.parentId].push(node.id);
+  }
+  snapshot.children = children;
+};
+
 const ensureFolder = (snapshot: VfsSnapshot, args: { id: string; name: string; parentId: string | null }): void => {
   const existing = snapshot.nodes[args.id];
   if (existing && existing.type === 'folder') {
@@ -303,7 +330,7 @@ const createLegacyFolderIfNeeded = (snapshot: VfsSnapshot): void => {
   ensureFolder(snapshot, {
     id: ARCHIVE_ID,
     name: 'Archive',
-    parentId: ROOT_ID,
+    parentId: HOME_ID,
   });
   ensureFolder(snapshot, {
     id: ARCHIVE_LEGACY_ID,
@@ -312,7 +339,7 @@ const createLegacyFolderIfNeeded = (snapshot: VfsSnapshot): void => {
   });
 };
 
-const ensureCanonicalHomeDocs = (snapshot: VfsSnapshot): void => {
+const ensureCanonicalStructure = (snapshot: VfsSnapshot): void => {
   const seed = createSeedSnapshot();
   const legacyAboutFolder = snapshot.nodes.about?.type === 'folder' ? snapshot.nodes.about : undefined;
   const legacyContactFolder = snapshot.nodes.contact?.type === 'folder' ? snapshot.nodes.contact : undefined;
@@ -320,15 +347,30 @@ const ensureCanonicalHomeDocs = (snapshot: VfsSnapshot): void => {
 
   ensureFolder(snapshot, { id: ROOT_ID, name: '/', parentId: null });
   ensureFolder(snapshot, { id: HOME_ID, name: 'Home', parentId: ROOT_ID });
-  ensureFolder(snapshot, { id: 'projects', name: 'Projects', parentId: ROOT_ID });
-  ensureFolder(snapshot, { id: 'media', name: 'Media', parentId: ROOT_ID });
-  ensureFolder(snapshot, { id: ARCHIVE_ID, name: 'Archive', parentId: ROOT_ID });
+  ensureFolder(snapshot, { id: PROJECTS_ID, name: 'Projects', parentId: HOME_ID });
+  ensureFolder(snapshot, { id: MEDIA_ID, name: 'Media', parentId: HOME_ID });
+  ensureFolder(snapshot, { id: PHOTOS_ID, name: 'Photos', parentId: MEDIA_ID });
+  ensureFolder(snapshot, { id: VIDEOS_ID, name: 'Videos', parentId: MEDIA_ID });
+  ensureFolder(snapshot, { id: ARCHIVE_ID, name: 'Archive', parentId: HOME_ID });
 
   const seedAbout = seed.nodes[ABOUT_DOC_ID];
   const seedContact = seed.nodes[CONTACT_CARD_ID];
   const seedReadme = seed.nodes[README_ID];
+  const seededFiles = [
+    seed.nodes[PORTRAIT_ID],
+    seed.nodes[DSC00479_ID],
+    seed.nodes[IDG_20250710_004909_371_ID],
+    seed.nodes[IMG_0285_ID],
+    seed.nodes[REEL_ID],
+    seed.nodes[PROJECT_TERMINAL_OS_ID],
+    seed.nodes[PROJECT_PROZILLA_ID],
+  ];
 
-  const existingReadme = snapshot.nodes[README_ID] ?? findNodeByName(snapshot, HOME_ID, 'README.txt');
+  const existingReadme = (
+    snapshot.nodes[README_ID]
+    ?? findNodeByName(snapshot, HOME_ID, 'README.txt')
+    ?? findNodeByName(snapshot, ROOT_ID, 'README.txt')
+  );
   if (existingReadme && existingReadme.type === 'file') {
     existingReadme.name = 'README.txt';
     existingReadme.parentId = HOME_ID;
@@ -347,7 +389,11 @@ const ensureCanonicalHomeDocs = (snapshot: VfsSnapshot): void => {
     ensureFile(snapshot, seedReadme);
   }
 
-  const existingAbout = snapshot.nodes[ABOUT_DOC_ID] ?? findNodeByName(snapshot, HOME_ID, 'About');
+  const existingAbout = (
+    snapshot.nodes[ABOUT_DOC_ID]
+    ?? findNodeByName(snapshot, HOME_ID, 'About')
+    ?? findNodeByName(snapshot, ROOT_ID, 'About')
+  );
   if (existingAbout && existingAbout.type === 'file') {
     existingAbout.name = 'About';
     existingAbout.parentId = HOME_ID;
@@ -373,7 +419,11 @@ const ensureCanonicalHomeDocs = (snapshot: VfsSnapshot): void => {
     });
   }
 
-  const existingContact = snapshot.nodes[CONTACT_CARD_ID] ?? findNodeByName(snapshot, HOME_ID, 'Contact');
+  const existingContact = (
+    snapshot.nodes[CONTACT_CARD_ID]
+    ?? findNodeByName(snapshot, HOME_ID, 'Contact')
+    ?? findNodeByName(snapshot, ROOT_ID, 'Contact')
+  );
   if (existingContact && existingContact.type === 'file') {
     existingContact.name = 'Contact';
     existingContact.parentId = HOME_ID;
@@ -395,6 +445,35 @@ const ensureCanonicalHomeDocs = (snapshot: VfsSnapshot): void => {
     ensureFile(snapshot, seedContact);
   }
 
+  for (const childId of [...(snapshot.children[MEDIA_ID] ?? [])]) {
+    const child = snapshot.nodes[childId];
+    if (!child || child.type !== 'file') continue;
+    if (child.kind === 'image') {
+      child.parentId = PHOTOS_ID;
+      continue;
+    }
+    if (child.kind === 'video') {
+      child.parentId = VIDEOS_ID;
+    }
+  }
+
+  for (const seeded of seededFiles) {
+    if (!seeded || seeded.type !== 'file') continue;
+    const existing = snapshot.nodes[seeded.id];
+    if (existing && existing.type === 'file') {
+      existing.name = seeded.name;
+      existing.parentId = seeded.parentId;
+      existing.kind = seeded.kind;
+      existing.textContent = existing.textContent || seeded.textContent;
+      existing.assetSrc = existing.assetSrc || seeded.assetSrc;
+      existing.posterSrc = existing.posterSrc || seeded.posterSrc;
+      existing.videoThumbnailId = existing.videoThumbnailId || seeded.videoThumbnailId;
+      existing.projectMeta = existing.projectMeta ?? seeded.projectMeta;
+      continue;
+    }
+    ensureFile(snapshot, seeded);
+  }
+
   if (legacyAboutFolder) {
     createLegacyFolderIfNeeded(snapshot);
     moveNode(snapshot, legacyAboutFolder.id, ARCHIVE_LEGACY_ID);
@@ -403,16 +482,29 @@ const ensureCanonicalHomeDocs = (snapshot: VfsSnapshot): void => {
     createLegacyFolderIfNeeded(snapshot);
     moveNode(snapshot, legacyContactFolder.id, ARCHIVE_LEGACY_ID);
   }
+
+  rebuildChildren(snapshot);
 };
 
-export const migrateSnapshotV1ToV2 = (shape: SnapshotShape): VfsSnapshot => {
+export const migrateSnapshotV1ToV3 = (shape: SnapshotShape): VfsSnapshot => {
   const base: VfsSnapshot = {
     version: VFS_VERSION,
-    rootId: shape.rootId || ROOT_ID,
+    rootId: ROOT_ID,
     nodes: Object.fromEntries(Object.entries(shape.nodes).map(([id, node]) => [id, cloneNode(node)])),
     children: Object.fromEntries(Object.entries(shape.children).map(([id, childIds]) => [id, [...childIds]])),
   };
-  ensureCanonicalHomeDocs(base);
+  ensureCanonicalStructure(base);
+  return base;
+};
+
+export const migrateSnapshotV2ToV3 = (shape: SnapshotShape): VfsSnapshot => {
+  const base: VfsSnapshot = {
+    version: VFS_VERSION,
+    rootId: ROOT_ID,
+    nodes: Object.fromEntries(Object.entries(shape.nodes).map(([id, node]) => [id, cloneNode(node)])),
+    children: Object.fromEntries(Object.entries(shape.children).map(([id, childIds]) => [id, [...childIds]])),
+  };
+  ensureCanonicalStructure(base);
   return base;
 };
 
@@ -420,15 +512,18 @@ const normalizeSnapshot = (shape: SnapshotShape): VfsSnapshot | null => {
   if (shape.version === VFS_VERSION) {
     const snapshot: VfsSnapshot = {
       version: VFS_VERSION,
-      rootId: shape.rootId,
+      rootId: ROOT_ID,
       nodes: Object.fromEntries(Object.entries(shape.nodes).map(([id, node]) => [id, cloneNode(node)])),
       children: Object.fromEntries(Object.entries(shape.children).map(([id, childIds]) => [id, [...childIds]])),
     };
-    ensureCanonicalHomeDocs(snapshot);
+    ensureCanonicalStructure(snapshot);
     return snapshot;
   }
+  if (shape.version === 2) {
+    return migrateSnapshotV2ToV3(shape);
+  }
   if (shape.version === 1) {
-    return migrateSnapshotV1ToV2(shape);
+    return migrateSnapshotV1ToV3(shape);
   }
   return null;
 };

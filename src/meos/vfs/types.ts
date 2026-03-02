@@ -38,6 +38,7 @@ export type VfsNode = {
   textContent?: string;
   assetSrc?: string;
   posterSrc?: string;
+  videoThumbnailId?: string;
   projectMeta?: VfsProjectMeta;
   documentLayout?: VfsDocumentLayout;
   documentSections?: VfsDocumentSection[];
@@ -46,7 +47,7 @@ export type VfsNode = {
 };
 
 export type VfsSnapshot = {
-  version: 2;
+  version: 3;
   rootId: string;
   nodes: Record<string, VfsNode>;
   children: Record<string, string[]>;

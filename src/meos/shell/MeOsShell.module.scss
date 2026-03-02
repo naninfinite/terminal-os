@@ -88,32 +88,47 @@
 
 .desktopSurface {
   position: absolute;
-  left: 12px;
-  top: 12px;
-  width: min(196px, calc(100% - 24px));
-  display: grid;
-  grid-auto-flow: column;
-  grid-template-rows: repeat(var(--desktop-rows, 7), min-content);
-  grid-auto-columns: minmax(86px, 1fr);
-  gap: 8px 10px;
+  inset: 12px;
   z-index: 1;
-  align-content: start;
+  padding: 4px;
+  --desktop-stack-left: 4px;
+  --desktop-stack-top: 4px;
+  --desktop-stack-step: clamp(80px, 9vw, 106px);
 }
 
 .desktopEntry {
+  position: absolute;
+  top: var(--desktop-stack-top);
+  left: var(--desktop-stack-left);
   border: 1px solid transparent;
   background: transparent;
   color: $phosphor-green;
   display: grid;
   justify-items: center;
-  gap: 5px;
+  gap: clamp(4px, 0.7vw, 7px);
   align-content: start;
-  padding: 4px 2px 5px;
+  width: clamp(74px, 8vw, 96px);
+  padding: clamp(4px, 0.55vw, 7px) clamp(2px, 0.45vw, 5px);
+  min-height: clamp(68px, 8vw, 92px);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.desktopEntry[data-desktop-entry='media'] {
+  top: calc(var(--desktop-stack-top) + var(--desktop-stack-step));
+}
+
+.desktopEntry[data-desktop-entry='about'] {
+  top: calc(var(--desktop-stack-top) + (var(--desktop-stack-step) * 2));
+}
+
+.desktopEntry[data-desktop-entry='contact'] {
+  top: calc(var(--desktop-stack-top) + (var(--desktop-stack-step) * 3));
 }
 
 .desktopEntry:hover,
 .desktopEntry:focus-visible {
   border-color: var(--ui-border-soft);
+  background: rgb(var(--ui-scanline-rgb, 0 255 102) / 0.05);
 }
 
 .desktopEntryActive {
@@ -123,20 +138,22 @@
 .desktopEntryIcon {
   display: grid;
   place-items: center;
-  min-height: 36px;
+  min-height: clamp(30px, 3.8vw, 42px);
   line-height: 1;
 }
 
 .desktopEntryIconGlyph {
-  --icon-size: 1.95rem;
+  --icon-size: clamp(1.45rem, 1.9vw, 2.1rem);
   opacity: 0.96;
 }
 
 .desktopEntryLabel {
-  font-size: $font-xs;
-  padding: 0 3px;
+  font-size: 0.64rem;
+  padding: 0 2px;
   line-height: 1.1;
   text-align: center;
+  width: 100%;
+  word-break: break-word;
 }
 
 .desktopEntryActive .desktopEntryLabel,
@@ -349,15 +366,16 @@
 
 @media (max-width: $bp-tablet) {
   .desktopSurface {
-    width: min(182px, calc(100% - 24px));
+    inset: 10px;
+    --desktop-stack-step: 92px;
   }
 
   .desktopEntryIcon {
-    min-height: 34px;
+    min-height: 28px;
   }
 
   .desktopEntryIconGlyph {
-    --icon-size: 1.75rem;
+    --icon-size: 1.55rem;
   }
 
   .windowHeader {
@@ -368,18 +386,23 @@
 
 @media (max-width: $bp-phone) {
   .desktopSurface {
-    width: min(168px, calc(100% - 18px));
-    left: 8px;
-    top: 8px;
-    gap: 6px 8px;
+    inset: 8px;
+    --desktop-stack-left: 2px;
+    --desktop-stack-top: 2px;
+    --desktop-stack-step: 84px;
+  }
+
+  .desktopEntry {
+    width: 76px;
+    min-height: 72px;
   }
 
   .desktopEntryIcon {
-    min-height: 30px;
+    min-height: 26px;
   }
 
   .desktopEntryIconGlyph {
-    --icon-size: 1.5rem;
+    --icon-size: 1.4rem;
   }
 
   .windowBody {
@@ -394,14 +417,15 @@
 @media (max-width: $bp-narrow) {
   .desktopEntry {
     gap: 4px;
+    min-height: 68px;
   }
 
   .desktopEntryIcon {
-    min-height: 26px;
+    min-height: 24px;
   }
 
   .desktopEntryIconGlyph {
-    --icon-size: 1.35rem;
+    --icon-size: 1.25rem;
   }
 
   .fullscreenLayer {

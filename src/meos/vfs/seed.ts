@@ -4,15 +4,21 @@ export const ROOT_ID = 'root';
 export const HOME_ID = 'home';
 export const PROJECTS_ID = 'projects';
 export const MEDIA_ID = 'media';
+export const PHOTOS_ID = 'photos';
+export const VIDEOS_ID = 'videos';
 export const ARCHIVE_ID = 'archive';
 export const ABOUT_DOC_ID = 'about_doc';
 export const CONTACT_CARD_ID = 'contact_card';
 export const README_ID = 'readme_txt';
 export const PORTRAIT_ID = 'portrait_png';
+export const DSC00479_ID = 'dsc00479_jpg';
+export const IDG_20250710_004909_371_ID = 'idg_20250710_004909_371_jpg';
+export const IMG_0285_ID = 'img_0285_jpg';
 export const REEL_ID = 'reel_mp4';
 export const PROJECT_TERMINAL_OS_ID = 'project_terminalos';
 export const PROJECT_PROZILLA_ID = 'project_prozilla';
 export const ARCHIVE_LEGACY_ID = 'archive_legacy';
+export const REEL_THUMBNAIL_ID = 'reel_cover';
 
 const ABOUT_SECTIONS: VfsDocumentSection[] = [
   {
@@ -40,9 +46,11 @@ const CONTACT_META: VfsContactMeta = {
 const seedNodes: VfsNode[] = [
   { id: ROOT_ID, name: '/', type: 'folder', parentId: null },
   { id: HOME_ID, name: 'Home', type: 'folder', parentId: ROOT_ID },
-  { id: PROJECTS_ID, name: 'Projects', type: 'folder', parentId: ROOT_ID },
-  { id: MEDIA_ID, name: 'Media', type: 'folder', parentId: ROOT_ID },
-  { id: ARCHIVE_ID, name: 'Archive', type: 'folder', parentId: ROOT_ID },
+  { id: PROJECTS_ID, name: 'Projects', type: 'folder', parentId: HOME_ID },
+  { id: MEDIA_ID, name: 'Media', type: 'folder', parentId: HOME_ID },
+  { id: PHOTOS_ID, name: 'Photos', type: 'folder', parentId: MEDIA_ID },
+  { id: VIDEOS_ID, name: 'Videos', type: 'folder', parentId: MEDIA_ID },
+  { id: ARCHIVE_ID, name: 'Archive', type: 'folder', parentId: HOME_ID },
   {
     id: ABOUT_DOC_ID,
     name: 'About',
@@ -86,19 +94,47 @@ const seedNodes: VfsNode[] = [
     id: PORTRAIT_ID,
     name: 'Portrait.png',
     type: 'file',
-    parentId: MEDIA_ID,
+    parentId: PHOTOS_ID,
     kind: 'image',
-    assetSrc: '',
-    textContent: 'Portrait placeholder. Swap `assetSrc` with a final image later.',
+    assetSrc: 'src/assets/images/DSC00056.JPG',
+    textContent: 'Portrait reference image.',
+  },
+  {
+    id: DSC00479_ID,
+    name: 'DSC00479.jpg',
+    type: 'file',
+    parentId: PHOTOS_ID,
+    kind: 'image',
+    assetSrc: 'src/assets/images/DSC00479.jpg',
+    textContent: 'Seed photo asset.',
+  },
+  {
+    id: IDG_20250710_004909_371_ID,
+    name: 'IDG_20250710_004909_371.jpg',
+    type: 'file',
+    parentId: PHOTOS_ID,
+    kind: 'image',
+    assetSrc: 'src/assets/images/IDG_20250710_004909_371.jpg',
+    textContent: 'Seed photo asset.',
+  },
+  {
+    id: IMG_0285_ID,
+    name: 'IMG_0285.jpg',
+    type: 'file',
+    parentId: PHOTOS_ID,
+    kind: 'image',
+    assetSrc: 'src/assets/images/IMG_0285.jpg',
+    textContent: 'Seed photo asset.',
   },
   {
     id: REEL_ID,
     name: 'Reel.mp4',
     type: 'file',
-    parentId: MEDIA_ID,
+    parentId: VIDEOS_ID,
     kind: 'video',
     assetSrc: 'src/assets/videos/mp4/juno-echo_web.mp4',
     posterSrc: '',
+    videoThumbnailId: REEL_THUMBNAIL_ID,
     textContent: 'Showreel slot. Attach a different `assetSrc` when a final reel is ready.',
   },
   {
@@ -154,7 +190,7 @@ export const createSeedSnapshot = (): VfsSnapshot => {
   }
 
   return {
-    version: 2,
+    version: 3,
     rootId: ROOT_ID,
     nodes,
     children,
