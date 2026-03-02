@@ -166,7 +166,7 @@ const nextPrimitiveName = (objects: ThirdSceneObject[], type: ThirdPrimitiveType
   return `${label} ${count + 1}`;
 };
 
-const primitiveDefaultTransform = (type: ThirdPrimitiveType): ThirdSceneObject['transform'] => {
+export const resolvePrimitiveDefaultTransform = (type: ThirdPrimitiveType): ThirdSceneObject['transform'] => {
   switch (type) {
     case 'sphere':
       return {
@@ -202,7 +202,7 @@ export const createSceneObject = (args: {
   transform?: ThirdSceneObject['transform'];
   animationPreset?: ThirdAnimationPreset;
 }): ThirdSceneObject => {
-  const transform = args.transform ?? primitiveDefaultTransform(args.type);
+  const transform = args.transform ?? resolvePrimitiveDefaultTransform(args.type);
   return {
     id: uid(),
     name: nextPrimitiveName(args.objects, args.type),
@@ -456,10 +456,11 @@ export const setCameraState = (state: ThirdRuntimeState, cameraState: ThirdCamer
 
 export const addPrimitive = (
   state: ThirdRuntimeState,
-  type: ThirdPrimitiveType
+  type: ThirdPrimitiveType,
+  transform?: ThirdSceneObject['transform']
 ): ThirdRuntimeState => {
   if (state.objects.length >= THIRD_MAX_OBJECTS) return state;
-  const nextObject = createSceneObject({ type, objects: state.objects });
+  const nextObject = createSceneObject({ type, objects: state.objects, transform });
   return {
     ...state,
     objects: [...state.objects, nextObject],

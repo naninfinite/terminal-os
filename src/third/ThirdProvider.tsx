@@ -48,6 +48,7 @@ import type {
   ThirdDisplayMode,
   ThirdEditorMode,
   ThirdMaterialPreset,
+  ThirdObjectTransform,
   ThirdPrimitiveType,
   ThirdRuntimeState,
   ThirdTransformMode,
@@ -89,7 +90,7 @@ type ThirdContextValue = {
   setSnapEnabled: (enabled: boolean) => void;
   toggleSnap: () => void;
   selectObject: (id: string | null) => void;
-  addPrimitive: (type: ThirdPrimitiveType) => void;
+  addPrimitive: (type: ThirdPrimitiveType, transform?: ThirdObjectTransform) => void;
   deleteSelected: () => void;
   duplicateSelected: () => void;
   updateObjectTransform: (patch: ThirdTransformPatch) => void;
@@ -273,9 +274,9 @@ export const ThirdProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       track: false,
     });
   }, [mutateStore]);
-  const addPrimitiveAction = useCallback((type: ThirdPrimitiveType) => {
+  const addPrimitiveAction = useCallback((type: ThirdPrimitiveType, transform?: ThirdObjectTransform) => {
     mutateStore({
-      mutate: (prev) => addPrimitive(prev, type),
+      mutate: (prev) => addPrimitive(prev, type, transform),
       track: true,
     });
   }, [mutateStore]);

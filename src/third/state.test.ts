@@ -61,6 +61,25 @@ describe('third state helpers', () => {
     expect(copy.parentId).toBe(original.parentId);
   });
 
+  it('supports explicit spawn transforms when adding primitives', () => {
+    const seeded = createDefaultThirdRuntimeState();
+    const withPlane = addPrimitive(seeded, 'plane', {
+      position: { x: 3, y: 2, z: 1 },
+      rotation: { x: 0.25, y: 0.5, z: 0.75 },
+      scale: { x: 2, y: 1, z: 4 },
+    });
+
+    const added = withPlane.objects.find((object) => object.id === withPlane.selectionId);
+    expect(added).toBeTruthy();
+    if (!added) return;
+
+    expect(added.transform).toEqual({
+      position: { x: 3, y: 2, z: 1 },
+      rotation: { x: 0.25, y: 0.5, z: 0.75 },
+      scale: { x: 2, y: 1, z: 4 },
+    });
+  });
+
   it('deletes selected object and updates selection safely', () => {
     const seeded = createDefaultThirdRuntimeState();
     const withSphere = addPrimitive(seeded, 'sphere');

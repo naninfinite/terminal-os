@@ -89,16 +89,25 @@ import { useThirdRuntime } from '../../third/ThirdProvider';
 import {
   THIRD_DEFAULT_CAMERA_STATE,
   THIRD_MAX_OBJECT_NAME_LENGTH,
+  resolvePrimitiveDefaultTransform,
 } from '../../third/state';
 import type {
   ThirdAnimationPreset,
   ThirdMaterialPreset,
+  ThirdObjectTransform,
   ThirdPrimitiveType,
   ThirdProjectionMode,
   ThirdSceneObject,
   ThirdTransformPatch,
   ThirdVec3,
 } from '../../third/types';
+import { resolveThirdViewportSpawnPosition } from './thirdViewportSpawn';
+import {
+  resolveThirdPanelBackgroundTap,
+  shouldOpenThirdPanelFromSceneDoubleClick,
+  THIRD_PANEL_DOUBLE_TAP_TOLERANCE_PX,
+  type ThirdPanelBackgroundTap,
+} from './thirdPanelFullscreenGesture';
 
 const FIXED_TIMESTEP_SECONDS = 1 / 60;
 const MAX_PHYSICS_SUBSTEPS = 3;
@@ -137,6 +146,7 @@ type ViewportMenuState = {
   x: number;
   y: number;
   openGroupId: ThirdViewportMenuGroupId | null;
+  spawnPosition: ThirdVec3 | null;
 };
 
 type HierarchyMenuState = {
@@ -179,6 +189,14 @@ type MobileDrawerDragState = {
   mode: 'open' | 'close';
   pointerId: number;
   startY: number;
+};
+
+type PanelBackgroundTouchPress = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  moved: boolean;
+  startedOnBlank: boolean;
 };
 
 const applyMaterialParams = (
@@ -501,6 +519,22 @@ const withClampedDistance = (distance: number): number => (
   Number.isFinite(distance) ? Math.max(MIN_CAMERA_DISTANCE, distance) : MIN_CAMERA_DISTANCE
 );
 
+const createPrimitiveTransformAtPosition = (
+  type: ThirdPrimitiveType,
+  position: ThirdVec3
+): ThirdObjectTransform => {
+  const transform = resolvePrimitiveDefaultTransform(type);
+  return {
+    position: {
+      x: position.x,
+      y: position.y,
+      z: position.z,
+    },
+    rotation: { ...transform.rotation },
+    scale: { ...transform.scale },
+  };
+};
+
 const buildHierarchyTree = (objects: ThirdSceneObject[]): HierarchyTreeNode[] => {
   const validIds = new Set(objects.map((object) => object.id));
   const childrenByParent = new Map<string | null, ThirdSceneObject[]>();
@@ -778,6 +812,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     redo,
     forceSave,
     resetToSaved,
+    openFullscreen,
   } = useThirdRuntime();
 
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -1417,7 +1452,12 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     });
   }, []);
 
-  const openViewportMenu = useCallback((clientX: number, clientY: number, openGroupId: ThirdViewportMenuGroupId = 'add') => {
+  const openViewportMenu = useCallback((
+    clientX: number,
+    clientY: number,
+    openGroupId: ThirdViewportMenuGroupId = 'add',
+    spawnPosition: ThirdVec3 | null = null
+  ) => {
     const root = rootRef.current;
     if (!root) return;
     const rect = root.getBoundingClientRect();
@@ -1430,6 +1470,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       x: clampedX,
       y: clampedY,
       openGroupId,
+      spawnPosition,
     });
   }, []);
 
@@ -1732,18 +1773,27 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   ]);
 
   const runViewportMenuAction = useCallback((actionId: ThirdViewportMenuActionId) => {
+    const addViewportPrimitive = (type: ThirdPrimitiveType) => {
+      const spawnPosition = viewportMenu?.spawnPosition;
+      if (!spawnPosition) {
+        addPrimitive(type);
+        return;
+      }
+      addPrimitive(type, createPrimitiveTransformAtPosition(type, spawnPosition));
+    };
+
     switch (actionId) {
       case 'add_cube':
-        addPrimitive('cube');
+        addViewportPrimitive('cube');
         break;
       case 'add_sphere':
-        addPrimitive('sphere');
+        addViewportPrimitive('sphere');
         break;
       case 'add_cylinder':
-        addPrimitive('cylinder');
+        addViewportPrimitive('cylinder');
         break;
       case 'add_plane':
-        addPrimitive('plane');
+        addViewportPrimitive('plane');
         break;
       case 'camera_toggle_projection': {
         const nextProjection = projectionModeRef.current === 'orthographic'
@@ -1806,6 +1856,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     setUtilityPanelVisible,
     toggleMode,
     toggleSnap,
+    viewportMenu,
   ]);
 
   const syncEntryBodyFromMeshWorld = useCallback((entry: RuntimeObjectEntry) => {
@@ -2074,6 +2125,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const raycaster = new THREE.Raycaster();
     const pointerNdc = new THREE.Vector2();
     const clock = new THREE.Clock();
+    const cameraForward = new THREE.Vector3();
     const meshWorldPosition = new THREE.Vector3();
     const meshWorldQuaternion = new THREE.Quaternion();
     const bodyWorldQuaternion = new THREE.Quaternion();
@@ -2081,6 +2133,9 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const localQuaternion = new THREE.Quaternion();
     const snappedWorldPosition = new THREE.Vector3();
     const snappedLocalPosition = new THREE.Vector3();
+    let panelBackgroundTap: ThirdPanelBackgroundTap | null = null;
+    let panelTouchPress: PanelBackgroundTouchPress | null = null;
+    let suppressPanelBackgroundTapUntilAllTouchesReleased = false;
     let physicsAccumulator = 0;
     let elapsedSeconds = 0;
 
@@ -2239,6 +2294,19 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       engine.dragBody.position.set(target.x, target.y, target.z);
       engine.dragBody.velocity.set(0, 0, 0);
       engine.dragBody.angularVelocity.set(0, 0, 0);
+    };
+
+    const resolveViewportSpawnPosition = (clientX: number, clientY: number, anchorPoint: THREE.Vector3): ThirdVec3 | null => {
+      if (!toNdc(clientX, clientY)) return null;
+      raycaster.setFromCamera(pointerNdc, engine.camera);
+      engine.camera.getWorldDirection(cameraForward);
+      return resolveThirdViewportSpawnPosition({
+        objectCount: objectsRef.current.length,
+        rayOrigin: vec3FromThree(raycaster.ray.origin),
+        rayDirection: vec3FromThree(raycaster.ray.direction),
+        planeOrigin: vec3FromThree(anchorPoint),
+        planeNormal: vec3FromThree(cameraForward),
+      });
     };
 
     const startGrab = (args: {
@@ -2434,12 +2502,18 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
     const openViewportMenuAtPointer = (clientX: number, clientY: number) => {
       const picked = pickObject(clientX, clientY);
+      const spawnAnchor = picked?.hitPoint ?? engine.orbit.target;
       if (picked) {
         selectObject(picked.id);
         selectionIdRef.current = picked.id;
         updateTransformAttachment();
       }
-      openViewportMenu(clientX, clientY);
+      openViewportMenu(
+        clientX,
+        clientY,
+        'add',
+        resolveViewportSpawnPosition(clientX, clientY, spawnAnchor)
+      );
     };
 
     const onPointerDown = (event: PointerEvent) => {
