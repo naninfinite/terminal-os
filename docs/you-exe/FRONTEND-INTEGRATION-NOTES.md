@@ -18,8 +18,8 @@ Optional (only if verify_jwt=true):
 
 ## URL construction
 - baseUrl = import.meta.env.VITE_YOU_API_BASE_URL ?? ""
-- listUrl = `${baseUrl}/messages?limit=30` (when baseUrl set)
-- or `/api/you/messages?limit=30` (when baseUrl unset and proxy is set up)
+- listUrl = `${baseUrl}?limit=30` (when baseUrl set)
+- or `/api/you?limit=30` (when baseUrl unset and proxy is set up)
 
 ## Fetch wrapper requirements
 - Centralise fetch logic in one file (YouApiClient).

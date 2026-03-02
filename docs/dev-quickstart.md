@@ -32,9 +32,9 @@ VITE_YOU_API_ANON_KEY=<optional_anon_publishable_key>
 
 ## Branching / Workflow
 
-- `main` — stable releases
-- `phase0-2` — current work (landing + skeleton + placeholders)
-- Create `phase3` and `phase4` when starting those phases.
+- `main` — active baseline
+- `phase0-2` — historical snapshot (landing + skeleton + placeholders)
+- `phase3` — historical snapshot (earlier ME runtime experiments)
 
 Commit guidance:
 - Keep commits small and descriptive. Use `feat:`, `fix:`, `docs:`, `style:` prefixes.
@@ -66,7 +66,7 @@ Commit guidance:
 - YOU
   - `src/components/YOU/YOU.tsx`
   - Uses `YouProvider` + `YouApiClient` (no board data localStorage writes).
-  - API contract: `GET/POST /api/you/messages`.
+  - API contract: `GET/POST` to Supabase Edge Function root (via `VITE_YOU_API_BASE_URL`), or fallback `GET/POST /api/you`.
   - Panel mode shows recent feed preview; fullscreen mode shows full feed with older-page loading.
   - Backend schema/contract reference: `docs/you-api-v1.md`.
   - Supabase ops details: `docs/you-exe/SUPABASE-SETUP-AND-OPS.md`.
@@ -81,7 +81,7 @@ Commit guidance:
 - Respect `prefers-reduced-motion` in animations (check `src/styles/crt.module.scss` and JS checks in `Cursor.tsx`).
 - Prefer adding small SCSS module rules scoped to components.
 - Keep mobile/tablet changes breakpoint-scoped; preserve desktop behavior above tablet width.
-- Keep `node_modules` out of the repo; if the repo contains `node_modules`, consider adding it to `.gitignore` (not done here for reproducible edits).
+- Keep `node_modules` out of git history (it is ignored via `.gitignore`).
 
 ## Responsive Baseline (2026-02-25)
 
@@ -105,5 +105,8 @@ Reference and validation matrix:
 
 ## Where to document design decisions
 
-- `docs/phase-2.md` (detailed text-heavy descriptions — created already)
+- `docs/adr/README.md` (architectural decisions and intent records)
+- `docs/conversation-log.md` (running decision log)
+- `docs/timeline.md` (curated chronological narrative)
+- `docs/phase-2.md` (historical, text-heavy Phase 2 baseline)
 - `docs/dev-quickstart.md` (this file) — quick reference for contributors

@@ -1,5 +1,9 @@
 # Terminal-OS Overview
 
+Start here:
+- `docs/README.md` (documentation hub)
+- `docs/timeline.md` (chronological narrative)
+
 Phases:
 - Phase 0: Landing page (video background + ENTER overlay + fade)
 - Phase 1: Skeleton app layout (panels + status bar)
@@ -29,16 +33,16 @@ Assets:
 
 - `ME.EXE` now runs as a live miniature `ME.OS` inside the panel and expands to fullscreen without resetting state.
 - Desktop behavior is folder/file-first:
-- `Home`, `Projects`, `Media`, and `Archive` open as folder windows.
-- `About`, `Contact`, and `README.txt` live canonically in `Home` and appear on the desktop as aliases.
-- `Get Info` windows expose read-only item metadata, including alias target paths.
+  - `Home`, `Projects`, `Media`, and `Archive` open as folder windows.
+  - `About`, `Contact`, and `README.txt` live canonically in `Home` and appear on the desktop as aliases.
+  - `Get Info` windows expose read-only item metadata, including alias target paths.
 - Global status bar remains fixed at the bottom.
 - One Start-like menu button remains context-aware by active scope.
 - Gallery/video browsing remains a deferred follow-up; current media/project viewers stay in place.
 
 Related docs:
 - `docs/phase-3.md`
-- `docs/ADR Index`
+- `docs/adr/README.md`
 - `docs/conversation-log.md`
 - `docs/me-exe-finder-reset-spec.md`
 - `docs/fileman-v2-build-spec.md`

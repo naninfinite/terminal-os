@@ -1,244 +1,190 @@
-ADR-00XX — VFS Persistence & Schema Versioning
+# Phase 3 (ME.OS) ADR Pack
 
-Status: Accepted
-Phase: 3
-Date: YYYY-MM-DD
-Related: Phase 2 deterministic tests, FileMan scaffold
+Status: Accepted (baseline implemented)
 
-Context
+Date accepted: 2026-02-08  
+Last updated: 2026-03-02
 
-During Phases 0–2, FileMan.EXE operated on in-memory or seeded structures suitable for UI scaffolding.
-Phase 3 requires a persistent, deterministic virtual file system (VFS) that survives reloads and behaves like OS infrastructure rather than UI state.
+This file records the Phase 3 decisions that locked persistence boundaries, reset semantics, and testing scope.
 
-Previous Phase 2 work established:
-	•	Deterministic state handling
-	•	DOM guards and strict test isolation
-	•	Clear separation between shell, apps, and services
+Primary references:
+- ADR index: `docs/adr/README.md`
+- VFS implementation: `src/meos/vfs/service.ts` (`VFS_STORAGE_KEY`, `VFS_VERSION`)
+- VFS seed: `src/meos/vfs/seed.ts`
+- Finder Reset UX contract: `docs/me-exe-finder-reset-spec.md`
+- Historical ME architecture notes: `docs/fileman-v2-build-spec.md`
 
-The VFS must follow these constraints.
+---
 
-Decision
+## ADR-0030: VFS Persistence and Schema Versioning
 
-Introduce a versioned, persistent VFS service backed by localStorage.
-	•	Storage key is namespaced and versioned:
+### Context
 
-terminalOS.vfs@v1
+Earlier phases used in-memory or seeded structures to prove UI and windowing.
+Phase 3 required a persistent virtual file system (VFS) that survives reloads and behaves like OS infrastructure, not UI state.
 
+### Decision
 
-	•	Stored shape:
+Introduce a versioned, persistent VFS service backed by browser storage (localStorage when available).
 
-{
-  version: 1,
-  tree: VfsNode[]
-}
+Key contract:
+- Storage key is namespaced and versioned: `terminalOS.meos.v1.vfs`
+- Snapshot version is explicit (`VFS_VERSION` in code).
+- Stored shape is a single snapshot object (not scattered keys):
+  - `version: number`
+  - `rootId: string`
+  - `nodes: Record<string, VfsNode>`
+  - `children: Record<string, string[]>`
+- The VFS service is the sole owner of file/folder persistence.
+- UI components and apps must not read/write localStorage directly for filesystem state.
 
+### Consequences
 
-	•	The VFS is the sole owner of file/folder state.
-	•	UI components and apps must never access localStorage directly.
+Positive:
+- Reload restores ME.OS filesystem state deterministically.
+- Migrations can be explicit and version-scoped.
+- Tests can operate against a stable snapshot shape.
 
-Persistence rules
-	•	Writes are atomic (write → swap → cleanup)
-	•	Legacy keys (Phase 2 or earlier) are migrated once
-	•	IDs are stable and never regenerated on reload
-	•	Seed data is immutable and overlaid deterministically
+Negative:
+- Adds complexity relative to pure in-memory state.
+- Requires explicit storage isolation in tests to avoid cross-test coupling.
 
-Consequences
+### Alternatives considered
 
-Positive
-	•	Reloading restores OS state exactly
-	•	Tests can rely on stable storage semantics
-	•	Future migrations are explicit and controlled
+- UI-owned file browser state: rejected (drifts, restores poorly, hard to test).
+- Multiple storage keys per folder/app: rejected (harder migrations, inconsistent resets).
 
-Negative
-	•	Slightly more complexity than in-memory state
-	•	Requires explicit test cleanup per run
+---
 
-Related phases
-	•	Phase 2: Deterministic tests & DOM guards
-	•	Phase 3: FileMan.EXE promotion to core system app
+## ADR-0031: Reset Semantics
 
-⸻
+### Context
 
-ADR-00XX — Reset Semantics
+Before Phase 3, "reset" behavior was informal and mostly for development.
+As ME.OS became persistent, reset needed to become a first-class, explicit system operation.
 
-Status: Accepted
-Phase: 3
-Date: YYYY-MM-DD
-Related: VFS persistence ADR, Phase 2 lifecycle fixes
+### Decision
 
-Context
-
-In earlier phases, “reset” functionality was informal and primarily used during development.
-As website-os evolves into an OS metaphor, reset must be treated as a first-class system operation.
-
-Reset must not leave orphaned state, stale UI, or corrupted persistence.
-
-Decision
-
-Reset is defined as a destructive, explicit operation that restores the system to its seeded file system state.
+Reset is defined as a destructive operation that clears the VFS snapshot key and re-seeds defaults.
 
 Rules:
-	•	Reset always restores the original seed exactly
-	•	Reset requires user confirmation
-	•	Reset clears persisted VFS data before reseeding
-	•	All open views must reconcile cleanly after reset
-	•	No in-memory state may survive reset implicitly
+- Reset requires explicit confirmation in UI surfaces that expose it.
+- Reset clears only the ME.OS VFS namespace (not unrelated app data).
+- Reset always restores the seed snapshot deterministically.
+- Reset logic lives in the VFS service, not in apps.
 
-Reset logic lives in the VFS service, not in apps.
+### Consequences
 
-Consequences
+Positive:
+- Predictable recovery path for demos, tests, and users.
+- Clear mental model: reset means "back to seed", not "maybe cleared something".
 
-Positive
-	•	Predictable recovery path
-	•	Safe testing and demos
-	•	Clear mental model for users and developers
+Negative:
+- Apps must tolerate sudden state replacement without crashing.
 
-Negative
-	•	Requires explicit UI affordances (confirm dialogs)
-	•	Apps must tolerate sudden state replacement
+### Alternatives considered
 
-Related phases
-	•	Phase 2: lifecycle & provider stability
-	•	Phase 3: persistence hardening
+- Per-app reset buttons that mutate local state: rejected (inconsistent, leaky).
+- `localStorage.clear()`: rejected (over-destructive).
 
-⸻
+---
 
-ADR-00XX — FileMan.EXE Action Model
+## ADR-0032: FileMan.EXE Action Model (Reference Consumer)
 
-Status: Accepted
-Phase: 3
-Date: YYYY-MM-DD
-Related: FileMan scaffold (Phase 2)
+### Context
 
-Context
+FileMan started as a scaffold for windowing/navigation.
+In Phase 3 it became the reference consumer of the VFS service and the place where file operations were proven end-to-end.
 
-FileMan.EXE was introduced as a scaffold in Phase 2 to validate windowing, navigation, and layout.
-Phase 3 promotes FileMan.EXE into a core reference system app.
+### Decision
 
-Its action model must be explicit, predictable, and keyboard-friendly.
+The reference file action set (as implemented during Phase 3) is:
+- Create folder
+- Create file
+- Inline rename
+- Delete (recursive)
+- Reset filesystem (confirmation required)
 
-Decision
+Interaction rules:
+- Rename via `F2` or context menu.
+- Rename commits on `Enter` or blur.
+- `Escape` cancels rename.
+- Delete operates via VFS only (no UI-owned state mutation).
+- Reset always requires confirmation.
 
-FileMan.EXE supports the following actions in Phase 3:
+Non-goals:
+- Drag and drop.
+- Permissions/users.
+- Cloud sync.
+- File content editing.
 
-Core actions
-	•	Create folder
-	•	Create file
-	•	Inline rename
-	•	Delete (recursive)
-	•	Reset file system (confirm)
+Note:
+- The Finder Reset ME UX removed visible authoring controls from the default ME desktop, but the underlying VFS action semantics remain the reference baseline.
 
-Interaction rules
-	•	Rename via F2 or context menu
-	•	Rename commits on Enter or blur
-	•	Escape cancels rename
-	•	Delete operates via VFS only (no UI state mutation)
-	•	Reset always requires confirmation
+### Consequences
 
-Non-goals
-	•	Drag and drop
-	•	Permissions or users
-	•	Cloud sync
-	•	File content editing
+Positive:
+- Established a canonical action model other apps can copy.
+- Proved the VFS service boundary under realistic UI workflows.
 
-Consequences
+Negative:
+- More advanced file interactions are deferred.
 
-Positive
-	•	FileMan becomes a canonical VFS consumer
-	•	Other apps can copy its interaction patterns
-	•	Predictable keyboard and action semantics
+### Alternatives considered
 
-Negative
-	•	Advanced file interactions deferred to later phases
+- Implement everything (drag/drop, trash, permissions) in Phase 3: rejected (over-scoped, higher regression risk).
 
-Related phases
-	•	Phase 2: FileMan scaffold
-	•	Phase 3: VFS hardening and persistence
+---
 
-⸻
+## ADR-0033: Testing Boundaries for Stateful Services
 
-ADR-00XX — Testing Boundaries for Stateful Services
+### Context
 
-Status: Accepted
-Phase: 3
-Date: YYYY-MM-DD
-Related: Phase 2 deterministic engine tests
+Persistent state increases risk of flaky/order-dependent tests.
+Phase 3 needed explicit boundaries so the test suite stayed deterministic.
 
-Context
+### Decision
 
-Phase 2 established strict deterministic testing:
-	•	DOM guards
-	•	No implicit globals
-	•	Stable timing and state
+Define testing boundaries:
+- Unit tests:
+  - VFS service (pure logic, storage isolation per test)
+  - no UI/DOM assumptions
+- Integration tests:
+  - VFS consumer flows where warranted (historically FileMan)
+  - action flows (rename/delete/reset) and rendering correctness
 
-Phase 3 introduces persistent state, which increases the risk of flaky or order-dependent tests.
+Explicit exclusions (baseline):
+- No visual snapshot testing by default.
+- No full E2E browser automation by default.
 
-Decision
+### Consequences
 
-Define explicit testing boundaries:
+Positive:
+- Fast, reliable suite.
+- Failures are local and diagnosable.
 
-Unit tests
-	•	VFS service
-	•	Pure logic
-	•	Storage isolation per test
-	•	No UI or DOM assumptions
+Negative:
+- Some visual regressions require manual review unless specifically tested.
 
-Integration tests
-	•	FileMan.EXE consuming VFS
-	•	Rendering correctness
-	•	Action flows (rename, delete, reset)
+### Alternatives considered
 
-Explicit exclusions
-	•	No visual snapshot testing
-	•	No full E2E browser automation
+- Broad E2E coverage early: rejected (time cost + flakiness risk for a fast-moving UI).
 
-Consequences
+---
 
-Positive
-	•	Fast, reliable test suite
-	•	Failures are local and diagnosable
-	•	CI remains deterministic
+## Phase 3 Direction Update (captured 2026-02-08)
 
-Negative
-	•	Some visual regressions rely on manual review
+Phase 3 prioritized a FileMan v2 path aligned with a live `ME.OS` experience:
+- `ME.EXE` panel hosts a live miniature `ME.OS` instance.
+- Opening `ME.EXE` expands the same instance to fullscreen (no duplicate app state).
+- Returning to desktop preserves in-session windows/files in the panel preview.
 
-Related phases
-	•	Phase 1–2: engine and test hardening
-	•	Phase 3: persistent OS state
+Architecture constraints:
+- Persistence remains service-owned (VFS/service layer only).
+- UI apps do not write directly to localStorage for core state.
+- Window restore must rehydrate real app content, not placeholders.
+- Mode-aware performance is required (panel lightweight; fullscreen full fidelity).
 
-⸻
-
-Phase 3 Direction Update (2026-02-08)
-
-Scope clarification
-
-Phase 3 will prioritize a `FileMan v2` path aligned with a live `ME.OS` experience:
-	•	`ME.EXE` panel hosts a live miniature `ME.OS` instance.
-	•	Opening `ME.EXE` expands that same instance to fullscreen (no duplicate app state).
-	•	Returning to desktop keeps existing `ME.OS` windows/files visible in the panel.
-
-Architecture constraints
-	•	Persistence remains service-owned (VFS/service layer only).
-	•	UI apps (`FileMan`, gallery/viewers, launchers) do not write directly to localStorage.
-	•	Window restore must rehydrate real app content, not placeholder content.
-	•	Mode-aware performance is required:
-	•	Panel mode reduces heavy rendering.
-	•	Fullscreen mode enables full interactivity.
-
-Navigation and interaction targets
-	•	FileMan v2 includes path bar, back/forward/up, quick access, and context actions.
-	•	Context menu/actions should be declarative and reusable.
-	•	Keyboard-friendly behavior remains a requirement.
-
-Menu model
-	•	Keep one global Start-like menu button in the bottom status bar.
-	•	Menu entries are context-aware by active scope (Desktop, `ME.OS`, future subsystems).
-
-Notes
-	•	This update reflects product-direction decisions and should guide implementation order.
-	•	Conversation source: `docs/conversation-log.md`.
-	•	Execution spec: `docs/fileman-v2-build-spec.md`.
-	•	Future subsystem parity context: `docs/subsystem-expansion-roadmap.md`.
-	•	M1 status: implemented (shared ME.OS shell state + panel/fullscreen mode + persisted shell windows).
-	•	M2 status: implemented (VFS service + versioned key + legacy migration + reset + unit tests).
-	•	M3 status: implemented (FileMan window app + list/grid views + navigation/actions + viewer-window launch routing).
+Menu model:
+- One global Start-like menu button in the bottom status bar.
+- Menu entries are scope-aware (Desktop, `ME.OS`, future subsystems).

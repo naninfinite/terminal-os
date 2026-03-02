@@ -40,12 +40,12 @@ Ship YOU.EXE in M6 as the first online shared feature with durable backend persi
 
 ## Backend API (v1)
 
-### GET /api/you/messages?before=<ISO>&limit=<N>
+### GET /api/you?before=<ISO>&limit=<N>
 - Returns newest-first page
 - Default limit=30, max limit=100
 - Response: YouMessage[]
 
-### POST /api/you/messages
+### POST /api/you
 - Request body: CreateYouMessageInput
 - Response: created YouMessage
 - No update/delete endpoints in M6

@@ -888,8 +888,8 @@ Risks / Notes:
 Summary:
 - Implemented `YOU.EXE` as a message-board runtime backed by a dedicated service/provider boundary (replacing localStorage input-save behavior).
 - Added frontend API contract integration for:
-  - `GET /api/you/messages` (newest-first list, pagination cursor support),
-  - `POST /api/you/messages` (immutable message create).
+  - `GET /api/you` (newest-first list, pagination cursor support),
+  - `POST /api/you` (immutable message create).
 - Added shared runtime state for panel preview + fullscreen board layer.
 - Added polling refresh, older-message pagination, submit guardrails, and temporary client-side post cooldown behavior.
 
@@ -899,7 +899,7 @@ Why it matters:
 - Enables durable persistence across refresh/cache clears once backend endpoint is deployed.
 
 Risks / Notes:
-- Durable cross-device persistence now depends on managed backend deployment behind `/api/you/messages`.
+- Durable cross-device persistence now depends on managed backend deployment behind `/api/you`.
 - This pass intentionally excludes moderation tooling and edit/delete flows (deferred to M6.x/M7).
 
 ---
@@ -910,7 +910,7 @@ Summary:
 - Refreshed YOU.EXE backend docs to match live Supabase state:
   - tables present (`you_messages`, `you_rate_limits`),
   - RPC present (`you_allow_post`),
-  - Edge Function `you` with `GET/POST /messages` route.
+  - Edge Function `you` with root `GET/POST` routes.
 - Refreshed `.env.example` for current frontend integration:
   - `VITE_YOU_API_BASE_URL` points to Supabase function base ending with `/you`,
   - optional `VITE_YOU_API_ANON_KEY` only for `verify_jwt=true`.

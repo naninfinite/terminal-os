@@ -11,10 +11,10 @@
 ## Edge Function
 - Function name: `you`
 - Routes inside function:
-  - GET  /messages
-  - POST /messages
+  - `GET /` (list messages)
+  - `POST /` (create message)
 - Deployed endpoint shape:
-  - https://<project-ref>.supabase.co/functions/v1/you/messages
+  - https://<project-ref>.supabase.co/functions/v1/you
 
 ## Secrets (Edge Function env)
 - SUPABASE_URL
@@ -38,11 +38,13 @@ Allow:
 
 ## Smoke tests (curl)
 GET:
-curl -i "https://<project-ref>.supabase.co/functions/v1/you/messages?limit=5"
+curl -i "https://<project-ref>.supabase.co/functions/v1/you?limit=5"
 
 POST:
-curl -i "https://<project-ref>.supabase.co/functions/v1/you/messages" \
+curl -i "https://<project-ref>.supabase.co/functions/v1/you" \
+  -H "Accept: application/json" \
   -H "Content-Type: application/json" \
+  -H "x-you-client-key: local-dev-client" \
   --data '{"body":"hello","displayName":"nan"}'
 
 If verify_jwt=true, add:

@@ -1,6 +1,14 @@
 # Phase 2 — Panel Placeholders and Core Behavior
 
+Status: Historical (Phase 2 is complete)  
+Date captured: 2025-08-23  
+Last updated: 2026-03-02
+
 This document summarizes the work completed through Phase 2 and explains the code and pages in a developer-friendly, text-heavy way.
+
+For current system behavior, start at:
+- `docs/overview.md`
+- `docs/timeline.md`
 
 ## Goals Completed
 - Landing page with video background and keyboard/click entry
@@ -55,14 +63,13 @@ Legacy note (post-M6):
 2. npm run dev
 3. Open `http://localhost:5173`
 
-## Next steps (Phase 3 suggestions)
+## What happened next (Phase 3+)
 
-- Replace panel placeholders with interactive content and persistence (ME profile, YOU messaging, THIRD archive, CONNECT live links)
-- Add keyboard-only navigation between panels
-- Implement thick block caret inside text inputs (optional)
-- Add tests and CI
+- ME became a live `ME.OS` runtime (shared panel/fullscreen instance) with persistent shell + VFS services.
+- FileMan and viewers proved the service boundaries (later ME UX shifted to the Finder Reset desktop model).
+- YOU and THIRD moved from placeholders to real subsystems with shared panel/fullscreen runtime state.
 
-## Notes about recent changes
-
-- Several commits were rewritten to normalize the committer name to `NaNinfinite` and the repo was pushed to GitHub at `naninfinite/terminal-os`.
-
+See:
+- `docs/phase-3.md`
+- `docs/me-exe-finder-reset-spec.md`
+- `docs/subsystem-expansion-roadmap.md`

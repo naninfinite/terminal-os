@@ -144,7 +144,7 @@ Current implementation checkpoint (2026-02-24):
 
 - Frontend runtime/service boundary implemented:
   - shared `YOU` provider state for panel + fullscreen board views;
-  - API client contract for `GET/POST /api/you/messages`;
+  - API client contract for `GET/POST /api/you`;
   - immutable post flow with polling refresh + older-page loading.
 - Backend checkpoint:
   - Supabase tables (`you_messages`, `you_rate_limits`), RPC (`you_allow_post`), and Edge Function (`you`) are configured.

@@ -46,18 +46,18 @@ Terminal-OS evolves in small, system-safe steps. The goal is an OS-like runtime 
 
 - **Small, reviewable diffs:** one concern per commit/PR.
 - **Docs with code:** behavior/contract shifts are documented in the same change cycle.
-- **Green baseline required:** `pnpm test` and `pnpm build` before merge.
-- **Decision authority order:** code -> docs -> ADRs.
+- **Green baseline required:** `npm test` and `npm run build` before merge.
+- **Decision authority order:** code -> docs -> ADRs -> logs.
 
 ## Dev workflow
 
 Install and run:
 ```bash
-pnpm install
-pnpm dev
-pnpm test
-pnpm build
-pnpm preview
+npm install
+npm run dev
+npm test
+npm run build
+npm run preview
 ```
 
 Vite server baseline is configured in `vite.config.ts`:
@@ -82,7 +82,10 @@ Vite server baseline is configured in `vite.config.ts`:
 
 ## References
 
+- `docs/README.md`
 - `docs/overview.md`
+- `docs/timeline.md`
+- `docs/adr/README.md`
 - `docs/phase-2.md`
 - `docs/fileman-v2-build-spec.md`
 - `docs/me-exe-evolution-plan.md`

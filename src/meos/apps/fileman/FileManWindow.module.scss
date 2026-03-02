@@ -14,8 +14,9 @@
   overflow: auto;
   display: grid;
   align-content: start;
-  grid-template-columns: repeat(auto-fill, minmax(clamp(110px, 12vw, 148px), 1fr));
-  gap: clamp(10px, 1.2vw, 14px) clamp(8px, 1vw, 12px);
+  grid-template-columns: repeat(auto-fill, clamp(78px, 8.5vw, 100px));
+  justify-content: start;
+  gap: clamp(8px, 1vw, 12px);
   padding: 6px 3px 10px;
   scrollbar-width: thin;
   scrollbar-color: $phosphor-green $bg-black;
@@ -47,11 +48,11 @@
   color: $phosphor-green;
   display: grid;
   justify-items: center;
-  gap: 6px;
+  gap: clamp(4px, 0.7vw, 6px);
   align-content: start;
   width: 100%;
-  padding: 6px 4px 8px;
-  min-height: clamp(92px, 12vw, 128px);
+  padding: clamp(4px, 0.55vw, 6px) clamp(2px, 0.45vw, 4px);
+  min-height: clamp(68px, 8vw, 90px);
   transition: border-color 140ms ease, background-color 140ms ease, opacity 140ms ease, transform 140ms ease;
 }
 
@@ -87,12 +88,12 @@
   display: grid;
   place-items: center;
   width: 100%;
-  min-height: clamp(40px, 5.4vw, 58px);
+  min-height: clamp(30px, 3.9vw, 42px);
   line-height: 1;
 }
 
 .entryIconGlyph {
-  --icon-size: clamp(1.9rem, 2.4vw, 2.5rem);
+  --icon-size: clamp(1.45rem, 1.95vw, 2.05rem);
   opacity: 0.96;
 }
 
@@ -102,7 +103,7 @@
 
 .entryThumbFrame {
   position: relative;
-  width: min(100%, clamp(84px, 9vw, 108px));
+  width: min(100%, clamp(70px, 7.6vw, 90px));
   aspect-ratio: 4 / 3;
   overflow: hidden;
   border: 1px solid var(--ui-border-soft);
@@ -146,10 +147,10 @@
 }
 
 .entryLabel {
-  font-size: $font-xs;
+  font-size: 0.64rem;
   text-align: center;
-  line-height: 1.2;
-  padding: 0 4px;
+  line-height: 1.1;
+  padding: 0 2px;
   max-width: 100%;
   word-break: break-word;
 }
@@ -217,43 +218,47 @@
 
 @media (max-width: $bp-phone) {
   .contents {
-    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
-    gap: 10px 8px;
+    grid-template-columns: repeat(auto-fill, 80px);
+    gap: 8px;
   }
 
   .entry {
-    min-height: 88px;
-    gap: 5px;
-  }
-
-  .entryIcon {
-    min-height: 36px;
-  }
-
-  .entryIconGlyph {
-    --icon-size: 1.65rem;
-  }
-
-  .entryThumbFrame {
-    width: min(100%, 92px);
-  }
-}
-
-@media (max-width: $bp-narrow) {
-  .entry {
-    min-height: 80px;
+    min-height: 72px;
     gap: 4px;
   }
 
   .entryIcon {
-    min-height: 32px;
+    min-height: 28px;
   }
 
   .entryIconGlyph {
-    --icon-size: 1.45rem;
+    --icon-size: 1.35rem;
   }
 
   .entryThumbFrame {
-    width: min(100%, 84px);
+    width: min(100%, 72px);
+  }
+}
+
+@media (max-width: $bp-narrow) {
+  .contents {
+    grid-template-columns: repeat(auto-fill, 74px);
+  }
+
+  .entry {
+    min-height: 68px;
+    gap: 4px;
+  }
+
+  .entryIcon {
+    min-height: 24px;
+  }
+
+  .entryIconGlyph {
+    --icon-size: 1.2rem;
+  }
+
+  .entryThumbFrame {
+    width: min(100%, 66px);
   }
 }
