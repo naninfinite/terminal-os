@@ -4,11 +4,17 @@ import {
   faFile as faFileRegular,
   faFolder as faFolderRegular,
 } from '@fortawesome/free-regular-svg-icons';
+import {
+  faCameraRetro,
+  faFilm,
+} from '@fortawesome/free-solid-svg-icons';
 
 export const FONT_AWESOME_ICONS = {
   contact: faAddressCardRegular,
   file: faFileRegular,
   folder: faFolderRegular,
+  image: faCameraRetro,
+  video: faFilm,
 } satisfies Record<string, IconDefinition>;
 
 export type AppIconName = keyof typeof FONT_AWESOME_ICONS;

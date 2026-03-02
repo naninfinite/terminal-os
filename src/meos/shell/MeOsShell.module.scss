@@ -106,7 +106,6 @@
   gap: 6px;
   align-content: start;
   padding: 4px 2px 6px;
-  position: relative;
 }
 
 .desktopEntry:hover,
@@ -119,40 +118,15 @@
 }
 
 .desktopEntryIcon {
-  width: 54px;
-  height: 42px;
-  border: $border;
   display: grid;
   place-items: center;
-  position: relative;
-  box-sizing: border-box;
-  padding: 2px;
-  background: linear-gradient(
-    180deg,
-    rgb(var(--ui-scanline-rgb, 0 255 102) / 0.08) 0%,
-    rgb(var(--ui-scanline-rgb, 0 255 102) / 0.03) 100%
-  );
-  box-shadow: inset 0 0 0 1px rgb(var(--ui-scanline-rgb, 0 255 102) / 0.08);
-  transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+  min-height: 32px;
+  line-height: 1;
 }
 
 .desktopEntryIconGlyph {
-  --icon-size: 1.5rem;
+  --icon-size: 1.625rem;
   opacity: 0.94;
-}
-
-.desktopEntry:hover .desktopEntryIcon,
-.desktopEntry:focus-visible .desktopEntryIcon,
-.desktopEntryActive .desktopEntryIcon {
-  border-color: var(--ui-border);
-  background: linear-gradient(
-    180deg,
-    rgb(var(--ui-scanline-rgb, 0 255 102) / 0.13) 0%,
-    rgb(var(--ui-scanline-rgb, 0 255 102) / 0.05) 100%
-  );
-  box-shadow:
-    inset 0 0 0 1px rgb(var(--ui-scanline-rgb, 0 255 102) / 0.16),
-    0 0 8px rgb(var(--ui-scanline-rgb, 0 255 102) / 0.06);
 }
 
 .desktopEntryLabel {
@@ -166,21 +140,6 @@
 .desktopEntry:focus-visible .desktopEntryLabel {
   background: $phosphor-green;
   color: $bg-black;
-}
-
-.desktopEntryAliasHint {
-  position: absolute;
-  right: 4px;
-  top: 0;
-  font-size: 8px;
-  letter-spacing: 0.08em;
-  opacity: 0;
-  transition: opacity 120ms ease;
-}
-
-.desktopEntry:hover .desktopEntryAliasHint,
-.desktopEntry:focus-visible .desktopEntryAliasHint {
-  opacity: 0.75;
 }
 
 .desktopContextMenu {
