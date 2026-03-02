@@ -2264,13 +2264,18 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const pickObject = (
       clientX: number,
       clientY: number,
-      requirePhysicsEligible = false
+      options?: {
+        requirePhysicsEligible?: boolean;
+        includeLocked?: boolean;
+      }
     ): { id: string; hitPoint: THREE.Vector3 } | null => {
       if (!toNdc(clientX, clientY)) return null;
       raycaster.setFromCamera(pointerNdc, engine.camera);
+      const requirePhysicsEligible = options?.requirePhysicsEligible === true;
+      const includeLocked = options?.includeLocked === true;
       const meshes = [...engine.entries.values()]
         .filter((entry) => {
-          if (objectLockedRef.current.get(entry.id) === true) return false;
+          if (!includeLocked && objectLockedRef.current.get(entry.id) === true) return false;
           return !requirePhysicsEligible || shouldObjectSimulate(entry.id);
         })
         .map((entry) => entry.mesh);
@@ -2284,6 +2289,10 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         hitPoint: hit.point.clone(),
       };
     };
+
+    const hasSceneObjectAtPointer = (clientX: number, clientY: number): boolean => (
+      pickObject(clientX, clientY, { includeLocked: true }) != null
+    );
 
     const moveGrabTarget = (clientX: number, clientY: number) => {
       const activeGrab = engine.activeGrab;
@@ -2521,6 +2530,22 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         engine.touchPointers.add(event.pointerId);
         clearTouchContextMenuCandidate();
 
+        if (mode === 'panel') {
+          if (engine.touchPointers.size >= 2) {
+            panelTouchPress = null;
+            panelBackgroundTap = null;
+            suppressPanelBackgroundTapUntilAllTouchesReleased = true;
+          } else {
+            panelTouchPress = {
+              pointerId: event.pointerId,
+              startX: event.clientX,
+              startY: event.clientY,
+              moved: false,
+              startedOnBlank: !hasSceneObjectAtPointer(event.clientX, event.clientY),
+            };
+          }
+        }
+
         if (engine.touchPointers.size === 1) {
           const pointerId = event.pointerId;
           const startX = event.clientX;
@@ -2530,6 +2555,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
             if (!candidate || candidate.pointerId !== pointerId) return;
             touchContextMenuCandidateRef.current = null;
             releaseGrab(pointerId);
+            panelTouchPress = null;
+            panelBackgroundTap = null;
             openViewportMenuAtPointer(startX, startY);
           }, TOUCH_CONTEXT_MENU_OPEN_DELAY_MS);
           touchContextMenuCandidateRef.current = {
@@ -2563,7 +2590,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
       if (modeRef.current !== 'play') return;
       if (event.button !== 0 && event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
-      const picked = pickObject(event.clientX, event.clientY, true);
+      const picked = pickObject(event.clientX, event.clientY, { requirePhysicsEligible: true });
       if (!picked) return;
 
       renderer.domElement.setPointerCapture(event.pointerId);
@@ -2581,6 +2608,19 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     };
 
     const onPointerMove = (event: PointerEvent) => {
+      if (panelTouchPress && panelTouchPress.pointerId === event.pointerId) {
+        const distance = Math.hypot(
+          event.clientX - panelTouchPress.startX,
+          event.clientY - panelTouchPress.startY
+        );
+        if (distance > THIRD_PANEL_DOUBLE_TAP_TOLERANCE_PX) {
+          panelTouchPress = {
+            ...panelTouchPress,
+            moved: true,
+          };
+        }
+      }
+
       const touchContextMenuCandidate = touchContextMenuCandidateRef.current;
       if (touchContextMenuCandidate && touchContextMenuCandidate.pointerId === event.pointerId) {
         const distance = Math.hypot(
@@ -2636,11 +2676,70 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         activeGrab.touchCameraOverride = false;
         engine.orbit.enabled = false;
       }
+
+      if (event.pointerType !== 'touch') return;
+      if (event.type !== 'pointerup') {
+        if (panelTouchPress?.pointerId === event.pointerId) {
+          panelTouchPress = null;
+        }
+        panelBackgroundTap = null;
+        if (engine.touchPointers.size === 0) {
+          suppressPanelBackgroundTapUntilAllTouchesReleased = false;
+        }
+        return;
+      }
+      if (mode !== 'panel') return;
+
+      const currentPress = panelTouchPress;
+      if (currentPress?.pointerId === event.pointerId) {
+        panelTouchPress = null;
+      }
+
+      if (suppressPanelBackgroundTapUntilAllTouchesReleased) {
+        panelBackgroundTap = null;
+        if (engine.touchPointers.size === 0) {
+          suppressPanelBackgroundTapUntilAllTouchesReleased = false;
+        }
+        return;
+      }
+
+      if (!currentPress || currentPress.pointerId !== event.pointerId) {
+        panelBackgroundTap = null;
+        return;
+      }
+      if (currentPress.moved || !currentPress.startedOnBlank) {
+        panelBackgroundTap = null;
+        return;
+      }
+
+      const nextPanelTap = resolveThirdPanelBackgroundTap({
+        mode,
+        hasSceneHit: hasSceneObjectAtPointer(event.clientX, event.clientY),
+        previousTap: panelBackgroundTap,
+        tapAt: event.timeStamp,
+        x: event.clientX,
+        y: event.clientY,
+      });
+      panelBackgroundTap = nextPanelTap.nextTap;
+      if (nextPanelTap.shouldOpenFullscreen) {
+        openFullscreen();
+      }
     };
 
     const onContextMenu = (event: MouseEvent) => {
       event.preventDefault();
       event.stopPropagation();
+    };
+
+    const onDoubleClick = (event: MouseEvent) => {
+      if (!shouldOpenThirdPanelFromSceneDoubleClick({
+        mode,
+        hasSceneHit: hasSceneObjectAtPointer(event.clientX, event.clientY),
+      })) {
+        return;
+      }
+      panelBackgroundTap = null;
+      openFullscreen();
     };
 
     const resize = () => {
@@ -2666,6 +2765,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     renderer.domElement.addEventListener('pointerup', onPointerUpOrCancel);
     renderer.domElement.addEventListener('pointercancel', onPointerUpOrCancel);
     renderer.domElement.addEventListener('contextmenu', onContextMenu);
+    renderer.domElement.addEventListener('dblclick', onDoubleClick);
 
     const animate = () => {
       rafRef.current = window.requestAnimationFrame(animate);
@@ -2735,6 +2835,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       renderer.domElement.removeEventListener('pointerup', onPointerUpOrCancel);
       renderer.domElement.removeEventListener('pointercancel', onPointerUpOrCancel);
       renderer.domElement.removeEventListener('contextmenu', onContextMenu);
+      renderer.domElement.removeEventListener('dblclick', onDoubleClick);
 
       engine.entries.forEach((entry) => {
         engine.world.removeBody(entry.body);

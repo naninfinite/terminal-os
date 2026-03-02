@@ -41,15 +41,15 @@ describe('MeOsViewport', () => {
   });
 
   it('treats the stage itself as panel background', () => {
-    const stageTarget = { id: 'stage' } as EventTarget;
+    const stageTarget = { id: 'stage' } as unknown as EventTarget;
 
     expect(isPanelBackgroundTarget(stageTarget, stageTarget)).toBe(true);
   });
 
   it('treats only the marked desktop surface as panel background', () => {
-    const stageTarget = { id: 'stage' } as EventTarget;
-    const desktopSurfaceTarget = { dataset: { meosStageBackground: 'true' } } as EventTarget;
-    const entryTarget = { dataset: {} } as EventTarget;
+    const stageTarget = { id: 'stage' } as unknown as EventTarget;
+    const desktopSurfaceTarget = { dataset: { meosStageBackground: 'true' } } as unknown as EventTarget;
+    const entryTarget = { dataset: {} } as unknown as EventTarget;
 
     expect(isPanelBackgroundTarget(desktopSurfaceTarget, stageTarget)).toBe(true);
     expect(isPanelBackgroundTarget(entryTarget, stageTarget)).toBe(false);
