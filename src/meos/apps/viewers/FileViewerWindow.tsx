@@ -3,12 +3,14 @@
  * Renders directly from VFS node metadata instead of name-based placeholders.
  */
 import React, { useRef, useState } from 'react';
+import { useMeOs } from '../../shell/MeOsProvider';
 import type { MeOsWindow } from '../../shell/types';
 import { useMeOsVfs } from '../../vfs/MeOsVfsProvider';
 import styles from './FileViewerWindow.module.scss';
 import { useTheme } from '../../../theme/ThemeProvider';
 import naninfinitePortrait from '../../../assets/images/NaNinfinite.jpg';
 import { resolveImagePreviewSrc, resolveVideoPosterSrc } from './mediaPreview';
+import { resolvePortraitImageViewerSize } from './imageViewerSizing';
 
 type FileViewerWindowProps = {
   win: MeOsWindow;
@@ -147,9 +149,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 };
 
 const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
+  const { resizeWindow } = useMeOs();
   const { resolvedTheme } = useTheme();
   const { snapshot } = useMeOsVfs();
   const node = win.nodeId ? snapshot.nodes[win.nodeId] : null;
+  const portraitAdjustedRef = useRef(false);
+
+  React.useEffect(() => {
+    portraitAdjustedRef.current = false;
+  }, [node?.id]);
 
   if (!node || node.type !== 'file') {
     return (
@@ -173,7 +181,19 @@ const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
           <span className={styles.viewerName}>{node.name}</span>
         </header>
         <div className={styles.mediaWrap}>
-          <img className={styles.image} src={source} alt={node.name} />
+          <img
+            className={styles.image}
+            src={source}
+            alt={node.name}
+            onLoad={(event) => {
+              if (portraitAdjustedRef.current) return;
+              const { naturalWidth, naturalHeight } = event.currentTarget;
+              const nextSize = resolvePortraitImageViewerSize(naturalWidth, naturalHeight);
+              if (!nextSize) return;
+              portraitAdjustedRef.current = true;
+              resizeWindow(win.id, nextSize);
+            }}
+          />
         </div>
       </div>
     );
