@@ -42,10 +42,10 @@
   color: $phosphor-green;
   display: grid;
   justify-items: center;
-  gap: 8px;
+  gap: 6px;
   align-content: start;
-  padding: 6px 4px 8px;
-  min-height: 106px;
+  padding: 6px 4px;
+  min-height: 98px;
 }
 
 .entry:hover,
@@ -61,7 +61,7 @@
 .entryIcon {
   display: grid;
   place-items: center;
-  min-height: 44px;
+  min-height: 40px;
   line-height: 1;
 }
 
@@ -73,8 +73,8 @@
 .entryLabel {
   font-size: $font-xs;
   text-align: center;
-  line-height: 1.25;
-  padding: 1px 5px;
+  line-height: 1.15;
+  padding: 0 4px;
   max-width: 100%;
   word-break: break-word;
 }
@@ -153,12 +153,12 @@
   }
 
   .entry {
-    min-height: 90px;
-    gap: 6px;
+    min-height: 84px;
+    gap: 5px;
   }
 
   .entryIcon {
-    min-height: 34px;
+    min-height: 32px;
   }
 
   .entryIconGlyph {
@@ -168,12 +168,12 @@
 
 @media (max-width: $bp-narrow) {
   .entry {
-    min-height: 84px;
-    gap: 5px;
+    min-height: 80px;
+    gap: 4px;
   }
 
   .entryIcon {
-    min-height: 30px;
+    min-height: 28px;
   }
 
   .entryIconGlyph {
