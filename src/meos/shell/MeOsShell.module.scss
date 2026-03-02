@@ -232,46 +232,9 @@
   padding: 0;
 }
 
-.windowGlyph {
-  display: block;
-  position: relative;
-  width: 10px;
-  height: 10px;
-}
-
-.windowGlyphClose::before,
-.windowGlyphClose::after {
-  content: '';
-  position: absolute;
-  left: 4px;
-  top: 0;
-  width: 1px;
-  height: 10px;
-  background: currentColor;
-}
-
-.windowGlyphClose::before {
-  transform: rotate(45deg);
-}
-
-.windowGlyphClose::after {
-  transform: rotate(-45deg);
-}
-
-.windowGlyphMinimize::before {
-  content: '';
-  position: absolute;
-  left: 1px;
-  right: 1px;
-  bottom: 2px;
-  border-top: 1px solid currentColor;
-}
-
-.windowGlyphZoom::before {
-  content: '';
-  position: absolute;
-  inset: 1px;
-  border: 1px solid currentColor;
+.windowBtnIcon {
+  --icon-size: 0.7rem;
+  opacity: 0.95;
 }
 
 .windowBody {

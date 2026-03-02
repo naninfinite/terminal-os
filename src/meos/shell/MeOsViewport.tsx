@@ -60,7 +60,7 @@ const clamp = (value: number, min: number, max: number): number => Math.min(Math
 
 const getEntryIcon = (entry: MeOsDesktopEntry): AppIconName => {
   if (entry.id === 'home') return 'home';
-  if (entry.id === 'media') return 'image';
+  if (entry.id === 'media') return 'media';
   if (entry.iconVariant === 'folder') return 'folder';
   if (entry.iconVariant === 'contact') return 'contact';
   return 'file';
@@ -272,7 +272,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
             onClick={() => closeWindow(win.id)}
             aria-label={`Close ${win.title}`}
           >
-            <span className={`${styles.windowGlyph} ${styles.windowGlyphClose}`.trim()} aria-hidden="true" />
+            <Icon className={styles.windowBtnIcon} fixedWidth name="close" size="sm" />
           </button>
           <button
             type="button"
@@ -282,7 +282,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
             onClick={() => minimizeWindow(win.id)}
             aria-label={`Minimize ${win.title}`}
           >
-            <span className={`${styles.windowGlyph} ${styles.windowGlyphMinimize}`.trim()} aria-hidden="true" />
+            <Icon className={styles.windowBtnIcon} fixedWidth name="minimize" size="sm" />
           </button>
           <button
             type="button"
@@ -292,7 +292,7 @@ const MeOsWindowCard: React.FC<MeOsWindowCardProps> = ({ win, mode }) => {
             onClick={() => toggleMaximizeWindow(win.id)}
             aria-label={`${win.maximized ? 'Restore' : 'Zoom'} ${win.title}`}
           >
-            <span className={`${styles.windowGlyph} ${styles.windowGlyphZoom}`.trim()} aria-hidden="true" />
+            <Icon className={styles.windowBtnIcon} fixedWidth name="expand" size="sm" />
           </button>
         </div>
         <span className={styles.windowTitle}>{win.title}</span>

@@ -48,7 +48,7 @@ const getGridColumnCount = (element: HTMLElement | null): number => {
 
 const getEntryIcon = (node: VfsNode): AppIconName => {
   if (node.id === HOME_ID) return 'home';
-  if (node.id === MEDIA_ID) return 'image';
+  if (node.id === MEDIA_ID) return 'media';
   if (node.type === 'folder') return 'folder';
   if (node.kind === 'contact') return 'contact';
   if (node.kind === 'image') return 'image';
