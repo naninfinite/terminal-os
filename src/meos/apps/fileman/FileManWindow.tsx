@@ -73,6 +73,10 @@ const getEntryIcon = (node: VfsNode): AppIconName => {
   return 'file';
 };
 
+const isMediaFile = (node: VfsNode): boolean => (
+  node.type === 'file' && (node.kind === 'image' || node.kind === 'video')
+);
+
 const FolderEntryVisual: React.FC<{ node: VfsNode; theme: ResolvedTheme }> = ({ node, theme }) => {
   const iconName = getEntryIcon(node);
   const [videoReady, setVideoReady] = React.useState(false);
@@ -165,6 +169,7 @@ const FolderEntryButton: React.FC<FolderEntryButtonProps> = ({
       draggable
       className={[
         styles.entry,
+        isMediaFile(node) ? styles.entryMediaFile : '',
         active ? styles.entryActive : '',
         dragging ? styles.entryDragging : '',
         dropTarget ? styles.entryDropTarget : '',

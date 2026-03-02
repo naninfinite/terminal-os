@@ -61,6 +61,13 @@
   background: rgb(var(--ui-scanline-rgb, 0 255 102) / 0.05);
 }
 
+.entryMediaFile:hover,
+.entryMediaFile:focus-visible,
+.entryMediaFile.entryActive {
+  border-color: transparent;
+  background: transparent;
+}
+
 .entryActive {
   border-color: var(--ui-border);
   background: rgb(var(--ui-scanline-rgb, 0 255 102) / 0.12);
@@ -100,6 +107,19 @@
   overflow: hidden;
   border: 1px solid var(--ui-border-soft);
   background: rgb(var(--ui-scanline-rgb, 0 255 102) / 0.05);
+  transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+}
+
+.entryMediaFile:hover .entryThumbFrame,
+.entryMediaFile:focus-visible .entryThumbFrame {
+  border-color: var(--ui-border-soft);
+  background: rgb(var(--ui-scanline-rgb, 0 255 102) / 0.08);
+}
+
+.entryMediaFile.entryActive .entryThumbFrame {
+  border-color: var(--ui-border);
+  background: rgb(var(--ui-scanline-rgb, 0 255 102) / 0.12);
+  box-shadow: 0 0 0 1px rgb(var(--ui-scanline-rgb, 0 255 102) / 0.18);
 }
 
 .entryThumbImage,
