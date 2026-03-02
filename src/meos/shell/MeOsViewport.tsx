@@ -59,6 +59,7 @@ const DESKTOP_COMPACT_HEIGHT = 340;
 const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
 
 const getEntryIcon = (entry: MeOsDesktopEntry): AppIconName => {
+  if (entry.id === 'home') return 'home';
   if (entry.iconVariant === 'folder') return 'folder';
   if (entry.iconVariant === 'contact') return 'contact';
   return 'file';

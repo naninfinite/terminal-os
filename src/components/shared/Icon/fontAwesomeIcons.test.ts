@@ -6,12 +6,13 @@ describe('fontAwesomeIcons', () => {
     expect(getFontAwesomeIcon('contact')).toBe(FONT_AWESOME_ICONS.contact);
     expect(getFontAwesomeIcon('file')).toBe(FONT_AWESOME_ICONS.file);
     expect(getFontAwesomeIcon('folder')).toBe(FONT_AWESOME_ICONS.folder);
+    expect(getFontAwesomeIcon('home')).toBe(FONT_AWESOME_ICONS.home);
     expect(getFontAwesomeIcon('image')).toBe(FONT_AWESOME_ICONS.image);
     expect(getFontAwesomeIcon('video')).toBe(FONT_AWESOME_ICONS.video);
   });
 
   it('keeps the current starter icon set stable', () => {
-    expect(Object.keys(FONT_AWESOME_ICONS)).toEqual(['contact', 'file', 'folder', 'image', 'video']);
+    expect(Object.keys(FONT_AWESOME_ICONS)).toEqual(['contact', 'file', 'folder', 'home', 'image', 'video']);
   });
 });
 
