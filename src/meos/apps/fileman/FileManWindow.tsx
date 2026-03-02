@@ -5,6 +5,8 @@ import type { MeOsWindow } from '../../shell/types';
 import { useMeOsVfs } from '../../vfs/MeOsVfsProvider';
 import type { VfsNode } from '../../vfs/types';
 import styles from './FileManWindow.module.scss';
+import { Icon } from '../../../components/shared/Icon';
+import type { AppIconName } from '../../../components/shared/Icon';
 
 type FileManWindowProps = {
   win: MeOsWindow;
@@ -43,11 +45,14 @@ const getGridColumnCount = (element: HTMLElement | null): number => {
   return count > 0 ? count : 1;
 };
 
-const getFolderGlyph = (node: VfsNode): { primary: string; secondary: string } => {
-  if (node.type === 'folder') return { primary: '[]', secondary: 'DIR' };
-  if (node.kind === 'contact') return { primary: 'ID', secondary: 'CARD' };
-  return { primary: '--', secondary: 'DOC' };
+const getFolderGlyph = (
+  node: VfsNode
+): {icon?: AppIconName; primary?: string; secondary: string} => {
+  if (node.type === 'folder') return { primary: '[]', secondary: 'DIR'};
+  if (node.kind === 'contact') return { primary: 'ID', secondary: 'CARD'};
+  return {icon: 'file', secondary: 'DOC'};
 };
+
 
 const FolderEntryButton: React.FC<FolderEntryButtonProps> = ({
   node,
@@ -133,10 +138,14 @@ const FolderEntryButton: React.FC<FolderEntryButtonProps> = ({
       }}
     >
       <span className={styles.entryIcon} aria-hidden="true">
-        <span className={styles.entryGlyph}>{glyph.primary}</span>
-        <span className={styles.entryType}>{glyph.secondary}</span>
+        {glyph.icon ? (
+          <Icon name={glyph.icon} size="lg" />
+        ) : (
+          <span className={styles.entryGlyph}>{glyph.primary}</span>
+        )}
+      
+      <span className={styles.entryType}>{glyph.secondary}</span>
       </span>
-      <span className={styles.entryLabel}>{node.name}</span>
     </button>
   );
 };

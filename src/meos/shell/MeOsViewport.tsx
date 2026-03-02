@@ -15,6 +15,8 @@ import { useMeOs } from './MeOsProvider';
 import type { MeOsDesktopEntry, MeOsDesktopEntryId, MeOsDisplayMode, MeOsWindow } from './types';
 import styles from './MeOsShell.module.scss';
 import { useMeOsVfs } from '../vfs/MeOsVfsProvider';
+import { Icon } from '../../components/shared/Icon';
+import type { AppIconName } from '../../components/shared/Icon';
 
 type MeOsViewportProps = {
   mode: MeOsDisplayMode;
@@ -56,10 +58,12 @@ const DESKTOP_COMPACT_HEIGHT = 340;
 
 const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
 
-const getEntryGlyph = (entry: MeOsDesktopEntry): { primary: string; secondary: string } => {
+const getEntryGlyph = (
+  entry: MeOsDesktopEntry
+): { icon?: AppIconName; primary?: string; secondary: string } => {
   if (entry.iconVariant === 'folder') return { primary: '[]', secondary: 'DIR' };
   if (entry.iconVariant === 'contact') return { primary: 'ID', secondary: 'CARD' };
-  return { primary: '--', secondary: entry.alias ? 'AL' : 'DOC' };
+  return { icon: 'file', secondary: entry.alias ? 'AL' : 'DOC' };
 };
 
 const DesktopEntryButton: React.FC<DesktopEntryButtonProps> = ({
@@ -146,11 +150,13 @@ const DesktopEntryButton: React.FC<DesktopEntryButtonProps> = ({
       }}
     >
       <span className={styles.desktopEntryIcon} aria-hidden="true">
-        <span className={styles.desktopEntryGlyph}>{glyph.primary}</span>
+        {glyph.icon ? (
+          <Icon name={glyph.icon} size="lg" />
+        ) : (
+          <span className={styles.desktopEntryGlyph}>{glyph.primary}</span>
+        )}
         <span className={styles.desktopEntryType}>{glyph.secondary}</span>
       </span>
-      <span className={styles.desktopEntryLabel}>{entry.label}</span>
-      {entry.alias ? <span className={styles.desktopEntryAliasHint}>ALIAS</span> : null}
     </button>
   );
 };
