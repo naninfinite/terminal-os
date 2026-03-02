@@ -436,18 +436,15 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode, onPanelBackgro
     <section className={`${styles.viewport} ${isPanel ? styles.panelMode : styles.fullscreenMode}`.trim()}>
       {isFullscreen ? (
         <header className={styles.chromeHeader}>
-          <div className={styles.chromeControls}>
-            <button
-              type="button"
-              className={styles.chromeBtn}
-              onClick={closeFullscreen}
-              aria-label="Close ME.EXE fullscreen"
-            >
-              CLOSE
-            </button>
-          </div>
           <span className={styles.chromeTitle}>ME.EXE</span>
-          <span className={styles.chromeSpacer} aria-hidden="true" />
+          <button
+            type="button"
+            className={styles.chromeBtn}
+            onClick={closeFullscreen}
+            aria-label="Close ME.EXE fullscreen"
+          >
+            CLOSE
+          </button>
         </header>
       ) : null}
 

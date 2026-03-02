@@ -17,6 +17,7 @@ describe('MeOsViewport', () => {
 
     expect(markup).toContain('aria-label="Close ME.EXE fullscreen"');
     expect(markup).toContain('>CLOSE<');
+    expect(markup).toContain('ME.EXE</span><button');
     expect(markup).toContain('Home');
     expect(markup).toContain('Media');
     expect(markup).toContain('About');
