@@ -3,6 +3,39 @@ import { FONT_AWESOME_ICONS, getFontAwesomeIcon } from './fontAwesomeIcons';
 
 describe('fontAwesomeIcons', () => {
   it('resolves registry entries by app icon name', () => {
+    expect(getFontAwesomeIcon('file')).toBe(FONT_AWESOME_ICONS.file);
+  });
+
+
+  it('keeps the current starter icon set stable', () => {
+    expect(Object.keys(FONT_AWESOME_ICONS)).toEqual(['file']);
+  });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*import { describe, expect, it } from 'vitest';
+import { FONT_AWESOME_ICONS, getFontAwesomeIcon } from './fontAwesomeIcons';
+
+describe('fontAwesomeIcons', () => {
+  it('resolves registry entries by app icon name', () => {
     expect(getFontAwesomeIcon('folder')).toBe(FONT_AWESOME_ICONS.folder);
     expect(getFontAwesomeIcon('close')).toBe(FONT_AWESOME_ICONS.close);
     expect(getFontAwesomeIcon('settings')).toBe(FONT_AWESOME_ICONS.settings);
@@ -35,3 +68,4 @@ describe('fontAwesomeIcons', () => {
     ]);
   });
 });
+*/

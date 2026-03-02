@@ -1,4 +1,40 @@
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+import { faFile as faFileRegular } from '@fortawesome/free-regular-svg-icons';
+
+export const FONT_AWESOME_ICONS = {
+  file: faFileRegular,
+} satisfies Record<string, IconDefinition>;
+
+export type AppIconName = keyof typeof FONT_AWESOME_ICONS;
+
+export const getFontAwesomeIcon = (name: AppIconName): IconDefinition =>
+  FONT_AWESOME_ICONS[name];
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+
 import {
   faAddressCard,
   faArrowRotateLeft,
@@ -52,3 +88,4 @@ export const FONT_AWESOME_ICONS = {
 export type AppIconName = keyof typeof FONT_AWESOME_ICONS;
 
 export const getFontAwesomeIcon = (name: AppIconName): IconDefinition => FONT_AWESOME_ICONS[name];
+*/
