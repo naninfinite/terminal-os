@@ -467,7 +467,7 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode, onPanelBackgro
               onClick={closeFullscreen}
               aria-label="Close ME.EXE fullscreen"
             >
-              <span className={`${styles.windowGlyph} ${styles.windowGlyphClose}`.trim()} aria-hidden="true" />
+              CLOSE
             </button>
           </div>
           <span className={styles.chromeTitle}>ME.EXE</span>

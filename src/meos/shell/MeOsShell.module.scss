@@ -44,7 +44,7 @@
 }
 
 .chromeSpacer {
-  width: 26px;
+  width: 52px;
 }
 
 .chromeTitle {
@@ -57,12 +57,15 @@
   border: $border;
   background: $bg-black;
   color: $phosphor-green;
-  width: 26px;
+  min-width: 52px;
   height: 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  padding: 0 8px;
+  flex: 0 0 auto;
+  font-size: $font-xs;
+  letter-spacing: 0.08em;
 }
 
 .stageViewport {

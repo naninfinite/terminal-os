@@ -31,6 +31,17 @@ describe('fontAwesomeIcons', () => {
       'video',
     ]);
   });
+
+  it('pins the ME.EXE chrome and media glyph choices', () => {
+    expect(FONT_AWESOME_ICONS.close.iconName).toBe('xmark');
+    expect(FONT_AWESOME_ICONS.close.prefix).toBe('fas');
+    expect(FONT_AWESOME_ICONS.expand.iconName).toBe('square-full');
+    expect(FONT_AWESOME_ICONS.expand.prefix).toBe('far');
+    expect(FONT_AWESOME_ICONS.minimize.iconName).toBe('window-minimize');
+    expect(FONT_AWESOME_ICONS.minimize.prefix).toBe('far');
+    expect(FONT_AWESOME_ICONS.media.iconName).toBe('tv');
+    expect(FONT_AWESOME_ICONS.media.prefix).toBe('fas');
+  });
 });
 
 
