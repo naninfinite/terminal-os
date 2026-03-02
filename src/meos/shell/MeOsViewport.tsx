@@ -60,10 +60,10 @@ const clamp = (value: number, min: number, max: number): number => Math.min(Math
 
 const getEntryGlyph = (
   entry: MeOsDesktopEntry
-): { icon?: AppIconName; primary?: string; secondary: string } => {
-  if (entry.iconVariant === 'folder') return { primary: '[]', secondary: 'DIR' };
-  if (entry.iconVariant === 'contact') return { primary: 'ID', secondary: 'CARD' };
-  return { icon: 'file', secondary: entry.alias ? 'AL' : 'DOC' };
+): { icon?: AppIconName; primary?: string } => {
+  if (entry.iconVariant === 'folder') return { primary: '[]' };
+  if (entry.iconVariant === 'contact') return { primary: 'ID' };
+  return { icon: 'file' };
 };
 
 const DesktopEntryButton: React.FC<DesktopEntryButtonProps> = ({
@@ -155,8 +155,9 @@ const DesktopEntryButton: React.FC<DesktopEntryButtonProps> = ({
         ) : (
           <span className={styles.desktopEntryGlyph}>{glyph.primary}</span>
         )}
-        <span className={styles.desktopEntryType}>{glyph.secondary}</span>
       </span>
+      <span className={styles.desktopEntryLabel}>{entry.label}</span>
+      {entry.alias ? <span className={styles.desktopEntryAliasHint}>ALIAS</span> : null}
     </button>
   );
 };

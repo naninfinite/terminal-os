@@ -47,10 +47,10 @@ const getGridColumnCount = (element: HTMLElement | null): number => {
 
 const getFolderGlyph = (
   node: VfsNode
-): {icon?: AppIconName; primary?: string; secondary: string} => {
-  if (node.type === 'folder') return { primary: '[]', secondary: 'DIR'};
-  if (node.kind === 'contact') return { primary: 'ID', secondary: 'CARD'};
-  return {icon: 'file', secondary: 'DOC'};
+): { icon?: AppIconName; primary?: string } => {
+  if (node.type === 'folder') return { primary: '[]' };
+  if (node.kind === 'contact') return { primary: 'ID' };
+  return { icon: 'file' };
 };
 
 
@@ -143,9 +143,8 @@ const FolderEntryButton: React.FC<FolderEntryButtonProps> = ({
         ) : (
           <span className={styles.entryGlyph}>{glyph.primary}</span>
         )}
-      
-      <span className={styles.entryType}>{glyph.secondary}</span>
       </span>
+      <span className={styles.entryLabel}>{node.name}</span>
     </button>
   );
 };
