@@ -148,7 +148,7 @@ const DesktopEntryButton: React.FC<DesktopEntryButtonProps> = ({
       }}
     >
       <span className={styles.desktopEntryIcon} aria-hidden="true">
-        <Icon name={iconName} size="lg" />
+        <Icon className={styles.desktopEntryIconGlyph} name={iconName} size="lg" />
       </span>
       <span className={styles.desktopEntryLabel}>{entry.label}</span>
       {entry.alias ? <span className={styles.desktopEntryAliasHint}>ALIAS</span> : null}

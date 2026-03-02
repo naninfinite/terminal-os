@@ -135,7 +135,7 @@ const FolderEntryButton: React.FC<FolderEntryButtonProps> = ({
       }}
     >
       <span className={styles.entryIcon} aria-hidden="true">
-        <Icon name={iconName} size="lg" />
+        <Icon className={styles.entryIconGlyph} name={iconName} size="lg" />
       </span>
       <span className={styles.entryLabel}>{node.name}</span>
     </button>
