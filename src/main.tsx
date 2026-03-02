@@ -1,5 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import './boot/fontAwesome';
 import App from './App';
 import './styles/global.scss';
 import { ThemeProvider } from './theme/ThemeProvider';

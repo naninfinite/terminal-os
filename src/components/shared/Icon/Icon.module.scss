@@ -1,0 +1,21 @@
+.root {
+  --icon-size: 1rem;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  color: currentColor;
+  flex: 0 0 auto;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.sizeSm {
+  --icon-size: 0.875rem;
+}
+
+.sizeMd {
+  --icon-size: 1rem;
+}
+
+.sizeLg {
+  --icon-size: 1.25rem;
+}
