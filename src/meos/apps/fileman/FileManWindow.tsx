@@ -45,14 +45,11 @@ const getGridColumnCount = (element: HTMLElement | null): number => {
   return count > 0 ? count : 1;
 };
 
-const getFolderGlyph = (
-  node: VfsNode
-): { icon?: AppIconName; primary?: string } => {
-  if (node.type === 'folder') return { primary: '[]' };
-  if (node.kind === 'contact') return { primary: 'ID' };
-  return { icon: 'file' };
+const getEntryIcon = (node: VfsNode): AppIconName => {
+  if (node.type === 'folder') return 'folder';
+  if (node.kind === 'contact') return 'contact';
+  return 'file';
 };
-
 
 const FolderEntryButton: React.FC<FolderEntryButtonProps> = ({
   node,
@@ -73,7 +70,7 @@ const FolderEntryButton: React.FC<FolderEntryButtonProps> = ({
       onContextOpen({ x, y, node });
     },
   });
-  const glyph = getFolderGlyph(node);
+  const iconName = getEntryIcon(node);
 
   return (
     <button
@@ -138,11 +135,7 @@ const FolderEntryButton: React.FC<FolderEntryButtonProps> = ({
       }}
     >
       <span className={styles.entryIcon} aria-hidden="true">
-        {glyph.icon ? (
-          <Icon name={glyph.icon} size="lg" />
-        ) : (
-          <span className={styles.entryGlyph}>{glyph.primary}</span>
-        )}
+        <Icon name={iconName} size="lg" />
       </span>
       <span className={styles.entryLabel}>{node.name}</span>
     </button>

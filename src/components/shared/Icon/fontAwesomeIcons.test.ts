@@ -3,12 +3,13 @@ import { FONT_AWESOME_ICONS, getFontAwesomeIcon } from './fontAwesomeIcons';
 
 describe('fontAwesomeIcons', () => {
   it('resolves registry entries by app icon name', () => {
+    expect(getFontAwesomeIcon('contact')).toBe(FONT_AWESOME_ICONS.contact);
     expect(getFontAwesomeIcon('file')).toBe(FONT_AWESOME_ICONS.file);
+    expect(getFontAwesomeIcon('folder')).toBe(FONT_AWESOME_ICONS.folder);
   });
 
-
   it('keeps the current starter icon set stable', () => {
-    expect(Object.keys(FONT_AWESOME_ICONS)).toEqual(['file']);
+    expect(Object.keys(FONT_AWESOME_ICONS)).toEqual(['contact', 'file', 'folder']);
   });
 });
 

@@ -1,8 +1,14 @@
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
-import { faFile as faFileRegular } from '@fortawesome/free-regular-svg-icons';
+import {
+  faAddressCard as faAddressCardRegular,
+  faFile as faFileRegular,
+  faFolder as faFolderRegular,
+} from '@fortawesome/free-regular-svg-icons';
 
 export const FONT_AWESOME_ICONS = {
+  contact: faAddressCardRegular,
   file: faFileRegular,
+  folder: faFolderRegular,
 } satisfies Record<string, IconDefinition>;
 
 export type AppIconName = keyof typeof FONT_AWESOME_ICONS;

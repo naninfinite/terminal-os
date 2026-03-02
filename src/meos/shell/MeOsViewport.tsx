@@ -58,12 +58,10 @@ const DESKTOP_COMPACT_HEIGHT = 340;
 
 const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
 
-const getEntryGlyph = (
-  entry: MeOsDesktopEntry
-): { icon?: AppIconName; primary?: string } => {
-  if (entry.iconVariant === 'folder') return { primary: '[]' };
-  if (entry.iconVariant === 'contact') return { primary: 'ID' };
-  return { icon: 'file' };
+const getEntryIcon = (entry: MeOsDesktopEntry): AppIconName => {
+  if (entry.iconVariant === 'folder') return 'folder';
+  if (entry.iconVariant === 'contact') return 'contact';
+  return 'file';
 };
 
 const DesktopEntryButton: React.FC<DesktopEntryButtonProps> = ({
@@ -85,7 +83,7 @@ const DesktopEntryButton: React.FC<DesktopEntryButtonProps> = ({
       onContextOpen({ x, y, entry });
     },
   });
-  const glyph = getEntryGlyph(entry);
+  const iconName = getEntryIcon(entry);
 
   return (
     <button
@@ -150,11 +148,7 @@ const DesktopEntryButton: React.FC<DesktopEntryButtonProps> = ({
       }}
     >
       <span className={styles.desktopEntryIcon} aria-hidden="true">
-        {glyph.icon ? (
-          <Icon name={glyph.icon} size="lg" />
-        ) : (
-          <span className={styles.desktopEntryGlyph}>{glyph.primary}</span>
-        )}
+        <Icon name={iconName} size="lg" />
       </span>
       <span className={styles.desktopEntryLabel}>{entry.label}</span>
       {entry.alias ? <span className={styles.desktopEntryAliasHint}>ALIAS</span> : null}
