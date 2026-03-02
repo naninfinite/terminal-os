@@ -1,4 +1,4 @@
-import reelCover from '../../assets/images/IMG_3439.jpg';
+import reelCover from '../../assets/images/juno_thumbnail.jpg';
 
 export const VIDEO_THUMBNAIL_REGISTRY = {
   reel_cover: reelCover,
