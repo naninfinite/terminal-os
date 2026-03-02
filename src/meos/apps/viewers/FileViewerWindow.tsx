@@ -9,6 +9,7 @@ import styles from './FileViewerWindow.module.scss';
 import { useTheme } from '../../../theme/ThemeProvider';
 import type { ResolvedTheme } from '../../../theme/types';
 import { RUNTIME_THEME_PALETTE } from '../../../theme/runtimePalette';
+import naninfinitePortrait from '../../../assets/images/NaNinfinite.jpg';
 
 type FileViewerWindowProps = {
   win: MeOsWindow;
@@ -282,8 +283,12 @@ const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
       <div className={styles.viewer}>
         <article className={styles.contactCard} data-allow-select="true">
           <div className={styles.contactHero}>
-            <div className={styles.contactAvatarPlaceholder} aria-hidden="true">
-              <span>AV</span>
+            <div className={styles.contactAvatarFrame}>
+              <img
+                className={styles.contactAvatarImage}
+                src={naninfinitePortrait}
+                alt="Naninfinite portrait"
+              />
             </div>
             <div className={styles.contactIntro}>
               <p className={styles.projectLabel}>CONTACT CARD</p>

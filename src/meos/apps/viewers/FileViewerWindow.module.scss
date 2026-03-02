@@ -251,7 +251,7 @@
 }
 
 .aboutHeroPlaceholder,
-.contactAvatarPlaceholder {
+.contactAvatarFrame {
   min-height: 120px;
   border: $border;
   display: grid;
@@ -262,8 +262,16 @@
     linear-gradient(135deg, transparent 0%, transparent 46%, rgb(var(--ui-scanline-rgb, 0 255 102) / 0.16) 46%, rgb(var(--ui-scanline-rgb, 0 255 102) / 0.16) 54%, transparent 54%, transparent 100%);
 }
 
-.contactAvatarPlaceholder {
+.contactAvatarFrame {
   min-height: 96px;
+  overflow: hidden;
+}
+
+.contactAvatarImage {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
 }
 
 .aboutHeroCopy,
