@@ -42,10 +42,10 @@
   color: $phosphor-green;
   display: grid;
   justify-items: center;
-  gap: 6px;
+  gap: 8px;
   align-content: start;
   padding: 6px 4px 8px;
-  min-height: 96px;
+  min-height: 106px;
 }
 
 .entry:hover,
@@ -61,13 +61,13 @@
 .entryIcon {
   display: grid;
   place-items: center;
-  min-height: 34px;
+  min-height: 44px;
   line-height: 1;
 }
 
 .entryIconGlyph {
-  --icon-size: 1.75rem;
-  opacity: 0.94;
+  --icon-size: 2.125rem;
+  opacity: 0.96;
 }
 
 .entryLabel {
@@ -153,12 +153,30 @@
   }
 
   .entry {
-    min-height: 96px;
+    min-height: 90px;
     gap: 6px;
   }
 
   .entryIcon {
-    width: 50px;
-    height: 40px;
+    min-height: 34px;
+  }
+
+  .entryIconGlyph {
+    --icon-size: 1.65rem;
+  }
+}
+
+@media (max-width: $bp-narrow) {
+  .entry {
+    min-height: 84px;
+    gap: 5px;
+  }
+
+  .entryIcon {
+    min-height: 30px;
+  }
+
+  .entryIconGlyph {
+    --icon-size: 1.5rem;
   }
 }

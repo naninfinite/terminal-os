@@ -103,7 +103,7 @@
   color: $phosphor-green;
   display: grid;
   justify-items: center;
-  gap: 6px;
+  gap: 7px;
   align-content: start;
   padding: 4px 2px 6px;
 }
@@ -120,13 +120,13 @@
 .desktopEntryIcon {
   display: grid;
   place-items: center;
-  min-height: 32px;
+  min-height: 40px;
   line-height: 1;
 }
 
 .desktopEntryIconGlyph {
-  --icon-size: 1.625rem;
-  opacity: 0.94;
+  --icon-size: 1.95rem;
+  opacity: 0.96;
 }
 
 .desktopEntryLabel {
@@ -386,6 +386,14 @@
     width: min(182px, calc(100% - 24px));
   }
 
+  .desktopEntryIcon {
+    min-height: 36px;
+  }
+
+  .desktopEntryIconGlyph {
+    --icon-size: 1.75rem;
+  }
+
   .windowHeader {
     padding: 3px 5px;
     gap: 6px;
@@ -401,8 +409,11 @@
   }
 
   .desktopEntryIcon {
-    width: 48px;
-    height: 38px;
+    min-height: 32px;
+  }
+
+  .desktopEntryIconGlyph {
+    --icon-size: 1.5rem;
   }
 
   .windowBody {
@@ -415,6 +426,18 @@
 }
 
 @media (max-width: $bp-narrow) {
+  .desktopEntry {
+    gap: 5px;
+  }
+
+  .desktopEntryIcon {
+    min-height: 28px;
+  }
+
+  .desktopEntryIconGlyph {
+    --icon-size: 1.35rem;
+  }
+
   .fullscreenLayer {
     border-left: 0;
     border-right: 0;
