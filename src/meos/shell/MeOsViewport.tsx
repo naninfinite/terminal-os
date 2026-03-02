@@ -54,6 +54,23 @@ const PANEL_DOUBLE_TAP_MS = 300;
 
 const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
 
+const hasPanelBackgroundMarker = (
+  target: EventTarget | null,
+): target is EventTarget & { dataset: { meosStageBackground?: string } } => (
+  typeof target === 'object'
+  && target !== null
+  && 'dataset' in target
+);
+
+export const isPanelBackgroundTarget = (
+  eventTarget: EventTarget | null,
+  currentTarget: EventTarget | null,
+): boolean => {
+  if (eventTarget === currentTarget) return true;
+  return hasPanelBackgroundMarker(eventTarget)
+    && eventTarget.dataset.meosStageBackground === 'true';
+};
+
 const getEntryIcon = (entry: MeOsDesktopEntry): AppIconName => {
   if (entry.id === 'home') return 'home';
   if (entry.id === 'media') return 'media';
@@ -412,14 +429,14 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode, onPanelBackgro
 
   const onPanelBackgroundDoubleClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!isPanel || !onPanelBackgroundEnterFullscreen) return;
-    if (event.target !== event.currentTarget) return;
+    if (!isPanelBackgroundTarget(event.target, event.currentTarget)) return;
     onPanelBackgroundEnterFullscreen();
   };
 
   const onPanelBackgroundPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!isPanel || !onPanelBackgroundEnterFullscreen) return;
     if (event.pointerType !== 'touch') return;
-    if (event.target !== event.currentTarget) {
+    if (!isPanelBackgroundTarget(event.target, event.currentTarget)) {
       panelTapAtRef.current = null;
       return;
     }
@@ -455,7 +472,7 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode, onPanelBackgro
           onDoubleClick={onPanelBackgroundDoubleClick}
           onPointerUp={onPanelBackgroundPointerUp}
           onClick={(event) => {
-            if (event.target !== event.currentTarget) return;
+            if (!isPanelBackgroundTarget(event.target, event.currentTarget)) return;
             setSelectedDesktopEntryId(null);
             setDesktopMenu(null);
           }}
@@ -468,7 +485,7 @@ export const MeOsViewport: React.FC<MeOsViewportProps> = ({ mode, onPanelBackgro
             onPanelBackgroundEnterFullscreen();
           }}
         >
-          <div className={styles.desktopSurface}>
+          <div className={styles.desktopSurface} data-meos-stage-background="true">
             {entries.map((entry) => (
               <DesktopEntryButton
                 key={entry.id}
