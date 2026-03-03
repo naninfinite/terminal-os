@@ -79,6 +79,7 @@ const resolveLandingIntroNodes = (
     frame: landingSurface.frame,
     scene: landingSurface.scene,
     field: landingSurface.field,
+    rainCanvas: landingSurface.rainCanvas,
     glow: landingSurface.glow,
     grid: landingSurface.grid,
     sweep: landingSurface.sweep,

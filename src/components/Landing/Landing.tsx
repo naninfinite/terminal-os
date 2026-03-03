@@ -1,6 +1,7 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import styles from './Landing.module.scss';
 import crt from '../../styles/crt.module.scss';
+import DigitalRain from '../Effects/DigitalRain/DigitalRain';
 
 export type LandingPhase = 'idle' | 'loading' | 'transitioning' | 'entered' | 'error';
 
@@ -9,6 +10,7 @@ export type LandingSurfaceHandle = {
   frame: HTMLElement | null;
   scene: HTMLDivElement | null;
   field: HTMLDivElement | null;
+  rainCanvas: HTMLCanvasElement | null;
   glow: HTMLDivElement | null;
   grid: HTMLDivElement | null;
   sweep: HTMLDivElement | null;
@@ -45,6 +47,7 @@ const Landing = forwardRef<LandingSurfaceHandle, LandingProps>(({
   const frameRef = useRef<HTMLElement | null>(null);
   const sceneRef = useRef<HTMLDivElement | null>(null);
   const fieldRef = useRef<HTMLDivElement | null>(null);
+  const rainCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const glowRef = useRef<HTMLDivElement | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
   const sweepRef = useRef<HTMLDivElement | null>(null);
@@ -58,6 +61,7 @@ const Landing = forwardRef<LandingSurfaceHandle, LandingProps>(({
     frame: frameRef.current,
     scene: sceneRef.current,
     field: fieldRef.current,
+    rainCanvas: rainCanvasRef.current,
     glow: glowRef.current,
     grid: gridRef.current,
     sweep: sweepRef.current,
@@ -95,6 +99,16 @@ const Landing = forwardRef<LandingSurfaceHandle, LandingProps>(({
               data-landing-scene="true"
             >
               <div ref={fieldRef} className={styles.sceneField} aria-hidden="true">
+                <DigitalRain
+                  ref={rainCanvasRef}
+                  className={styles.sceneRain}
+                  enabled={sceneLoading || phase === 'transitioning'}
+                  direction="rtl"
+                  fontSize={15}
+                  speed={0.9}
+                  fadeAlpha={0.075}
+                  fps={30}
+                />
                 <div ref={glowRef} className={styles.sceneGlow} />
                 <div ref={gridRef} className={styles.sceneGrid} />
                 <div ref={sweepRef} className={styles.sceneSweep} />

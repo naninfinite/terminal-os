@@ -5,6 +5,7 @@ export type LandingIntroNodes = {
   frame: HTMLElement;
   scene: HTMLDivElement;
   field: HTMLDivElement;
+  rainCanvas?: HTMLCanvasElement | null;
   glow: HTMLDivElement;
   grid: HTMLDivElement;
   sweep: HTMLDivElement;
@@ -39,6 +40,7 @@ export const createLandingIntroTimeline = (
     frame,
     scene,
     field,
+    rainCanvas,
     glow,
     grid,
     sweep,
@@ -95,6 +97,9 @@ export const createLandingIntroTimeline = (
   gsap.set(scene, { scaleY: 1, transformOrigin: '50% 50%' });
   gsap.set(glow, { scale: 1, transformOrigin: '50% 50%' });
   gsap.set(field, { filter: 'brightness(1)' });
+  if (rainCanvas) {
+    gsap.set(rainCanvas, { autoAlpha: 1 });
+  }
 
   if (flash) {
     gsap.set(flash, {
@@ -163,6 +168,14 @@ export const createLandingIntroTimeline = (
       ease: 'power3.out',
     }, 0.34)
     .set(desktopShell, { pointerEvents: 'auto' }, 0.7);
+
+  if (rainCanvas) {
+    timeline.to(rainCanvas, {
+      autoAlpha: 0,
+      duration: 0.12,
+      ease: 'power1.out',
+    }, 0.18);
+  }
 
   if (flash) {
     timeline

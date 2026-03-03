@@ -23,6 +23,8 @@ describe('Landing', () => {
     expect(markup).toContain('data-landing-telemetry="true"');
     expect(markup).toContain('data-landing-status="true"');
     expect(markup).toContain('data-landing-enter="true"');
+    expect(markup).toContain('data-digital-rain="true"');
+    expect(markup).toContain('data-enabled="false"');
     expect(markup).toContain('PRESS ENTER TO LOAD DESKTOP.');
     expect(markup).toContain('>ENTER<');
     expect(markup).toContain('aria-busy="false"');
@@ -44,9 +46,30 @@ describe('Landing', () => {
 
     expect(markup).toContain('data-state="loading"');
     expect(markup).toContain('data-loading="true"');
+    expect(markup).toContain('data-digital-rain="true"');
+    expect(markup).toContain('data-enabled="true"');
     expect(markup).toContain('LOADING DESKTOP...');
     expect(markup).toContain('>LOADING...<');
     expect(markup).toContain('disabled=""');
     expect(markup).toContain('aria-busy="true"');
+  });
+
+  it('keeps the rain effect enabled during the GSAP transition phase', () => {
+    const markup = renderToStaticMarkup(
+      <Landing
+        phase="transitioning"
+        busy
+        sceneLoading={false}
+        buttonLabel="ENTERING..."
+        status="ENTERING SHELL..."
+        runtimeStatus="LINKING SHELL..."
+        onEnter={vi.fn()}
+        disabled
+      />
+    );
+
+    expect(markup).toContain('data-state="transitioning"');
+    expect(markup).toContain('data-digital-rain="true"');
+    expect(markup).toContain('data-enabled="true"');
   });
 });
