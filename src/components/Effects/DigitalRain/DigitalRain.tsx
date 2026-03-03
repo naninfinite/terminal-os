@@ -185,9 +185,9 @@ const DigitalRain = forwardRef<HTMLCanvasElement, DigitalRainProps>(({
     const landingText = computedStyle.getPropertyValue('--landing-text').trim();
 
     metricsRef.current.fontFamily = computedStyle.fontFamily || 'monospace';
-    metricsRef.current.fillColor = `rgba(${red}, ${green}, ${blue}, 0.78)`;
-    metricsRef.current.headColor = landingText || `rgba(${red}, ${green}, ${blue}, 0.98)`;
-    metricsRef.current.shadowColor = `rgba(${red}, ${green}, ${blue}, 0.35)`;
+    metricsRef.current.fillColor = `rgba(${red}, ${green}, ${blue}, 0.9)`;
+    metricsRef.current.headColor = landingText || `rgba(${red}, ${green}, ${blue}, 1)`;
+    metricsRef.current.shadowColor = `rgba(${red}, ${green}, ${blue}, 0.5)`;
 
     if (canvas.width !== pixelWidth) {
       canvas.width = pixelWidth;
@@ -338,7 +338,7 @@ const DigitalRain = forwardRef<HTMLCanvasElement, DigitalRainProps>(({
       ctx.shadowBlur = 0;
       ctx.fillStyle = `rgba(0, 0, 0, ${activeFadeAlpha})`;
       ctx.fillRect(0, 0, cssWidth, cssHeight);
-      ctx.shadowBlur = 6;
+      ctx.shadowBlur = 8;
       ctx.shadowColor = shadowColor;
 
       const rows = rowsRef.current;

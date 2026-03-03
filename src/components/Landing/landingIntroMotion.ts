@@ -24,7 +24,7 @@ export type LandingIntroOptions = {
   onComplete?: () => void;
 };
 
-const LANDING_INTRO_DURATION_MS = 1000;
+const LANDING_INTRO_DURATION_MS = 3000;
 const LANDING_INTRO_REDUCED_DURATION_MS = 120;
 
 export const getLandingIntroDurationMs = (reducedMotion: boolean): number => (
@@ -121,60 +121,60 @@ export const createLandingIntroTimeline = (
     onComplete,
   })
     .to([button, status], {
-      autoAlpha: 0.46,
-      duration: 0.12,
+      autoAlpha: 0.42,
+      duration: 0.28,
     }, 0)
     .to(glow, {
       opacity: 1,
-      scale: 1.16,
-      duration: 0.12,
+      scale: 1.18,
+      duration: 0.42,
       ease: 'sine.out',
     }, 0)
     .to(grid, {
-      opacity: 0.98,
-      duration: 0.12,
+      opacity: 1,
+      duration: 0.42,
     }, 0)
     .to(sweep, {
       opacity: 1,
-      duration: 0.12,
+      duration: 0.42,
     }, 0)
     .to(telemetry, {
-      autoAlpha: 0.16,
-      y: -4,
-      duration: 0.14,
-    }, 0.08)
+      autoAlpha: 0.22,
+      y: -6,
+      duration: 0.32,
+    }, 0.3)
     .to(field, {
-      filter: 'brightness(1.65)',
-      duration: 0.16,
+      filter: 'brightness(1.72)',
+      duration: 0.42,
       ease: 'power3.in',
-    }, 0.12)
+    }, 0.8)
     .to(scene, {
-      scaleY: 0.05,
-      duration: 0.16,
+      scaleY: 0.06,
+      duration: 0.38,
       ease: 'power3.in',
-    }, 0.12)
+    }, 0.98)
     .to(frame, {
-      autoAlpha: 0.72,
-      duration: 0.12,
-    }, 0.16)
+      autoAlpha: 0.68,
+      duration: 0.34,
+    }, 1.02)
     .to(root, {
       autoAlpha: 0,
-      duration: 0.18,
+      duration: 0.94,
       ease: 'power1.inOut',
-    }, 0.28)
+    }, 1.36)
     .to(desktopShell, {
       ...desktopRevealProps,
-      duration: 0.44,
+      duration: 1.2,
       ease: 'power3.out',
-    }, 0.34)
-    .set(desktopShell, { pointerEvents: 'auto' }, 0.7);
+    }, 1.62)
+    .set(desktopShell, { pointerEvents: 'auto' }, 2.5);
 
   if (rainCanvas) {
     timeline.to(rainCanvas, {
       autoAlpha: 0,
-      duration: 0.12,
+      duration: 0.9,
       ease: 'power1.out',
-    }, 0.18);
+    }, 1.18);
   }
 
   if (flash) {
@@ -182,33 +182,33 @@ export const createLandingIntroTimeline = (
       .to(flash, {
         autoAlpha: 0.92,
         scaleY: 1,
-        duration: 0.06,
+        duration: 0.12,
         ease: 'power2.out',
-      }, 0.24)
+      }, 1.22)
       .to(flash, {
         autoAlpha: 0,
-        duration: 0.12,
+        duration: 0.24,
         ease: 'power1.in',
-      }, 0.30);
+      }, 1.34);
   }
 
   if (panels.length > 0) {
     timeline.to(panels, {
       autoAlpha: 1,
       y: 0,
-      duration: 0.24,
-      stagger: 0.045,
+      duration: 0.38,
+      stagger: 0.07,
       ease: 'power2.out',
-    }, 0.62);
+    }, 2.22);
   }
 
   if (statusBar) {
     timeline.to(statusBar, {
       autoAlpha: 1,
       y: 0,
-      duration: 0.22,
+      duration: 0.36,
       ease: 'power2.out',
-    }, 0.74);
+    }, 2.58);
   }
 
   return timeline;

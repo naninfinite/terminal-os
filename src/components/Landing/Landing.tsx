@@ -104,9 +104,9 @@ const Landing = forwardRef<LandingSurfaceHandle, LandingProps>(({
                   className={styles.sceneRain}
                   enabled={sceneLoading || phase === 'transitioning'}
                   direction="rtl"
-                  fontSize={15}
-                  speed={0.9}
-                  fadeAlpha={0.075}
+                  fontSize={13}
+                  speed={1.05}
+                  fadeAlpha={0.05}
                   fps={30}
                 />
                 <div ref={glowRef} className={styles.sceneGlow} />
