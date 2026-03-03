@@ -14,3 +14,14 @@
   overflow: visible;
 }
 
+.shell[data-intro-state='hidden'],
+.shell[data-intro-state='transitioning'] {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: scale(1.02);
+  transform-origin: center center;
+  filter: blur(16px) brightness(1.24) contrast(1.12);
+  clip-path: inset(47% 0 47% 0 round 10px);
+  will-change: opacity, transform, filter, clip-path;
+}

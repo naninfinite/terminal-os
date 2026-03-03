@@ -24,13 +24,17 @@ Legacy note (post-M6):
 
 ## File map and responsibilities
 
-- `src/App.tsx` — application entry point. Controls landing flow and the transition into the main shell. Key behavior:
-  - Tracks `entered` / `exiting` state. Pressing Enter or clicking `[ ENTER ]` sets `exiting` and after a CSS-aligned delay flips to `entered`.
+- `src/App.tsx` — application entry point. Controls landing flow and the transition into the main shell. Current behavior:
+  - Tracks a `LandingPhase` state machine: `idle` / `loading` / `transitioning` / `entered` / `error`.
+  - Pressing Enter or clicking `[ ENTER ]` loads the desktop runtime if needed, then runs a GSAP CRT handoff instead of a CSS-timed fade.
   - Renders `Cursor` at top-level so the custom pointer appears on landing and app screens.
 
 - `src/main.tsx` — mounts React app and imports global styles.
 
-- `src/components/Landing/` — landing UI. `Landing.module.scss` contains responsive clamps for the video box and ENTER button styles.
+- `src/components/Landing/` — landing UI and motion glue.
+  - `Landing.tsx` renders the landing surface and exposes DOM handles for the GSAP intro.
+  - `landingIntroMotion.ts` defines the CRT handoff timeline and reduced-motion duration.
+  - `Landing.module.scss` contains the shared landing layout and static visual treatment.
 
 - `src/components/Panel/Panel.tsx` — small single-responsibility wrapper used by all panels. It provides an ASCII-style header and a body area.
 

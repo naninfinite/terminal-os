@@ -1,40 +1,51 @@
 @use '../../styles/variables' as *;
 
 .landing {
-  /* Full-screen entry scene container with fade/blur exit transition. */
+  /* Full-screen entry scene container used as the GSAP-controlled transition surface. */
   position: fixed;
   inset: 0;
-  background: $bg-black;
-  color: $color-fg;
+  z-index: 34;
+  background: var(--landing-bg, $bg-black);
+  color: var(--landing-text, $color-fg);
   font-family: $font-mono;
   text-transform: inherit;
   display: grid;
   place-items: center;
   overflow: hidden;
-  transition: opacity 600ms ease, filter 600ms ease;
-
-  &[data-state='exiting'] {
-    /* During exit, fade and soften before shell mount swap. */
-    opacity: 0;
-    filter: blur(2px);
-    pointer-events: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .landing {
-    transition: none;
-  }
+  isolation: isolate;
 }
 
 .center {
   /* Constrained content column centered in viewport. */
+  position: relative;
+  z-index: 1;
   width: min(92vw, 960px);
   max-width: 100%;
   display: grid;
   place-items: center;
   /* Small horizontal gutter keeps the framed window from touching screen edges on mobile. */
   padding: 0 12px;
+}
+
+.transitionFlash {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      rgb(var(--landing-grid-rgb, 0 255 102) / 0.16) 42%,
+      rgb(var(--landing-grid-rgb, 0 255 102) / 0.94) 50%,
+      rgb(var(--landing-grid-rgb, 0 255 102) / 0.16) 58%,
+      transparent 100%
+    ),
+    radial-gradient(circle at 50% 50%, rgb(var(--landing-grid-rgb, 0 255 102) / 0.34), transparent 58%);
+  mix-blend-mode: screen;
+  transform: scaleY(0.02);
+  transform-origin: center center;
 }
 
 .panelContent {
@@ -48,8 +59,10 @@
   max-width: 100%;
   /* Frame intentionally uses % sizing so it never outgrows `.center` on narrow devices. */
   border: $border;
+  border-color: var(--landing-border, $phosphor-green);
   padding: $panel-padding;
-  background: $bg-black;
+  background: var(--landing-bg, $bg-black);
+  box-shadow: var(--landing-shadow, none);
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -90,7 +103,7 @@
 .landingHeader {
   /* Bracket title bar matching panel headers in desktop shell. */
   width: 100%;
-  border-bottom: $border-thin solid $phosphor-green;
+  border-bottom: $border-thin solid var(--landing-border, $phosphor-green);
   padding-bottom: 4px;
   margin-bottom: 6px;
   font-size: $font-sm;
@@ -112,10 +125,16 @@
   width: 100%;
   aspect-ratio: 16 / 9;
   background:
-    radial-gradient(circle at 50% 28%, rgb(0 255 102 / 0.14), transparent 34%),
-    linear-gradient(180deg, rgb(0 255 102 / 0.06), transparent 30%, rgb(0 255 102 / 0.03)),
-    $bg-black;
+    radial-gradient(circle at 50% 28%, rgb(var(--landing-grid-rgb, 0 255 102) / 0.14), transparent 34%),
+    linear-gradient(
+      180deg,
+      rgb(var(--landing-grid-rgb, 0 255 102) / 0.06),
+      transparent 30%,
+      rgb(var(--landing-grid-rgb, 0 255 102) / 0.03)
+    ),
+    var(--landing-bg, $bg-black);
   border: $border;
+  border-color: var(--landing-border, $phosphor-green);
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -139,7 +158,7 @@
 .sceneGlow {
   position: absolute;
   inset: 16% 18%;
-  background: radial-gradient(circle, rgb(0 255 102 / 0.26), transparent 64%);
+  background: radial-gradient(circle, rgb(var(--landing-grid-rgb, 0 255 102) / 0.26), transparent 64%);
   filter: blur(18px);
   opacity: 0.75;
 }
@@ -148,8 +167,8 @@
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(to right, rgb(0 255 102 / 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(0 255 102 / 0.08) 1px, transparent 1px);
+    linear-gradient(to right, rgb(var(--landing-grid-rgb, 0 255 102) / 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(var(--landing-grid-rgb, 0 255 102) / 0.08) 1px, transparent 1px);
   background-size: 28px 28px;
   mask-image: linear-gradient(180deg, transparent, #000 22%, #000 82%, transparent);
   opacity: 0.78;
@@ -158,7 +177,12 @@
 .sceneSweep {
   position: absolute;
   inset: -30% 0;
-  background: linear-gradient(180deg, transparent 36%, rgb(0 255 102 / 0.18) 50%, transparent 64%);
+  background: linear-gradient(
+    180deg,
+    transparent 36%,
+    rgb(var(--landing-grid-rgb, 0 255 102) / 0.18) 50%,
+    transparent 64%
+  );
   animation: landing-sweep 2.8s linear infinite;
   opacity: 0.72;
 }
@@ -171,8 +195,8 @@
   gap: 7px;
   font-size: $font-xs;
   letter-spacing: 0.12em;
-  color: $phosphor-green;
-  text-shadow: $glow;
+  color: var(--landing-text, $phosphor-green);
+  text-shadow: 0 0 8px rgb(var(--landing-grid-rgb, 0 255 102) / 0.36);
 }
 
 .enterStatus {
@@ -183,9 +207,10 @@
   z-index: 1;
   margin: 0;
   padding: 4px 10px;
-  border: $border-thin solid $phosphor-green;
-  background: rgb(0 0 0 / 0.56);
-  color: $text-dim;
+  border: $border-thin solid var(--landing-border, $phosphor-green);
+  background: var(--landing-status-bg, rgb(0 0 0 / 0.56));
+  color: var(--landing-text-muted, $text-dim);
+  backdrop-filter: blur(4px);
   box-sizing: border-box;
   line-height: 1;
   text-align: center;
@@ -210,11 +235,12 @@
   transform: translateX(-50%);
   bottom: 12px;
   border: $border;
+  border-color: var(--landing-border, $phosphor-green);
   background: transparent;
-  color: $phosphor-green;
+  color: var(--landing-text, $phosphor-green);
   padding: 6px 12px;
   z-index: 1;
-  box-shadow: none;
+  box-shadow: var(--landing-shadow, none);
   border-radius: 0;
   text-shadow: none;
   box-sizing: border-box;
@@ -224,13 +250,13 @@
 
 .enterBtn:hover,
 .enterBtn:focus-visible {
-  background: transparent;
-  border-color: var(--ui-border);
-  color: $phosphor-green;
+  background: rgb(var(--landing-grid-rgb, 0 255 102) / 0.08);
+  border-color: var(--landing-border, var(--ui-border));
+  color: var(--landing-text, $phosphor-green);
 }
 
 .enterBtn:focus-visible {
-  outline: 1px dashed var(--ui-border);
+  outline: 1px dashed var(--landing-border, var(--ui-border));
   outline-offset: 2px;
 }
 

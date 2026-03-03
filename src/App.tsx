@@ -1,15 +1,11 @@
 /**
  * `App` controls the top-level flow:
- * - Landing screen (`ENTER.EXE`) with an enter transition.
+ * - Landing screen (`ENTER.EXE`) with a GSAP-powered CRT handoff.
  * - Desktop shell is lazy-loaded with retry diagnostics before the transition completes.
  * - Background preloading only runs when startup conditions look favorable.
- *
- * Design notes:
- * - `entered` gates which screen is mounted.
- * - `exiting` drives the fade-out state before switching to desktop.
- * - Transition timing matches CSS unless reduced-motion is enabled.
  */
-import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { gsap } from 'gsap';
 import { loadDesktopRuntime } from './components/AppShell/loadDesktopRuntime';
 import {
   createDesktopRuntimeDiagnostic,
@@ -19,11 +15,17 @@ import {
   readDesktopRuntimePreloadSignals,
   shouldPreloadDesktopRuntime,
 } from './components/AppShell/desktopRuntimePreload';
-import landingStyles from './components/Landing/Landing.module.scss';
-import crt from './styles/crt.module.scss';
+import Landing, {
+  type LandingPhase,
+  type LandingSurfaceHandle,
+} from './components/Landing/Landing';
+import {
+  createLandingIntroTimeline,
+  type LandingIntroNodes,
+} from './components/Landing/landingIntroMotion';
 import Cursor from './components/Cursor/Cursor';
 
-type DesktopRuntimeModule = typeof import('./components/AppShell/DesktopRuntime');
+type DesktopRuntimeModule = Awaited<ReturnType<typeof loadDesktopRuntime>>;
 type DesktopLoadSource = 'preload' | 'enter';
 type IdleAwareWindow = Window & {
   requestIdleCallback?: (callback: () => void) => number;
@@ -31,7 +33,6 @@ type IdleAwareWindow = Window & {
 };
 
 const DESKTOP_RUNTIME_RELOAD_SESSION_KEY = 'terminalOS.desktopRuntime.reloadAttempted.v1';
-const DesktopRuntime = React.lazy(loadDesktopRuntime);
 
 type AppProps = {
   initialEnterRequested?: boolean;
@@ -53,50 +54,96 @@ const markDesktopReloadAttempted = (): void => {
   }
 };
 
+const resolveLandingIntroNodes = (
+  landingSurface: LandingSurfaceHandle | null,
+  desktopShell: HTMLDivElement | null,
+): LandingIntroNodes | null => {
+  if (
+    !landingSurface?.root
+    || !landingSurface.frame
+    || !landingSurface.scene
+    || !landingSurface.field
+    || !landingSurface.glow
+    || !landingSurface.grid
+    || !landingSurface.sweep
+    || !landingSurface.telemetry
+    || !landingSurface.status
+    || !landingSurface.button
+    || !desktopShell
+  ) {
+    return null;
+  }
+
+  return {
+    root: landingSurface.root,
+    frame: landingSurface.frame,
+    scene: landingSurface.scene,
+    field: landingSurface.field,
+    glow: landingSurface.glow,
+    grid: landingSurface.grid,
+    sweep: landingSurface.sweep,
+    telemetry: landingSurface.telemetry,
+    status: landingSurface.status,
+    button: landingSurface.button,
+    flash: landingSurface.flash,
+    desktopShell,
+    desktopRoot: desktopShell.querySelector<HTMLElement>('[data-desktop-root="true"]'),
+    panels: Array.from(desktopShell.querySelectorAll<HTMLElement>('[data-panel-scope]')),
+    statusBar: desktopShell.querySelector<HTMLElement>('[data-status-bar="true"]'),
+  };
+};
+
 const App: React.FC<AppProps> = ({ initialEnterRequested = false }) => {
-  const [entered, setEntered] = useState(false);
-  const [exiting, setExiting] = useState(false);
-  const [enterQueued, setEnterQueued] = useState(false);
-  const [desktopReady, setDesktopReady] = useState(false);
+  const [phase, setPhase] = useState<LandingPhase>('idle');
   const [desktopLoading, setDesktopLoading] = useState(false);
+  const [desktopRuntimeModule, setDesktopRuntimeModule] = useState<DesktopRuntimeModule | null>(null);
   const [desktopLoadError, setDesktopLoadError] = useState<string | null>(null);
   const [desktopLoadErrorKind, setDesktopLoadErrorKind] = useState<DesktopLoadErrorKind | null>(null);
-  const enterTimeoutRef = useRef<number | null>(null);
   const desktopLoadRef = useRef<Promise<DesktopRuntimeModule> | null>(null);
+  const desktopRuntimeModuleRef = useRef<DesktopRuntimeModule | null>(null);
   const desktopReadyRef = useRef(false);
   const initialEnterHandledRef = useRef(false);
   const reloadRequestedRef = useRef(false);
+  const landingSurfaceRef = useRef<LandingSurfaceHandle | null>(null);
+  const desktopShellRef = useRef<HTMLDivElement | null>(null);
+  const bootstrapLandingDismissedRef = useRef(false);
 
   const clearDesktopLoadError = useCallback(() => {
     setDesktopLoadError(null);
     setDesktopLoadErrorKind(null);
   }, []);
 
-  const markDesktopReady = useCallback(() => {
+  const markDesktopReady = useCallback((nextModule: DesktopRuntimeModule) => {
+    desktopRuntimeModuleRef.current = nextModule;
+    setDesktopRuntimeModule(nextModule);
     desktopReadyRef.current = true;
-    setDesktopReady(true);
     setDesktopLoading(false);
     clearDesktopLoadError();
   }, [clearDesktopLoadError]);
 
   const ensureDesktopRuntime = useCallback((): Promise<DesktopRuntimeModule> => {
+    if (desktopRuntimeModuleRef.current) {
+      return Promise.resolve(desktopRuntimeModuleRef.current);
+    }
     if (desktopLoadRef.current) return desktopLoadRef.current;
 
     setDesktopLoading(true);
-    const nextPromise = loadDesktopRuntime();
+    const nextPromise = loadDesktopRuntime()
+      .then((nextModule) => {
+        markDesktopReady(nextModule);
+        return nextModule;
+      })
+      .catch((error) => {
+        if (desktopLoadRef.current === nextPromise) {
+          desktopLoadRef.current = null;
+        }
+        desktopRuntimeModuleRef.current = null;
+        desktopReadyRef.current = false;
+        setDesktopRuntimeModule(null);
+        setDesktopLoading(false);
+        throw error;
+      });
     desktopLoadRef.current = nextPromise;
-
-    void nextPromise.then(() => {
-      markDesktopReady();
-    }).catch(() => {
-      if (desktopLoadRef.current === nextPromise) {
-        desktopLoadRef.current = null;
-      }
-      desktopReadyRef.current = false;
-      setDesktopReady(false);
-      setDesktopLoading(false);
-    });
-
     return nextPromise;
   }, [markDesktopReady]);
 
@@ -117,45 +164,47 @@ const App: React.FC<AppProps> = ({ initialEnterRequested = false }) => {
     if (source === 'enter') {
       setDesktopLoadError(diagnostic.message);
       setDesktopLoadErrorKind(diagnostic.kind);
+      setPhase('error');
     }
 
     return false;
   }, []);
 
-  const startExit = useCallback(() => {
-    if (exiting || entered) return;
-    setEnterQueued(false);
-    setExiting(true);
-  }, [entered, exiting]);
+  const startTransition = useCallback(() => {
+    if (!desktopReadyRef.current) return;
+    setPhase((previous) => (
+      previous === 'transitioning' || previous === 'entered' ? previous : 'transitioning'
+    ));
+  }, []);
 
   // Shared guard used by click + keyboard triggers to avoid duplicate transitions.
   const triggerEnter = useCallback(() => {
-    if (exiting || entered || enterQueued) return;
+    if (phase === 'loading' || phase === 'transitioning' || phase === 'entered') return;
 
     reloadRequestedRef.current = false;
     clearDesktopLoadError();
 
     if (desktopReadyRef.current) {
-      startExit();
+      startTransition();
       return;
     }
 
-    setEnterQueued(true);
+    setPhase('loading');
     setDesktopLoading(true);
 
     void ensureDesktopRuntime()
       .then(() => {
         if (!reloadRequestedRef.current) {
-          startExit();
+          startTransition();
         }
       })
       .catch((error) => {
         const reloading = handleDesktopRuntimeFailure(error, 'enter');
         if (!reloading) {
-          setEnterQueued(false);
+          setDesktopLoading(false);
         }
       });
-  }, [clearDesktopLoadError, ensureDesktopRuntime, enterQueued, entered, exiting, handleDesktopRuntimeFailure, startExit]);
+  }, [clearDesktopLoadError, ensureDesktopRuntime, handleDesktopRuntimeFailure, phase, startTransition]);
 
   useEffect(() => {
     const preloadSignals = readDesktopRuntimePreloadSignals(
@@ -202,7 +251,31 @@ const App: React.FC<AppProps> = ({ initialEnterRequested = false }) => {
     triggerEnter();
   }, [initialEnterRequested, triggerEnter]);
 
-  // Listen for Enter key to start exiting from the landing screen.
+  useEffect(() => {
+    if (phase !== 'transitioning') return undefined;
+
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const introNodes = resolveLandingIntroNodes(landingSurfaceRef.current, desktopShellRef.current);
+    if (!introNodes) return undefined;
+
+    let cancelled = false;
+    const ctx = gsap.context(() => {
+      createLandingIntroTimeline(introNodes, {
+        reducedMotion: reduceMotion,
+        onComplete: () => {
+          if (cancelled) return;
+          setPhase('entered');
+        },
+      });
+    }, introNodes.root);
+
+    return () => {
+      cancelled = true;
+      ctx.revert();
+    };
+  }, [phase]);
+
+  // Listen for Enter key to start the landing transition.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Enter') triggerEnter();
@@ -213,28 +286,22 @@ const App: React.FC<AppProps> = ({ initialEnterRequested = false }) => {
     };
   }, [triggerEnter]);
 
-  // When exiting starts, schedule transition to the desktop after a short delay.
-  useEffect(() => {
-    if (exiting && !entered) {
-      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const delayMs = reduce ? 0 : 600; // match CSS transition duration
-      if (enterTimeoutRef.current != null) {
-        window.clearTimeout(enterTimeoutRef.current);
-      }
-      enterTimeoutRef.current = window.setTimeout(() => setEntered(true), delayMs);
-      return () => {
-        if (enterTimeoutRef.current != null) {
-          window.clearTimeout(enterTimeoutRef.current);
-          enterTimeoutRef.current = null;
-        }
-      };
-    }
-  }, [exiting, entered]);
+  const handleLandingReady = useCallback(() => {
+    if (bootstrapLandingDismissedRef.current) return;
+    bootstrapLandingDismissedRef.current = true;
+    window.requestAnimationFrame(() => {
+      window.__TERMINAL_OS_LANDING__?.markInteractive();
+    });
+  }, []);
 
-  const waitingForDesktop = enterQueued && desktopLoading && !exiting;
+  const waitingForDesktop = phase === 'loading';
+  const transitioning = phase === 'transitioning';
+  const desktopReady = desktopReadyRef.current || desktopRuntimeModule != null;
+  const renderDesktop = transitioning || phase === 'entered';
+  const LandingRuntime = desktopRuntimeModule?.default;
   const enterButtonLabel = desktopLoadError
     ? 'RETRY'
-    : exiting
+    : transitioning
       ? 'ENTERING...'
       : waitingForDesktop
         ? 'LOADING...'
@@ -243,69 +310,44 @@ const App: React.FC<AppProps> = ({ initialEnterRequested = false }) => {
     ? 'DESKTOP LOAD FAILED. PRESS ENTER TO RETRY.'
     : desktopLoadError != null
       ? 'DESKTOP LOAD CRASHED. PRESS ENTER TO RETRY.'
-      : exiting
+      : transitioning
         ? 'ENTERING SHELL...'
         : waitingForDesktop
           ? 'LOADING DESKTOP...'
           : 'PRESS ENTER TO LOAD DESKTOP.';
   const runtimeStatus = desktopLoadError != null
     ? 'RETRY STANDBY'
-    : exiting || waitingForDesktop
+    : transitioning || waitingForDesktop
       ? 'LINKING SHELL...'
       : desktopReady
         ? 'DESKTOP CACHE READY'
+        : desktopLoading
+          ? 'PRIMING CACHE...'
         : 'STANDBY';
 
   return (
     <>
       <Cursor />
-      {!entered ? (
-        <div
-          className={`${landingStyles.landing} ${crt.crt}`}
-          data-state={exiting ? 'exiting' : 'idle'}
-        >
-          <div className={landingStyles.center}>
-            <section
-              className={landingStyles.landingFrame}
-              aria-label="ENTER.EXE"
-              aria-busy={waitingForDesktop || exiting}
-            >
-              <header className={landingStyles.landingHeader}>[ENTER.EXE]</header>
-              <div className={landingStyles.landingBody}>
-                <div className={landingStyles.videoBox} data-loading={waitingForDesktop ? 'true' : 'false'}>
-                  <div className={landingStyles.sceneField} aria-hidden="true">
-                    <div className={landingStyles.sceneGlow} />
-                    <div className={landingStyles.sceneGrid} />
-                    <div className={landingStyles.sceneSweep} />
-                    <div className={landingStyles.sceneTelemetry}>
-                      <span>BOOT SECTOR 01</span>
-                      <span>DISPLAY BUS ONLINE</span>
-                      <span>{runtimeStatus}</span>
-                    </div>
-                  </div>
-                  <p className={landingStyles.enterStatus} role="status" aria-live="polite" aria-atomic="true">
-                    {enterStatus}
-                  </p>
-                  <button
-                    type="button"
-                    className={landingStyles.enterBtn}
-                    onClick={triggerEnter}
-                    aria-label="Enter Terminal-OS"
-                    aria-busy={waitingForDesktop || exiting}
-                    disabled={waitingForDesktop || exiting}
-                  >
-                    {enterButtonLabel}
-                  </button>
-                </div>
-              </div>
-            </section>
-          </div>
-        </div>
-      ) : (
-        <Suspense fallback={null}>
-          <DesktopRuntime />
-        </Suspense>
-      )}
+      {renderDesktop && LandingRuntime ? (
+        <LandingRuntime
+          shellRef={desktopShellRef}
+          introState={transitioning ? 'transitioning' : 'idle'}
+        />
+      ) : null}
+      {phase !== 'entered' ? (
+        <Landing
+          ref={landingSurfaceRef}
+          phase={phase}
+          busy={waitingForDesktop || transitioning}
+          sceneLoading={waitingForDesktop}
+          buttonLabel={enterButtonLabel}
+          status={enterStatus}
+          runtimeStatus={runtimeStatus}
+          onEnter={triggerEnter}
+          disabled={waitingForDesktop || transitioning}
+          onReady={handleLandingReady}
+        />
+      ) : null}
     </>
   );
 };

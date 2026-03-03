@@ -629,6 +629,7 @@ const StatusBar: React.FC = () => {
       className={`${styles.statusBar} ${hasOverlayMenuOpen ? styles.statusBarOverlay : ''}`.trim()}
       role="contentinfo"
       aria-label="System status bar"
+      data-status-bar="true"
     >
       <div className={styles.left}>
         <button

@@ -19,7 +19,15 @@ type IdleAwareWindow = Window & {
   cancelIdleCallback?: (handle: number) => void;
 };
 
-const DesktopRuntime: React.FC = () => {
+export type DesktopRuntimeProps = {
+  shellRef?: React.Ref<HTMLDivElement>;
+  introState?: 'hidden' | 'transitioning' | 'idle';
+};
+
+const DesktopRuntime: React.FC<DesktopRuntimeProps> = ({
+  shellRef,
+  introState = 'idle',
+}) => {
   useEffect(() => {
     const idleWindow = window as IdleAwareWindow;
     let timeoutId: number | null = null;
@@ -57,7 +65,12 @@ const DesktopRuntime: React.FC = () => {
         <YouProvider>
           <ThirdProvider>
             <ConnectProvider>
-              <div className={shell.shell}>
+              <div
+                ref={shellRef}
+                className={shell.shell}
+                data-desktop-shell="true"
+                data-intro-state={introState}
+              >
                 <Scanlines />
                 <Desktop />
                 <StatusBar />

@@ -41,7 +41,7 @@ const Desktop: React.FC = () => {
   }, [setActiveScope]);
 
   return (
-    <div className={styles.desktop} role="main">
+    <div className={styles.desktop} role="main" data-desktop-root="true">
       {/* Profile / portfolio entry panel. */}
       <Panel
         title="ME.EXE"

@@ -18,9 +18,3 @@ root.render(
     </ThemeProvider>
   </React.StrictMode>
 );
-
-window.requestAnimationFrame(() => {
-  window.requestAnimationFrame(() => {
-    window.__TERMINAL_OS_LANDING__?.markInteractive();
-  });
-});

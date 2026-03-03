@@ -16,14 +16,18 @@
         --landing-text-muted: #66ffcc;
         --landing-border: #00ff66;
         --landing-shadow: 0 0 0 1px rgba(0, 255, 102, 0.18) inset;
+        --landing-grid-rgb: 0 255 102;
+        --landing-status-bg: rgba(0, 0, 0, 0.56);
       }
 
       :root[data-theme='light'] {
         --landing-bg: #f5f4ef;
-        --landing-text: #101010;
-        --landing-text-muted: #3f3f3f;
-        --landing-border: #101010;
-        --landing-shadow: 0 0 0 1px rgba(16, 16, 16, 0.12) inset;
+        --landing-text: #15563f;
+        --landing-text-muted: #4f6d61;
+        --landing-border: #0f8f63;
+        --landing-shadow: 0 0 0 1px rgba(15, 143, 99, 0.18) inset;
+        --landing-grid-rgb: 15 143 99;
+        --landing-status-bg: rgba(245, 244, 239, 0.8);
       }
 
       html,
@@ -68,8 +72,8 @@
         position: absolute;
         inset: 0;
         background:
-          linear-gradient(to right, rgba(0, 255, 102, 0.08) 1px, transparent 1px),
-          linear-gradient(to bottom, rgba(0, 255, 102, 0.08) 1px, transparent 1px);
+          linear-gradient(to right, rgb(var(--landing-grid-rgb) / 0.08) 1px, transparent 1px),
+          linear-gradient(to bottom, rgb(var(--landing-grid-rgb) / 0.08) 1px, transparent 1px);
         background-size: 28px 28px;
         opacity: 0.18;
         pointer-events: none;
@@ -122,8 +126,13 @@
         aspect-ratio: 16 / 9;
         border: 2px solid var(--landing-border);
         background:
-          radial-gradient(circle at 50% 28%, rgba(0, 255, 102, 0.14), transparent 34%),
-          linear-gradient(180deg, rgba(0, 255, 102, 0.06), transparent 30%, rgba(0, 255, 102, 0.03)),
+          radial-gradient(circle at 50% 28%, rgb(var(--landing-grid-rgb) / 0.14), transparent 34%),
+          linear-gradient(
+            180deg,
+            rgb(var(--landing-grid-rgb) / 0.06),
+            transparent 30%,
+            rgb(var(--landing-grid-rgb) / 0.03)
+          ),
           var(--landing-bg);
         display: grid;
         place-items: center;
@@ -144,7 +153,7 @@
       #landing-shell-glow {
         position: absolute;
         inset: 16% 18%;
-        background: radial-gradient(circle, rgba(0, 255, 102, 0.26), transparent 64%);
+        background: radial-gradient(circle, rgb(var(--landing-grid-rgb) / 0.26), transparent 64%);
         filter: blur(18px);
         opacity: 0.75;
       }
@@ -153,8 +162,8 @@
         position: absolute;
         inset: 0;
         background-image:
-          linear-gradient(to right, rgba(0, 255, 102, 0.08) 1px, transparent 1px),
-          linear-gradient(to bottom, rgba(0, 255, 102, 0.08) 1px, transparent 1px);
+          linear-gradient(to right, rgb(var(--landing-grid-rgb) / 0.08) 1px, transparent 1px),
+          linear-gradient(to bottom, rgb(var(--landing-grid-rgb) / 0.08) 1px, transparent 1px);
         background-size: 28px 28px;
         mask-image: linear-gradient(180deg, transparent, #000 22%, #000 82%, transparent);
         opacity: 0.78;
@@ -163,7 +172,7 @@
       #landing-shell-sweep {
         position: absolute;
         inset: -30% 0;
-        background: linear-gradient(180deg, transparent 36%, rgba(0, 255, 102, 0.18) 50%, transparent 64%);
+        background: linear-gradient(180deg, transparent 36%, rgb(var(--landing-grid-rgb) / 0.18) 50%, transparent 64%);
         animation: landing-shell-sweep 2.8s linear infinite;
         opacity: 0.72;
       }
@@ -177,7 +186,7 @@
         font-size: 10px;
         letter-spacing: 0.12em;
         color: var(--landing-text);
-        text-shadow: 0 0 8px rgba(0, 255, 102, 0.38);
+        text-shadow: 0 0 8px rgb(var(--landing-grid-rgb) / 0.38);
       }
 
       #landing-shell-status {
@@ -189,7 +198,7 @@
         margin: 0;
         padding: 4px 10px;
         border: 1px solid var(--landing-border);
-        background: rgba(0, 0, 0, 0.56);
+        background: var(--landing-status-bg);
         color: var(--landing-text-muted);
         box-sizing: border-box;
         line-height: 1;

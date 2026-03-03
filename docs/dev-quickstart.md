@@ -42,10 +42,12 @@ Commit guidance:
 ## Key files and components (what to edit)
 
 - `src/App.tsx` — root application flow
-  - Controls landing state: `entered`, `exiting`.
-  - Pressing Enter or clicking `[ ENTER ]` triggers `setExiting(true)`.
+  - Controls landing state via `LandingPhase`: `idle`, `loading`, `transitioning`, `entered`, `error`.
+  - Pressing Enter or clicking `[ ENTER ]` loads the desktop runtime if needed and then runs the GSAP CRT handoff.
 
-- `src/components/Landing/` — landing page and styles (`Landing.module.scss`).
+- `src/components/Landing/` — landing page, motion timeline, and styles.
+  - `Landing.tsx` owns the render surface.
+  - `landingIntroMotion.ts` defines the GSAP intro timeline.
 
 - `src/components/Panel/Panel.tsx` — small wrapper used for each panel (title + body).
 
