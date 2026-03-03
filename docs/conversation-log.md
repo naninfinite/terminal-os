@@ -1799,3 +1799,25 @@ Why it matters:
 Risks / Notes:
 - Dedicated gallery/video browsing is still intentionally deferred; `Media` continues to rely on the existing viewer windows for now.
 - `docs/me-exe-finder-reset-spec.md` is now the source of truth for active ME desktop UX, while `docs/fileman-v2-build-spec.md` remains historical for architecture boundaries.
+
+---
+
+## Entry 85 - THIRD Play Hover Labels + Edit-Mode Nudge
+
+Summary:
+- Added a desktop-only play-mode assist layer in `THIRD.EXE`:
+  - mouse/pen hover over any object now shows a small anchored label above the object,
+  - label content is `name | type` on the first line plus live world position on the second line.
+- Added repeated-click onboarding for edit entry in `PLAY`:
+  - two quick non-drag clicks on the same object pulse the top-left mode-toggle button,
+  - a short guidance label appears beneath the toolbar: `ENTER EDIT MODE TO INTERACT WITH THE SCENE`.
+- Added deterministic helper coverage for hover-card formatting and repeated-click cooldown behavior.
+
+Why it matters:
+- Makes object discovery clearer in `PLAY` without adding a new runtime mode or extra persistent UI chrome.
+- Gives users a discoverable path into `EDIT` when they keep trying to interact with scene objects directly.
+- Keeps the feature localized to desktop pointer input so touch behavior and existing play-mode grab rules stay intact.
+
+Risks / Notes:
+- Hover labels are visual-only and are intentionally suppressed for touch/mobile interactions.
+- Click nudges do not auto-switch to `EDIT`; they only highlight the existing mode toggle affordance.

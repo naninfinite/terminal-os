@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as CANNON from 'cannon-es';
+import { gsap } from 'gsap';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
@@ -108,11 +109,20 @@ import {
   THIRD_PANEL_DOUBLE_TAP_TOLERANCE_PX,
   type ThirdPanelBackgroundTap,
 } from './thirdPanelFullscreenGesture';
+import {
+  buildThirdObjectHoverCardContent,
+  createInitialThirdEditModeNudgeState,
+  resolveThirdEditModeNudge,
+  THIRD_EDIT_MODE_NUDGE_COOLDOWN_MS,
+  type ThirdEditModeNudgeState,
+  type ThirdObjectHoverCardContent,
+} from './thirdObjectModeAssist';
 
 const FIXED_TIMESTEP_SECONDS = 1 / 60;
 const MAX_PHYSICS_SUBSTEPS = 3;
 const PHYSICS_COMMIT_INTERVAL_SECONDS = 0.4;
 const CAMERA_SAVE_DEBOUNCE_MS = 250;
+const PLAY_CLICK_TOLERANCE_PX = 6;
 const RIGHT_CLICK_OPEN_TOLERANCE_PX = 6;
 const TOUCH_CONTEXT_MENU_OPEN_DELAY_MS = CONTEXT_LONG_PRESS_MS;
 const TOUCH_CONTEXT_MENU_OPEN_TOLERANCE_PX = CONTEXT_MOVE_TOLERANCE_PX;
@@ -168,6 +178,14 @@ type TouchContextMenuCandidate = {
   startX: number;
   startY: number;
   timeoutId: number;
+};
+
+type PlayClickCandidate = {
+  pointerId: number;
+  objectId: string;
+  startX: number;
+  startY: number;
+  moved: boolean;
 };
 
 type HierarchyTouchContextMenuCandidate = {
@@ -836,15 +854,32 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const pendingTransformPatchRef = useRef<ThirdTransformPatch | null>(null);
   const focusedInspectorFieldsRef = useRef(new Set<InspectorFieldKey>());
   const rightClickCandidateRef = useRef<RightClickCandidate | null>(null);
+  const playClickCandidateRef = useRef<PlayClickCandidate | null>(null);
   const touchContextMenuCandidateRef = useRef<TouchContextMenuCandidate | null>(null);
   const hierarchyTouchContextMenuCandidateRef = useRef<HierarchyTouchContextMenuCandidate | null>(null);
   const suppressHierarchyTouchClickRef = useRef(false);
+  const prefersReducedMotionRef = useRef(false);
+  const hoveredObjectIdRef = useRef<string | null>(null);
+  const hoverCardContentRef = useRef<ThirdObjectHoverCardContent | null>(null);
+  const hoverCardVisibleRef = useRef(false);
+  const hoverCardRef = useRef<HTMLDivElement | null>(null);
+  const hoverCardTitleRef = useRef<HTMLSpanElement | null>(null);
+  const hoverCardSubtitleRef = useRef<HTMLSpanElement | null>(null);
+  const sceneToolbarClusterRef = useRef<HTMLDivElement | null>(null);
+  const modeToggleButtonRef = useRef<HTMLButtonElement | null>(null);
+  const toolbarHintRef = useRef<HTMLDivElement | null>(null);
+  const editModeNudgeStateRef = useRef<ThirdEditModeNudgeState>(createInitialThirdEditModeNudgeState());
+  const editModeNudgeHideTimerRef = useRef<number | null>(null);
   const viewportMenuRef = useRef<HTMLDivElement | null>(null);
   const hierarchyMenuRef = useRef<HTMLDivElement | null>(null);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
   const mobileUtilityDrawerRef = useRef<HTMLElement | null>(null);
   const mobileDrawerDragStateRef = useRef<MobileDrawerDragState | null>(null);
   const suppressMobileDrawerHandleClickRef = useRef(false);
+  const mobileLayoutRef = useRef<boolean>(
+    typeof window !== 'undefined' && isThirdMobileUtilityViewport(window.innerWidth)
+  );
+  const viewportMenuOpenRef = useRef(false);
   const projectionModeRef = useRef<ThirdProjectionMode>(cameraState.projectionMode);
   const utilityTabRefsRef = useRef<Partial<Record<ThirdUtilityTabId, HTMLButtonElement | null>>>({});
   const initialUtilityPanelSession = useMemo<ThirdUtilityPanelSession>(
@@ -871,6 +906,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   const [mobileDrawerDragging, setMobileDrawerDragging] = useState(false);
   const [mobileToolbarExpanded, setMobileToolbarExpanded] = useState(false);
   const [viewportMenu, setViewportMenu] = useState<ViewportMenuState | null>(null);
+  const [hoverCardObjectId, setHoverCardObjectId] = useState<string | null>(null);
+  const [editModeNudgeVisible, setEditModeNudgeVisible] = useState(false);
   const [hierarchyMenu, setHierarchyMenu] = useState<HierarchyMenuState | null>(null);
   const [hierarchyExpanded, setHierarchyExpanded] = useState(true);
   const [hierarchyCollapsedIds, setHierarchyCollapsedIds] = useState<Set<string>>(() => new Set());
@@ -948,6 +985,155 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       isRenaming: hasSelection && renamingObjectId === hierarchyMenuObject?.id,
     });
   }, [editorMode, hierarchyMenu, hierarchyMenuObject, renamingObjectId]);
+
+  const motionDuration = useCallback((duration: number): number => (
+    prefersReducedMotionRef.current ? 0 : duration
+  ), []);
+
+  const writeHoverCardContent = useCallback((content: ThirdObjectHoverCardContent) => {
+    hoverCardContentRef.current = content;
+    if (hoverCardTitleRef.current) {
+      hoverCardTitleRef.current.textContent = content.title;
+    }
+    if (hoverCardSubtitleRef.current) {
+      hoverCardSubtitleRef.current.textContent = content.subtitle;
+    }
+  }, []);
+
+  const writeHoverCardSubtitle = useCallback((subtitle: string) => {
+    if (hoverCardContentRef.current) {
+      hoverCardContentRef.current.subtitle = subtitle;
+    } else {
+      hoverCardContentRef.current = {
+        title: '',
+        subtitle,
+      };
+    }
+    if (hoverCardSubtitleRef.current) {
+      hoverCardSubtitleRef.current.textContent = subtitle;
+    }
+  }, []);
+
+  const hideHoverCard = useCallback((immediate = false) => {
+    const wasVisible = hoveredObjectIdRef.current != null || hoverCardVisibleRef.current;
+    hoveredObjectIdRef.current = null;
+    hoverCardVisibleRef.current = false;
+    setHoverCardObjectId(null);
+    if (!wasVisible) return;
+    const hoverCard = hoverCardRef.current;
+    if (!hoverCard) return;
+    gsap.killTweensOf(hoverCard);
+    gsap.to(hoverCard, {
+      autoAlpha: 0,
+      scale: 0.92,
+      yPercent: -72,
+      duration: immediate ? 0 : motionDuration(0.14),
+      ease: 'power2.out',
+      overwrite: true,
+    });
+  }, [motionDuration]);
+
+  const showHoverCard = useCallback((objectId: string, content: ThirdObjectHoverCardContent) => {
+    hoveredObjectIdRef.current = objectId;
+    hoverCardVisibleRef.current = true;
+    setHoverCardObjectId((prev) => (prev === objectId ? prev : objectId));
+    writeHoverCardContent(content);
+    const hoverCard = hoverCardRef.current;
+    if (!hoverCard) return;
+    gsap.killTweensOf(hoverCard);
+    gsap.set(hoverCard, {
+      xPercent: -50,
+      yPercent: -72,
+      scale: 0.92,
+      autoAlpha: 0,
+    });
+    gsap.to(hoverCard, {
+      autoAlpha: 1,
+      scale: 1,
+      yPercent: -100,
+      duration: motionDuration(0.18),
+      ease: 'power2.out',
+      overwrite: true,
+    });
+  }, [motionDuration, writeHoverCardContent]);
+
+  const hideEditModeNudge = useCallback((immediate = false) => {
+    const wasVisible = editModeNudgeHideTimerRef.current != null || editModeNudgeVisible;
+    if (editModeNudgeHideTimerRef.current != null) {
+      window.clearTimeout(editModeNudgeHideTimerRef.current);
+      editModeNudgeHideTimerRef.current = null;
+    }
+    setEditModeNudgeVisible(false);
+    if (!wasVisible) return;
+
+    const modeToggleButton = modeToggleButtonRef.current;
+    if (modeToggleButton) {
+      gsap.killTweensOf(modeToggleButton);
+      gsap.to(modeToggleButton, {
+        scale: 1,
+        duration: immediate ? 0 : motionDuration(0.12),
+        ease: 'power2.out',
+        overwrite: true,
+      });
+    }
+
+    const toolbarHint = toolbarHintRef.current;
+    if (toolbarHint) {
+      gsap.killTweensOf(toolbarHint);
+      gsap.to(toolbarHint, {
+        autoAlpha: 0,
+        y: -6,
+        duration: immediate ? 0 : motionDuration(0.12),
+        ease: 'power2.out',
+        overwrite: true,
+      });
+    }
+  }, [editModeNudgeVisible, motionDuration]);
+
+  const triggerEditModeNudge = useCallback(() => {
+    if (mobileLayoutRef.current) return;
+    if (!sceneToolbarClusterRef.current) return;
+
+    if (editModeNudgeHideTimerRef.current != null) {
+      window.clearTimeout(editModeNudgeHideTimerRef.current);
+      editModeNudgeHideTimerRef.current = null;
+    }
+
+    setEditModeNudgeVisible(true);
+
+    const modeToggleButton = modeToggleButtonRef.current;
+    if (modeToggleButton) {
+      gsap.killTweensOf(modeToggleButton);
+      gsap.set(modeToggleButton, { scale: 1 });
+      if (!prefersReducedMotionRef.current) {
+        gsap.to(modeToggleButton, {
+          scale: 1.08,
+          duration: 0.8,
+          repeat: -1,
+          yoyo: true,
+          ease: 'sine.inOut',
+          overwrite: true,
+        });
+      }
+    }
+
+    const toolbarHint = toolbarHintRef.current;
+    if (toolbarHint) {
+      gsap.killTweensOf(toolbarHint);
+      gsap.set(toolbarHint, { y: -6, autoAlpha: 0 });
+      gsap.to(toolbarHint, {
+        autoAlpha: 1,
+        y: 0,
+        duration: motionDuration(0.18),
+        ease: 'power2.out',
+        overwrite: true,
+      });
+    }
+
+    editModeNudgeHideTimerRef.current = window.setTimeout(() => {
+      hideEditModeNudge();
+    }, THIRD_EDIT_MODE_NUDGE_COOLDOWN_MS);
+  }, [hideEditModeNudge, motionDuration]);
 
   const setInspectorFieldDraft = useCallback((key: InspectorFieldKey, value: string) => {
     setInspectorDraft((prev) => (prev[key] === value ? prev : { ...prev, [key]: value }));
@@ -1910,6 +2096,32 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   }, [editorMode]);
 
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      prefersReducedMotionRef.current = false;
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const syncReducedMotion = (matches: boolean) => {
+      prefersReducedMotionRef.current = matches;
+    };
+    syncReducedMotion(mediaQuery.matches);
+
+    const onChange = (event: MediaQueryListEvent) => {
+      syncReducedMotion(event.matches);
+    };
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', onChange);
+      return () => mediaQuery.removeEventListener('change', onChange);
+    }
+
+    const legacyListener = (event: MediaQueryListEvent) => onChange(event);
+    mediaQuery.addListener(legacyListener);
+    return () => mediaQuery.removeListener(legacyListener);
+  }, []);
+
+  useEffect(() => {
     selectedObjectRef.current = selectedObject;
   }, [selectedObject]);
 
@@ -1926,8 +2138,46 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   }, [objects]);
 
   useEffect(() => {
+    mobileLayoutRef.current = mobileLayout;
+  }, [mobileLayout]);
+
+  useEffect(() => {
+    viewportMenuOpenRef.current = viewportMenu != null;
+  }, [viewportMenu]);
+
+  useEffect(() => {
     objectLockedRef.current = new Map(objects.map((object) => [object.id, object.locked]));
   }, [objects]);
+
+  useEffect(() => {
+    const hoveredObjectId = hoveredObjectIdRef.current;
+    if (!hoveredObjectId) return;
+
+    const hoveredObject = objects.find((object) => object.id === hoveredObjectId);
+    if (!hoveredObject) {
+      hideHoverCard(true);
+      return;
+    }
+
+    const entry = engineRef.current?.entries.get(hoveredObjectId);
+    if (!entry) return;
+
+    const worldPosition = new THREE.Vector3();
+    entry.mesh.updateMatrixWorld(true);
+    entry.mesh.getWorldPosition(worldPosition);
+    const nextContent = buildThirdObjectHoverCardContent(hoveredObject.name, hoveredObject.type, {
+      x: worldPosition.x,
+      y: worldPosition.y,
+      z: worldPosition.z,
+    });
+
+    if (
+      hoverCardContentRef.current?.title !== nextContent.title
+      || hoverCardContentRef.current?.subtitle !== nextContent.subtitle
+    ) {
+      writeHoverCardContent(nextContent);
+    }
+  }, [hideHoverCard, objects, writeHoverCardContent]);
 
   useEffect(() => {
     setHierarchyCollapsedIds((prev) => {
@@ -1988,6 +2238,36 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   useEffect(() => {
     snapEnabledRef.current = snapEnabled;
   }, [snapEnabled]);
+
+  useEffect(() => {
+    if (editorMode === 'play' && !mobileLayout && !viewportMenu) return;
+    playClickCandidateRef.current = null;
+    hideHoverCard(true);
+  }, [editorMode, hideHoverCard, mobileLayout, viewportMenu]);
+
+  useEffect(() => {
+    if (editorMode === 'play' && !mobileLayout) return;
+    hideEditModeNudge(true);
+  }, [editorMode, hideEditModeNudge, mobileLayout]);
+
+  useEffect(() => () => {
+    if (editModeNudgeHideTimerRef.current != null) {
+      window.clearTimeout(editModeNudgeHideTimerRef.current);
+      editModeNudgeHideTimerRef.current = null;
+    }
+    const hoverCard = hoverCardRef.current;
+    if (hoverCard) {
+      gsap.killTweensOf(hoverCard);
+    }
+    const modeToggleButton = modeToggleButtonRef.current;
+    if (modeToggleButton) {
+      gsap.killTweensOf(modeToggleButton);
+    }
+    const toolbarHint = toolbarHintRef.current;
+    if (toolbarHint) {
+      gsap.killTweensOf(toolbarHint);
+    }
+  }, []);
 
   useEffect(() => {
     const engine = engineRef.current;
@@ -2133,6 +2413,10 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const localQuaternion = new THREE.Quaternion();
     const snappedWorldPosition = new THREE.Vector3();
     const snappedLocalPosition = new THREE.Vector3();
+    const hoverBounds = new THREE.Box3();
+    const hoverBoundsCenter = new THREE.Vector3();
+    const hoverAnchor = new THREE.Vector3();
+    const hoverWorldPosition = new THREE.Vector3();
     let panelBackgroundTap: ThirdPanelBackgroundTap | null = null;
     let panelTouchPress: PanelBackgroundTouchPress | null = null;
     let suppressPanelBackgroundTapUntilAllTouchesReleased = false;
@@ -2293,6 +2577,40 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const hasSceneObjectAtPointer = (clientX: number, clientY: number): boolean => (
       pickObject(clientX, clientY, { includeLocked: true }) != null
     );
+
+    const updateHoveredObjectAssist = (objectId: string | null) => {
+      if (!objectId) {
+        hideHoverCard();
+        return;
+      }
+
+      const hoveredObject = objectsRef.current.find((object) => object.id === objectId);
+      const entry = engine.entries.get(objectId);
+      if (!hoveredObject || !entry) {
+        hideHoverCard(true);
+        return;
+      }
+
+      entry.mesh.updateMatrixWorld(true);
+      entry.mesh.getWorldPosition(hoverWorldPosition);
+      const nextContent = buildThirdObjectHoverCardContent(hoveredObject.name, hoveredObject.type, {
+        x: hoverWorldPosition.x,
+        y: hoverWorldPosition.y,
+        z: hoverWorldPosition.z,
+      });
+
+      if (hoveredObjectIdRef.current === objectId && hoverCardVisibleRef.current) {
+        if (
+          hoverCardContentRef.current?.title !== nextContent.title
+          || hoverCardContentRef.current?.subtitle !== nextContent.subtitle
+        ) {
+          writeHoverCardContent(nextContent);
+        }
+        return;
+      }
+
+      showHoverCard(objectId, nextContent);
+    };
 
     const moveGrabTarget = (clientX: number, clientY: number) => {
       const activeGrab = engine.activeGrab;
@@ -2527,6 +2845,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
     const onPointerDown = (event: PointerEvent) => {
       if (event.pointerType === 'touch') {
+        hideHoverCard(true);
         engine.touchPointers.add(event.pointerId);
         clearTouchContextMenuCandidate();
 
@@ -2589,6 +2908,27 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       }
 
       if (modeRef.current !== 'play') return;
+      if (event.pointerType !== 'touch' && event.button === 0) {
+        const clickedObject = pickObject(event.clientX, event.clientY, { includeLocked: true });
+        playClickCandidateRef.current = clickedObject
+          ? {
+            pointerId: event.pointerId,
+            objectId: clickedObject.id,
+            startX: event.clientX,
+            startY: event.clientY,
+            moved: false,
+          }
+          : null;
+
+        if (clickedObject && !mobileLayoutRef.current && !viewportMenuOpenRef.current) {
+          updateHoveredObjectAssist(clickedObject.id);
+        } else if (!clickedObject) {
+          hideHoverCard();
+        }
+      } else if (event.pointerType !== 'touch') {
+        playClickCandidateRef.current = null;
+      }
+
       if (event.button !== 0 && event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
       const picked = pickObject(event.clientX, event.clientY, { requirePhysicsEligible: true });
       if (!picked) return;
@@ -2643,7 +2983,31 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         }
       }
 
+      const playClickCandidate = playClickCandidateRef.current;
+      if (playClickCandidate && playClickCandidate.pointerId === event.pointerId) {
+        const distance = Math.hypot(
+          event.clientX - playClickCandidate.startX,
+          event.clientY - playClickCandidate.startY
+        );
+        if (distance > PLAY_CLICK_TOLERANCE_PX) {
+          playClickCandidate.moved = true;
+        }
+      }
+
       const activeGrab = engine.activeGrab;
+      if (
+        modeRef.current === 'play'
+        && !mobileLayoutRef.current
+        && !viewportMenuOpenRef.current
+        && event.pointerType !== 'touch'
+        && activeGrab == null
+      ) {
+        const hoveredObject = pickObject(event.clientX, event.clientY, { includeLocked: true });
+        updateHoveredObjectAssist(hoveredObject?.id ?? null);
+      } else if (event.pointerType !== 'touch') {
+        hideHoverCard();
+      }
+
       if (!activeGrab || activeGrab.pointerId !== event.pointerId) return;
       moveGrabTarget(event.clientX, event.clientY);
     };
@@ -2656,6 +3020,29 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         rightClickCandidateRef.current = null;
         if (event.pointerType !== 'touch' && event.button === 2 && !rightClickCandidate.moved) {
           openViewportMenuAtPointer(event.clientX, event.clientY);
+        }
+      }
+
+      const playClickCandidate = playClickCandidateRef.current;
+      if (playClickCandidate && playClickCandidate.pointerId === event.pointerId) {
+        playClickCandidateRef.current = null;
+        const shouldResolvePlayClick = (
+          modeRef.current === 'play'
+          && event.type === 'pointerup'
+          && event.pointerType !== 'touch'
+          && event.button === 0
+          && !playClickCandidate.moved
+        );
+
+        if (shouldResolvePlayClick) {
+          const nudgeResult = resolveThirdEditModeNudge(editModeNudgeStateRef.current, {
+            objectId: playClickCandidate.objectId,
+            at: event.timeStamp,
+          });
+          editModeNudgeStateRef.current = nudgeResult.nextState;
+          if (nudgeResult.shouldShow) {
+            triggerEditModeNudge();
+          }
         }
       }
 
@@ -2675,6 +3062,15 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       } else if (activeGrab && event.pointerType === 'touch' && engine.touchPointers.size < 2) {
         activeGrab.touchCameraOverride = false;
         engine.orbit.enabled = false;
+      }
+
+      if (event.pointerType !== 'touch' && modeRef.current === 'play') {
+        if (!mobileLayoutRef.current && !viewportMenuOpenRef.current && event.type === 'pointerup') {
+          const hoveredObject = pickObject(event.clientX, event.clientY, { includeLocked: true });
+          updateHoveredObjectAssist(hoveredObject?.id ?? null);
+        } else if (event.type === 'pointercancel') {
+          hideHoverCard(true);
+        }
       }
 
       if (event.pointerType !== 'touch') return;
@@ -2726,6 +3122,14 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       }
     };
 
+    const onPointerLeave = (event: PointerEvent) => {
+      if (event.pointerType === 'touch') return;
+      if (playClickCandidateRef.current?.pointerId === event.pointerId) {
+        playClickCandidateRef.current = null;
+      }
+      hideHoverCard(true);
+    };
+
     const onContextMenu = (event: MouseEvent) => {
       event.preventDefault();
       event.stopPropagation();
@@ -2764,6 +3168,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     renderer.domElement.addEventListener('pointermove', onPointerMove);
     renderer.domElement.addEventListener('pointerup', onPointerUpOrCancel);
     renderer.domElement.addEventListener('pointercancel', onPointerUpOrCancel);
+    renderer.domElement.addEventListener('pointerleave', onPointerLeave);
     renderer.domElement.addEventListener('contextmenu', onContextMenu);
     renderer.domElement.addEventListener('dblclick', onDoubleClick);
 
@@ -2804,6 +3209,80 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         });
       }
 
+      const hoveredObjectId = hoveredObjectIdRef.current;
+      const hoverCard = hoverCardRef.current;
+      if (
+        hoveredObjectId
+        && hoverCard
+        && hoverCardVisibleRef.current
+        && modeRef.current === 'play'
+        && !mobileLayoutRef.current
+        && !viewportMenuOpenRef.current
+      ) {
+        const hoveredObject = objectsRef.current.find((object) => object.id === hoveredObjectId);
+        const entry = engine.entries.get(hoveredObjectId);
+        if (!hoveredObject || !entry) {
+          hideHoverCard(true);
+        } else {
+          entry.mesh.updateMatrixWorld(true);
+          entry.mesh.getWorldPosition(hoverWorldPosition);
+          const hoverContent = buildThirdObjectHoverCardContent(hoveredObject.name, hoveredObject.type, {
+            x: hoverWorldPosition.x,
+            y: hoverWorldPosition.y,
+            z: hoverWorldPosition.z,
+          });
+          if (hoverCardContentRef.current?.title !== hoverContent.title) {
+            writeHoverCardContent(hoverContent);
+          } else if (hoverCardContentRef.current?.subtitle !== hoverContent.subtitle) {
+            writeHoverCardSubtitle(hoverContent.subtitle);
+          }
+
+          hoverBounds.setFromObject(entry.mesh);
+          if (hoverBounds.isEmpty()) {
+            hideHoverCard(true);
+          } else {
+            hoverBounds.getCenter(hoverBoundsCenter);
+            hoverAnchor.copy(hoverBoundsCenter);
+            hoverAnchor.y = hoverBounds.max.y;
+            hoverAnchor.project(engine.camera);
+
+            const offscreen = (
+              !Number.isFinite(hoverAnchor.x)
+              || !Number.isFinite(hoverAnchor.y)
+              || !Number.isFinite(hoverAnchor.z)
+              || hoverAnchor.x < -1
+              || hoverAnchor.x > 1
+              || hoverAnchor.y < -1
+              || hoverAnchor.y > 1
+              || hoverAnchor.z < -1
+              || hoverAnchor.z > 1
+            );
+
+            if (offscreen) {
+              hideHoverCard(true);
+            } else {
+              const cardWidth = hoverCard.offsetWidth;
+              const cardHeight = hoverCard.offsetHeight;
+              const screenX = ((hoverAnchor.x + 1) / 2) * container.clientWidth;
+              const screenY = ((1 - hoverAnchor.y) / 2) * container.clientHeight - 12;
+              const clampedX = Math.max(
+                6 + cardWidth / 2,
+                Math.min(container.clientWidth - 6 - cardWidth / 2, screenX)
+              );
+              const clampedY = Math.max(
+                6 + cardHeight,
+                Math.min(container.clientHeight - 6, screenY)
+              );
+
+              gsap.set(hoverCard, {
+                x: clampedX,
+                y: clampedY,
+              });
+            }
+          }
+        }
+      }
+
       renderer.render(scene, engine.camera);
     };
     animate();
@@ -2834,6 +3313,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       renderer.domElement.removeEventListener('pointermove', onPointerMove);
       renderer.domElement.removeEventListener('pointerup', onPointerUpOrCancel);
       renderer.domElement.removeEventListener('pointercancel', onPointerUpOrCancel);
+      renderer.domElement.removeEventListener('pointerleave', onPointerLeave);
       renderer.domElement.removeEventListener('contextmenu', onContextMenu);
       renderer.domElement.removeEventListener('dblclick', onDoubleClick);
 
@@ -4091,6 +4571,15 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       data-panel-zoom-block="true"
     >
       <div ref={canvasHostRef} className={styles.canvasHost} />
+      <div
+        ref={hoverCardRef}
+        className={styles.objectHoverCard}
+        aria-hidden="true"
+        data-visible={hoverCardObjectId ? 'true' : 'false'}
+      >
+        <span ref={hoverCardTitleRef} className={styles.objectHoverCardTitle} />
+        <span ref={hoverCardSubtitleRef} className={styles.objectHoverCardSubtitle} />
+      </div>
 
       {viewportMenu ? (
         <div
@@ -4174,32 +4663,48 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
       {sceneToolbarVisible ? (
         <div
-          id={`third-scene-toolbar-${mode}`}
-          className={`${styles.sceneToolbar} ${mobileLayout ? styles.mobileSceneToolbar : ''}`.trim()}
-          role="toolbar"
-          aria-label="THIRD scene toolbar"
+          ref={sceneToolbarClusterRef}
+          className={styles.sceneToolbarCluster}
         >
-          {sceneToolbarItems.map((item, index) => {
-            const previous = sceneToolbarItems[index - 1];
-            const showDivider = previous && previous.group !== item.group;
-            return (
-              <React.Fragment key={item.id}>
-                {showDivider ? <span className={styles.sceneToolbarDivider} aria-hidden="true" /> : null}
-                <button
-                  type="button"
-                  className={`${styles.sceneToolbarBtn} ${item.active ? styles.sceneToolbarBtnActive : ''}`.trim()}
-                  onClick={() => runSceneToolbarAction(item.id)}
-                  disabled={item.disabled}
-                  title={item.title}
-                  aria-label={item.title}
-                  aria-pressed={item.active}
-                  data-toolbar-group={item.group}
-                >
-                  <span className={styles.sceneToolbarIcon}>{renderSceneToolbarIcon(item.icon)}</span>
-                </button>
-              </React.Fragment>
-            );
-          })}
+          <div
+            id={`third-scene-toolbar-${mode}`}
+            className={`${styles.sceneToolbar} ${mobileLayout ? styles.mobileSceneToolbar : ''}`.trim()}
+            role="toolbar"
+            aria-label="THIRD scene toolbar"
+          >
+            {sceneToolbarItems.map((item, index) => {
+              const previous = sceneToolbarItems[index - 1];
+              const showDivider = previous && previous.group !== item.group;
+              const isModeToggle = item.id === 'scene_toggle_mode';
+              return (
+                <React.Fragment key={item.id}>
+                  {showDivider ? <span className={styles.sceneToolbarDivider} aria-hidden="true" /> : null}
+                  <button
+                    ref={isModeToggle ? modeToggleButtonRef : undefined}
+                    type="button"
+                    className={[
+                      styles.sceneToolbarBtn,
+                      item.active ? styles.sceneToolbarBtnActive : '',
+                      isModeToggle && editModeNudgeVisible ? styles.sceneToolbarBtnPrompt : '',
+                    ].filter(Boolean).join(' ')}
+                    onClick={() => runSceneToolbarAction(item.id)}
+                    disabled={item.disabled}
+                    title={item.title}
+                    aria-label={item.title}
+                    aria-pressed={item.active}
+                    data-toolbar-group={item.group}
+                  >
+                    <span className={styles.sceneToolbarIcon}>{renderSceneToolbarIcon(item.icon)}</span>
+                  </button>
+                </React.Fragment>
+              );
+            })}
+          </div>
+          {!mobileLayout ? (
+            <div ref={toolbarHintRef} className={styles.sceneToolbarHint} aria-hidden="true">
+              ENTER EDIT MODE TO INTERACT WITH THE SCENE
+            </div>
+          ) : null}
         </div>
       ) : null}
 

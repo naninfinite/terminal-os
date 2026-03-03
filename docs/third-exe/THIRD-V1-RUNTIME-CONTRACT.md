@@ -171,6 +171,14 @@ On first load / destructive reset:
 ### PLAY mode
 
 - Physics stepping/simulation is `PLAY`-only.
+- Desktop pointer assist layer is available in `PLAY`:
+  - mouse/pen hover over any scene object shows a small anchored label above the object,
+  - label content is `name | type` plus live world position (`x / y / z`),
+  - label is visual-only and does not change keyboard/screen-reader flow.
+- Repeated desktop clicks can nudge edit entry without auto-switching modes:
+  - two quick non-drag clicks on the same object pulse the top-left mode-toggle button,
+  - a short hint appears under the toolbar: `ENTER EDIT MODE TO INTERACT WITH THE SCENE`,
+  - touch interactions do not show this nudge.
 - Object simulation/grab eligibility uses per-object physics + lock state:
   - object `physicsEnabled === true` and `locked !== true`.
 - Grab/drag uses raycast hit, fixed initial camera depth, and point-to-point constraint.
