@@ -5,7 +5,7 @@ import type { TronGameState, TronPlayerId } from '../../connect/types';
 
 type ConnectBoardCanvasProps = {
   game: TronGameState;
-  localPlayerId: TronPlayerId;
+  mode?: 'panel' | 'fullscreen';
 };
 
 const BACKGROUND_COLOR = '#03110b';
@@ -20,7 +20,7 @@ const HEAD_COLORS: Record<TronPlayerId, string> = {
 };
 const DEAD_COLOR = '#ff7d7d';
 
-const ConnectBoardCanvas: React.FC<ConnectBoardCanvasProps> = ({ game }) => {
+const ConnectBoardCanvas: React.FC<ConnectBoardCanvasProps> = ({ game, mode = 'panel' }) => {
   const frameRef = React.useRef<HTMLDivElement | null>(null);
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const [size, setSize] = React.useState({ width: 0, height: 0 });
@@ -30,10 +30,13 @@ const ConnectBoardCanvas: React.FC<ConnectBoardCanvasProps> = ({ game }) => {
     if (!frame) return undefined;
 
     const updateSize = () => {
-      setSize({
-        width: Math.max(1, Math.floor(frame.clientWidth)),
-        height: Math.max(1, Math.floor(frame.clientHeight)),
-      });
+      const nextWidth = Math.max(1, Math.floor(frame.clientWidth));
+      const nextHeight = Math.max(1, Math.floor(frame.clientHeight));
+      setSize((current) => (
+        current.width === nextWidth && current.height === nextHeight
+          ? current
+          : { width: nextWidth, height: nextHeight }
+      ));
     };
 
     updateSize();
@@ -117,7 +120,11 @@ const ConnectBoardCanvas: React.FC<ConnectBoardCanvasProps> = ({ game }) => {
   }, [game, size.height, size.width]);
 
   return (
-    <div ref={frameRef} className={styles.canvasFrame} data-panel-zoom-block="true">
+    <div
+      ref={frameRef}
+      className={`${styles.canvasFrame} ${mode === 'fullscreen' ? styles.canvasFrameFullscreen : ''}`.trim()}
+      data-panel-zoom-block="true"
+    >
       <canvas
         ref={canvasRef}
         className={styles.canvas}

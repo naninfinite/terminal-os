@@ -163,7 +163,7 @@ const CONNECT: React.FC<ConnectProps> = ({ mode = 'panel' }) => {
 
         {game ? (
           <div className={styles.boardShell}>
-            <ConnectBoardCanvas game={game} localPlayerId={localPlayerId} />
+            <ConnectBoardCanvas game={game} mode={mode} />
             <div className={styles.boardMeta}>
               <div className={styles.metaRow}>
                 <span>TICK {game.tick}</span>
