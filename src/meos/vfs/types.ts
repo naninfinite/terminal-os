@@ -4,7 +4,7 @@
 
 export type VfsNodeType = 'folder' | 'file';
 
-export type VfsFileKind = 'text' | 'image' | 'video' | 'project' | 'contact';
+export type VfsFileKind = 'text' | 'image' | 'video' | 'project' | 'contact' | 'game';
 
 export type VfsDocumentLayout = 'standard' | 'about';
 

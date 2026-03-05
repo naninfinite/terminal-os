@@ -1,0 +1,150 @@
+@use '../../../styles/variables' as *;
+
+.root {
+  --snake-lcd-bg: #001108;
+  --snake-lcd-ink: #00ff66;
+  --snake-lcd-grid: rgb(0 255 102 / 0.12);
+  border: $border;
+  background: $bg-black;
+  color: $phosphor-green;
+  padding: 10px;
+  min-height: 0;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  gap: 8px;
+  outline: none;
+}
+
+.root:focus-visible {
+  box-shadow: var(--ui-shadow-focus);
+}
+
+.hud {
+  display: grid;
+  gap: 4px;
+}
+
+.modeLabel,
+.summary,
+.hint,
+.metric,
+.controlButton {
+  font-family: $font-mono;
+  letter-spacing: 0.04em;
+}
+
+.modeLabel {
+  margin: 0;
+  font-size: $font-xs;
+  font-weight: 700;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.metric {
+  border: 1px solid rgb(0 255 102 / 0.4);
+  background: rgb(0 255 102 / 0.08);
+  padding: 5px 6px;
+  font-size: $font-xs;
+  white-space: nowrap;
+}
+
+.summary,
+.hint {
+  margin: 0;
+  border: 1px solid rgb(0 255 102 / 0.32);
+  background: rgb(0 255 102 / 0.06);
+  padding: 6px 8px;
+  font-size: $font-xs;
+  line-height: 1.4;
+}
+
+.boardFrame {
+  min-height: 240px;
+  border: 2px solid rgb(0 255 102 / 0.45);
+  background: rgb(0 255 102 / 0.08);
+  padding: 10px;
+  display: grid;
+  place-items: center;
+}
+
+.boardCanvas {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  border: 2px solid rgb(0 255 102 / 0.6);
+  background: var(--snake-lcd-bg);
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.metaControls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.directionPad {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(60px, 1fr));
+  gap: 6px;
+}
+
+.directionSpacer {
+  visibility: hidden;
+}
+
+.controlButton {
+  border: 1px solid rgb(0 255 102 / 0.6);
+  background: rgb(0 255 102 / 0.1);
+  color: inherit;
+  font: inherit;
+  font-size: $font-xs;
+  min-height: 34px;
+  padding: 6px 8px;
+}
+
+.controlButton:hover,
+.controlButton:focus-visible {
+  border-color: rgb(0 255 102 / 0.9);
+  background: rgb(0 255 102 / 0.18);
+  box-shadow: inset 0 0 0 1px rgb(0 255 102 / 0.16);
+}
+
+@media (max-width: 760px) {
+  .controls {
+    grid-template-columns: 1fr;
+  }
+
+  .directionPad {
+    width: 100%;
+  }
+}
+
+@media (max-width: $bp-phone) {
+  .root {
+    padding: 8px;
+  }
+
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .metaControls {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .directionPad {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

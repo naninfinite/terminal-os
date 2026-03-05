@@ -21,6 +21,7 @@ import {
   IDG_20250710_004909_371_ID,
   IMG_0285_ID,
   PROJECT_PROZILLA_ID,
+  SNAKE_GAME_ID,
   PROJECT_TERMINAL_OS_ID,
   PROJECTS_ID,
   REEL_ID,
@@ -62,7 +63,12 @@ const uid = (): string => (
 );
 
 const isValidKind = (kind: unknown): kind is VfsFileKind => (
-  kind === 'text' || kind === 'image' || kind === 'video' || kind === 'project' || kind === 'contact'
+  kind === 'text'
+  || kind === 'image'
+  || kind === 'video'
+  || kind === 'project'
+  || kind === 'contact'
+  || kind === 'game'
 );
 
 const isDocumentLayout = (value: unknown): value is VfsDocumentLayout => (
@@ -364,6 +370,7 @@ const ensureCanonicalStructure = (snapshot: VfsSnapshot): void => {
     seed.nodes[REEL_ID],
     seed.nodes[PROJECT_TERMINAL_OS_ID],
     seed.nodes[PROJECT_PROZILLA_ID],
+    seed.nodes[SNAKE_GAME_ID],
   ];
 
   const existingReadme = (

@@ -5,7 +5,7 @@
 
 export type MeOsDisplayMode = 'panel' | 'fullscreen';
 
-export type MeOsViewerKind = 'text' | 'image' | 'video' | 'project' | 'contact';
+export type MeOsViewerKind = 'text' | 'image' | 'video' | 'project' | 'contact' | 'game';
 
 export type MeOsDesktopEntryId =
   | 'home'
@@ -33,7 +33,8 @@ export type MeOsAppId =
   | 'viewer_image'
   | 'viewer_video'
   | 'viewer_project'
-  | 'viewer_contact';
+  | 'viewer_contact'
+  | 'viewer_game';
 
 export type MeOsWindowRect = {
   x: number;

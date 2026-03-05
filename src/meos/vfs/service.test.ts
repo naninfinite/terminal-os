@@ -11,10 +11,13 @@ import {
   MEDIA_ID,
   PHOTOS_ID,
   PORTRAIT_ID,
+  PROJECT_PROZILLA_ID,
+  PROJECT_TERMINAL_OS_ID,
   PROJECTS_ID,
   README_ID,
   REEL_ID,
   REEL_THUMBNAIL_ID,
+  SNAKE_GAME_ID,
   VIDEOS_ID,
 } from './seed';
 import { LEGACY_PHASE3_KEY, MeOsVfsService, VFS_STORAGE_KEY, type VfsStorageAdapter } from './service';
@@ -51,6 +54,11 @@ describe('MeOsVfsService', () => {
       DSC00479_ID,
       IDG_20250710_004909_371_ID,
       IMG_0285_ID,
+    ]);
+    expect(service.listChildren(PROJECTS_ID).map((node) => node.id)).toEqual([
+      PROJECT_TERMINAL_OS_ID,
+      PROJECT_PROZILLA_ID,
+      SNAKE_GAME_ID,
     ]);
     expect(service.listChildren(VIDEOS_ID).map((node) => node.id)).toEqual([REEL_ID]);
     expect(service.getNode(REEL_ID)?.videoThumbnailId).toBe(REEL_THUMBNAIL_ID);
@@ -189,6 +197,11 @@ describe('MeOsVfsService', () => {
       ABOUT_DOC_ID,
       CONTACT_CARD_ID,
       README_ID,
+    ]);
+    expect(service.listChildren(PROJECTS_ID).map((node) => node.id)).toEqual([
+      PROJECT_TERMINAL_OS_ID,
+      PROJECT_PROZILLA_ID,
+      SNAKE_GAME_ID,
     ]);
     expect(service.listChildren(MEDIA_ID).map((node) => node.id)).toEqual([PHOTOS_ID, VIDEOS_ID]);
     expect(service.listChildren(PHOTOS_ID).map((node) => node.id)).toContain(PORTRAIT_ID);
