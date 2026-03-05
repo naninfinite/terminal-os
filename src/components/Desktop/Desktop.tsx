@@ -13,6 +13,7 @@ import styles from './Desktop.module.scss';
 import { useMeOs } from '../../meos/shell/MeOsProvider';
 import { useThirdRuntime } from '../../third/ThirdProvider';
 import { useConnectRuntime } from '../../connect/ConnectProvider';
+import { useYouBoard } from '../../you/YouProvider';
 import { loadThirdSurface, ThirdLoadingSurface } from '../THIRD/loadThirdSurface';
 import {
   SUBSYSTEM_CONTEXT_MENU_EVENT,
@@ -23,9 +24,10 @@ type DesktopPanelScope = 'me' | 'you' | 'third' | 'connect';
 const ThirdSurface = React.lazy(loadThirdSurface);
 
 const Desktop: React.FC = () => {
-  const { setActiveScope } = useMeOs();
-  const { displayMode: thirdDisplayMode } = useThirdRuntime();
-  const { displayMode: connectDisplayMode } = useConnectRuntime();
+  const { setActiveScope, openFullscreen: openMeFullscreen } = useMeOs();
+  const { openFullscreen: openYouFullscreen } = useYouBoard();
+  const { displayMode: thirdDisplayMode, openFullscreen: openThirdFullscreen } = useThirdRuntime();
+  const { displayMode: connectDisplayMode, openFullscreen: openConnectFullscreen } = useConnectRuntime();
   const [activeZoomPanel, setActiveZoomPanel] = React.useState<DesktopPanelScope>('me');
   const requestPanelContextMenu = useCallback((detail: SubsystemContextMenuEventDetail) => {
     window.dispatchEvent(
@@ -45,9 +47,15 @@ const Desktop: React.FC = () => {
       {/* Profile / portfolio entry panel. */}
       <Panel
         title="ME.EXE"
+        className={styles.mePanel}
         scopeId="me"
         stretchBody
         bodyClassName={styles.panelBodyFlush}
+        headerActions={(
+          <button type="button" onClick={openMeFullscreen}>
+            ENTER
+          </button>
+        )}
         enableTouchContextFallback
         enableMobilePinchZoom={activeZoomPanel === 'me'}
         suppressInteractiveTargets={false}
@@ -67,8 +75,14 @@ const Desktop: React.FC = () => {
       {/* Shared message-board panel (YOU runtime, preview mode). */}
       <Panel
         title="YOU.EXE"
+        className={styles.youPanel}
         scopeId="you"
         bodyClassName={styles.panelBodyFlush}
+        headerActions={(
+          <button type="button" onClick={openYouFullscreen}>
+            OPEN
+          </button>
+        )}
         enableTouchContextFallback
         enableMobilePinchZoom={activeZoomPanel === 'you'}
         onActivate={() => activatePanel('you')}
@@ -87,9 +101,15 @@ const Desktop: React.FC = () => {
       {/* Canvas app needs a stretching body so WebGL can fill available height. */}
       <Panel
         title="THIRD.EXE"
+        className={styles.thirdPanel}
         scopeId="third"
         stretchBody
         bodyClassName={styles.panelBodyFlush}
+        headerActions={(
+          <button type="button" onClick={openThirdFullscreen}>
+            ENTER SCENE LAB
+          </button>
+        )}
         enableTouchContextFallback
         onActivate={() => activatePanel('third')}
         onRequestContextMenu={({ x, y, source }) => {
@@ -108,11 +128,18 @@ const Desktop: React.FC = () => {
           </Suspense>
         )}
       </Panel>
-      {/* ASCII banner / contact panel. */}
+      {/* Shared Tron runtime preview; fullscreen reuses the same state. */}
       <Panel
         title="CONNECT.EXE"
+        className={styles.connectPanel}
         scopeId="connect"
+        stretchBody
         bodyClassName={styles.panelBodyFlush}
+        headerActions={(
+          <button type="button" onClick={openConnectFullscreen}>
+            OPEN
+          </button>
+        )}
         enableTouchContextFallback
         enableMobilePinchZoom={activeZoomPanel === 'connect'}
         onActivate={() => activatePanel('connect')}

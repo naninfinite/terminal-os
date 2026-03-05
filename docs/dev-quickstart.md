@@ -21,13 +21,17 @@ This quickstart condenses how to run the project, the main components to know, a
    npm run preview
    ```
 
-Optional env for YOU board backend:
+Optional env for YOU board backend and CONNECT realtime:
 ```bash
 # Supabase Edge Function base (must end with /you)
 VITE_YOU_API_BASE_URL=https://your-api-host.example
 
 # Optional only if Edge Function verify_jwt=true
 VITE_YOU_API_ANON_KEY=<optional_anon_publishable_key>
+
+# Supabase Realtime root + anon key for CONNECT.EXE Tron multiplayer
+VITE_CONNECT_SUPABASE_URL=https://<project-ref>.supabase.co
+VITE_CONNECT_SUPABASE_ANON_KEY=<your-anon-publishable-key>
 ```
 
 ## Branching / Workflow
@@ -55,6 +59,8 @@ Commit guidance:
 
 - `src/components/YOU/` + `src/you/` — `YOU.EXE` message board UI + service/provider runtime.
 
+- `src/components/CONNECT/` + `src/connect/` — `CONNECT.EXE` Tron UI, deterministic engine, CPU logic, and Supabase Realtime runtime.
+
 - `src/components/Cursor/` — custom cursor implementation (enabled on hover devices, respects reduced motion).
 
 - `src/components/Scanlines/` — CRT scanline overlay (decorative, `aria-hidden`).
@@ -72,6 +78,13 @@ Commit guidance:
   - Panel mode shows recent feed preview; fullscreen mode shows full feed with older-page loading.
   - Backend schema/contract reference: `docs/you-api-v1.md`.
   - Supabase ops details: `docs/you-exe/SUPABASE-SETUP-AND-OPS.md`.
+
+- CONNECT
+  - `src/components/CONNECT/CONNECT.tsx`
+  - Uses `ConnectProvider` plus pure logic modules in `src/connect/`.
+  - Multiplayer contract uses Supabase Realtime presence/broadcast only (no DB schema for v1).
+  - Configure `VITE_CONNECT_SUPABASE_URL` and `VITE_CONNECT_SUPABASE_ANON_KEY` for quick match + room codes; otherwise CPU mode still works.
+  - Runtime contract reference: `docs/connect-exe/CONNECT-TRON-V1.md`.
 
 - Cursor
   - `src/components/Cursor/Cursor.tsx`

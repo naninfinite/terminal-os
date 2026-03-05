@@ -175,26 +175,26 @@ Launch note:
 
 ### Step 4 - `CONNECT.EXE` Parity Track
 
-Goal: establish deterministic game runtime baseline and hub flow.
+Status: baseline shipped.
 
-Implementation slices:
+Current outcome:
 
-1. Build deterministic local game loop primitives first (fixed timestep).
-2. Implement local `Pong` baseline (2-player same device).
-3. Implement local `Tron` baseline target (4-player same device).
-4. Add hub runtime:
-  - panel shows lightweight lobby/session snapshot;
-  - fullscreen hosts active game/hub.
-5. Multiplayer phase (optional inside M6, otherwise M6.x):
-  - room/session management;
-  - realtime sync + reconnect handling;
-  - authority model for fair play.
+- `CONNECT.EXE` now ships a deterministic Tron runtime with fixed-step simulation.
+- Panel and fullscreen share one runtime instance.
+- Supabase Realtime quick match + room-code invites are in place for v1, with CPU fallback when realtime is unavailable.
+
+Delivered slices:
+
+1. Deterministic Tron engine with fixed timestep and pure snapshot serialization.
+2. Shared panel/fullscreen hub runtime with canvas rendering and keyboard/touch controls.
+3. CPU opponent with difficulty scaling.
+4. Supabase Realtime queue + room channels with host-authoritative snapshots and disconnect handling.
 
 M6 acceptance for CONNECT:
 
 - Deterministic local game baseline exists and is stable.
 - Hub follows shared panel/fullscreen runtime pattern.
-- Multiplayer path is explicitly designed and staged, even if full online rollout is deferred.
+- Multiplayer path is implemented in a lightweight v1 form and remains hardening work for later milestones.
 
 ---
 

@@ -1,6 +1,6 @@
 # Terminal-OS Timeline (Chronological)
 
-Last updated: 2026-03-02
+Last updated: 2026-03-05
 
 This is a curated, chronological narrative for quickly reloading context.
 It is intentionally higher-level than `docs/conversation-log.md`.
@@ -23,6 +23,20 @@ Key baseline claims:
 - `ME.OS` uses a persistent, versioned VFS service and deterministic seed/reset behavior.
 - `YOU.EXE` is a persistent message board backed by a Supabase Edge Function.
 - `THIRD.EXE` is an object-mode three.js playground with shared panel/fullscreen state and local autosave.
+- `CONNECT.EXE` is a shared Tron runtime with CPU fallback and Supabase Realtime multiplayer.
+
+---
+
+## 2026-03-05: CONNECT.EXE Tron V1
+
+What changed:
+- Replaced the static CONNECT banner with a deterministic Tron runtime rendered in canvas 2D.
+- Added shared panel/fullscreen state, quick match, room-code invites, CPU difficulties, and reconnect/disconnect handling.
+- Wired CONNECT into the status-bar menu and subsystem context menu with match-aware actions.
+
+Why it matters:
+- Moves CONNECT from placeholder chrome into a real subsystem with the same runtime parity expectations as ME, YOU, and THIRD.
+- Establishes the first browser-multiplayer baseline in the repo without introducing a backend schema or Edge Function for v1.
 
 ---
 

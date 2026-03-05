@@ -20,6 +20,11 @@ export type SubsystemContextMenuActionId =
   | 'open_you'
   | 'open_third'
   | 'open_connect'
+  | 'connect_quick_match'
+  | 'connect_play_cpu'
+  | 'connect_copy_room_code'
+  | 'connect_leave_match'
+  | 'connect_rematch'
   | 'open_home'
   | 'open_projects'
   | 'open_media'
@@ -30,9 +35,7 @@ export type SubsystemContextMenuActionId =
   | 'you_clear_input'
   | 'third_set_edit_mode'
   | 'third_set_play_mode'
-  | 'third_reset_scene'
-  | 'connect_copy_banner'
-  | 'todo_connect_notifications';
+  | 'third_reset_scene';
 
 export type SubsystemContextMenuRow =
   | { key: string; kind: 'status'; label: string }
@@ -53,6 +56,11 @@ type BuildSubsystemContextMenuArgs = {
   thirdNotificationCount: number;
   thirdMode: ThirdEditorMode;
   connectNotificationCount: number;
+  connectStatus: string;
+  connectRoomCode: string | null;
+  connectCanRequestRematch: boolean;
+  connectActiveMatch: boolean;
+  connectMultiplayerAvailable: boolean;
 };
 
 const titleForScope = (scope: SubsystemScope): string => {
@@ -148,21 +156,47 @@ export const buildSubsystemContextMenu = (args: BuildSubsystemContextMenuArgs): 
       return {
         title,
         rows: [
-          { key: 'status_notifications', kind: 'status', label: `NOTIFICATIONS: ${args.connectNotificationCount}` },
+          { key: 'status_notifications', kind: 'status', label: `STATE: ${args.connectStatus.toUpperCase()}` },
+          {
+            key: 'status_room',
+            kind: 'status',
+            label: `ROOM: ${args.connectRoomCode ?? (args.connectActiveMatch ? 'CPU' : '--')}`,
+          },
           {
             key: 'act_open_connect',
             kind: 'action',
             id: 'open_connect',
             label: openLabelForScope('connect', args.origin),
           },
-          { key: 'act_connect_copy', kind: 'action', id: 'connect_copy_banner', label: 'COPY BANNER' },
+          {
+            key: 'act_connect_quick_match',
+            kind: 'action',
+            id: 'connect_quick_match',
+            label: 'QUICK MATCH',
+            disabled: !args.connectMultiplayerAvailable,
+          },
+          { key: 'act_connect_cpu', kind: 'action', id: 'connect_play_cpu', label: 'PLAY CPU' },
+          {
+            key: 'act_connect_copy_room_code',
+            kind: 'action',
+            id: 'connect_copy_room_code',
+            label: 'COPY ROOM CODE',
+            disabled: !args.connectRoomCode,
+          },
           { key: 'div_todo', kind: 'divider' },
           {
-            key: 'act_todo_notifications',
+            key: 'act_connect_rematch',
             kind: 'action',
-            id: 'todo_connect_notifications',
-            label: 'TODO: NOTIFICATION ACTIONS',
-            disabled: true,
+            id: 'connect_rematch',
+            label: 'REMATCH',
+            disabled: !args.connectCanRequestRematch,
+          },
+          {
+            key: 'act_connect_leave',
+            kind: 'action',
+            id: 'connect_leave_match',
+            label: 'LEAVE MATCH',
+            disabled: !args.connectActiveMatch,
           },
         ],
       };

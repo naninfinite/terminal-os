@@ -14,13 +14,17 @@ Current Status:
 - Phase 0 implemented. Replace assets in `public/assets/` as needed.
 - Phase 1 skeleton implemented (App shell, Desktop layout, StatusBar, scanlines overlay).
 - Phase 2 implemented: panel placeholders and core behaviors. See `docs/phase-2.md` for details.
-- ME.EXE Finder Reset baseline implemented: sparse desktop icon lane, minimal folder windows, richer `About`/`Contact` document surfaces, read-only info windows, and updated shell/VFS migrations.
+- ME.EXE world-hub recovery baseline implemented: curated 5-item desktop stack, stronger shell hierarchy, `Start Here` hub content, richer project/media payoff, and updated shell/VFS migrations.
+- CONNECT.EXE now runs a shared Tron runtime with CPU fallback and Supabase Realtime multiplayer.
 
 Recent updates:
 - Implemented custom retro green mouse cursor with larger-on-hover behavior; hidden on touch devices; respects `prefers-reduced-motion`.
 - Fixed landing page responsive video box sizing and enter transition cleanup.
 - Added cross-surface mobile/tablet hardening (shell, status bar, ME shell, folder windows, viewers, YOU, CONNECT) with shared breakpoints and safe-area-aware fullscreen/status behavior.
 - Rebuilt `ME.EXE` around a Finder-style desktop metaphor while keeping Terminal-OS styling.
+- Shifted the desktop shell to a hero-plus-rail composition so `ME.EXE` reads as the world hub instead of one equal tile among four.
+- Reframed `THIRD.EXE` panel mode as a clean scene preview and simplified fullscreen utility tabs to `SCENE`, `OBJECT`, and `CAMERA`.
+- Replaced the static CONNECT placeholder with canvas-rendered Tron, quick match, room-code invites, and deterministic CPU play.
 
 Assets:
 - `landing-bg.mp4` (looping)
@@ -29,16 +33,16 @@ Assets:
 
 ---
 
-## Direction Update (2026-03-01)
+## Direction Update (2026-03-05)
 
 - `ME.EXE` now runs as a live miniature `ME.OS` inside the panel and expands to fullscreen without resetting state.
-- Desktop behavior is folder/file-first:
-  - `Home`, `Projects`, `Media`, and `Archive` open as folder windows.
-  - `About`, `Contact`, and `README.txt` live canonically in `Home` and appear on the desktop as aliases.
-  - `Get Info` windows expose read-only item metadata, including alias target paths.
+- Desktop behavior is world-hub-first:
+  - desktop icons are now `Start Here`, `Projects`, `Media`, `About`, and `Contact`;
+  - `Home` and `Archive` remain canonical folders in the VFS, but no longer occupy desktop icon slots;
+  - `Start Here` opens the canonical `README.txt` node as the orientation hub for the shell.
 - Global status bar remains fixed at the bottom.
 - One Start-like menu button remains context-aware by active scope.
-- Gallery/video browsing remains a deferred follow-up; current media/project viewers stay in place.
+- `THIRD.EXE` panel mode is preview-first; fullscreen carries the fuller scene-lab controls.
 
 Related docs:
 - `docs/phase-3.md`

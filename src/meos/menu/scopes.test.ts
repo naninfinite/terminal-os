@@ -8,6 +8,15 @@ describe('menu scopes', () => {
     expect(ids).toContain('third_reset_scene');
   });
 
+  it('includes Connect quick-match and CPU actions in connect scope menu', () => {
+    expect(MENU_SCOPE_CONFIG.connect.items.map((item) => item.id)).toEqual([
+      'focus_connect_panel',
+      'connect_quick_match',
+      'connect_play_cpu',
+      'toggle_theme',
+    ]);
+  });
+
   it('uses finder-style ME commands in desktop and me scopes', () => {
     expect(MENU_SCOPE_CONFIG.desktop.items.map((item) => item.id)).toEqual([
       'open_meos',

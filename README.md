@@ -12,6 +12,7 @@ Implemented now:
 - FileMan + viewer apps inside ME (`text`, `image`, `video`, `project`).
 - `YOU.EXE` persistent message board backed by Supabase Edge Function.
 - `THIRD.EXE` object-mode playground baseline (primitives, edit/play modes, physics grab, local autosave).
+- `CONNECT.EXE` Tron V1 with shared panel/fullscreen runtime, CPU opponent, quick match, and room-code multiplayer over Supabase Realtime.
 - Permanent subsystem dock navbar (`ME`, `YOU`, `THIRD`, `CONNECT`) with fullscreen/focus routing.
 - `YOU.EXE` dock indicator with session-only draft/unread signals.
 - Unified right-click / long-press context menus for subsystem dock + desktop panel roots (V1 scope).
@@ -71,6 +72,9 @@ Vite server baseline is configured in `vite.config.ts`:
 - Use `.env.example` as the committed template.
 - `VITE_YOU_API_BASE_URL` should point to the Supabase function root:
   - `https://<project-ref>.supabase.co/functions/v1/you`
+- `VITE_CONNECT_SUPABASE_URL` should point to the Supabase project root:
+  - `https://<project-ref>.supabase.co`
+- `VITE_CONNECT_SUPABASE_ANON_KEY` should be the browser-safe anon/publishable key for that project.
 - Never commit secrets. Service-role credentials must stay only in Supabase Edge Function secrets/runtime.
 
 ## YOU.EXE persistence (high level)
@@ -79,6 +83,14 @@ Vite server baseline is configured in `vite.config.ts`:
 - Current deployment runs with JWT verify disabled (no frontend `Authorization`/`apikey` requirement).
 - Client sends `x-you-client-key` on post requests; backend uses it for rate-limit identity and can fall back to IP/UA.
 - CORS must allow dev origins (`localhost`) and production domains, and include required headers (`content-type`, `x-you-client-key`, optionally `accept`).
+
+## CONNECT.EXE Tron (high level)
+
+- `CONNECT.EXE` uses Supabase Realtime only in v1: queue matchmaking uses presence on `connect:queue:v1`, and matches run on `connect:room:<CODE>:v1`.
+- No Postgres schema or Edge Function is required for Tron v1.
+- If `VITE_CONNECT_SUPABASE_URL` or `VITE_CONNECT_SUPABASE_ANON_KEY` is missing, CONNECT stays in CPU-only mode and multiplayer buttons remain unavailable.
+- Quick Match pairs the oldest two waiting clients; room-code invites let one player host and another join directly.
+- Local development: set the two Connect env vars, run `npm install`, then `npm run dev`. Open two tabs to test quick match or room-code flow.
 
 ## References
 
@@ -91,3 +103,4 @@ Vite server baseline is configured in `vite.config.ts`:
 - `docs/me-exe-evolution-plan.md`
 - `docs/responsive-mobile-tablet-baseline.md`
 - `docs/you-api-v1.md`
+- `docs/connect-exe/CONNECT-TRON-V1.md`

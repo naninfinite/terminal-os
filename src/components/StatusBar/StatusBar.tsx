@@ -98,6 +98,15 @@ const StatusBar: React.FC = () => {
   const {
     displayMode: connectDisplayMode,
     notificationCount: connectNotificationCount,
+    status: connectStatus,
+    roomCode: connectRoomCode,
+    multiplayerAvailable: connectMultiplayerAvailable,
+    canRequestRematch: connectCanRequestRematch,
+    mode: connectMode,
+    startQuickMatch,
+    startCpuMatch,
+    leaveMatch: leaveConnectMatch,
+    requestRematch: requestConnectRematch,
     openFullscreen: openConnectFullscreen,
     closeFullscreen: closeConnectFullscreen,
   } = useConnectRuntime();
@@ -319,6 +328,15 @@ const StatusBar: React.FC = () => {
     window.dispatchEvent(new CustomEvent(eventName));
   };
 
+  const copyConnectRoomCode = async () => {
+    if (!connectRoomCode || !navigator.clipboard) return;
+    try {
+      await navigator.clipboard.writeText(connectRoomCode);
+    } catch {
+      // Clipboard writes can fail silently depending on browser permissions.
+    }
+  };
+
   const dispatchYouTypeMessage = () => {
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
@@ -467,8 +485,11 @@ const StatusBar: React.FC = () => {
       case 'focus_connect_panel':
         focusPanel('connect');
         break;
-      case 'connect_copy_banner':
-        dispatchShellEvent('terminalos:connect:copy-banner');
+      case 'connect_quick_match':
+        startQuickMatch();
+        break;
+      case 'connect_play_cpu':
+        startCpuMatch();
         break;
       case 'noop':
       default:
@@ -498,6 +519,12 @@ const StatusBar: React.FC = () => {
       case 'open_connect':
         onSubsystemDockClick('connect');
         return;
+      case 'connect_quick_match':
+        startQuickMatch();
+        break;
+      case 'connect_play_cpu':
+        startCpuMatch();
+        break;
       case 'open_home':
         openNodeForScope(HOME_ID);
         break;
@@ -528,10 +555,15 @@ const StatusBar: React.FC = () => {
       case 'third_reset_scene':
         resetThirdScene();
         break;
-      case 'connect_copy_banner':
-        dispatchShellEvent('terminalos:connect:copy-banner');
+      case 'connect_copy_room_code':
+        void copyConnectRoomCode();
         break;
-      case 'todo_connect_notifications':
+      case 'connect_leave_match':
+        leaveConnectMatch();
+        break;
+      case 'connect_rematch':
+        requestConnectRematch();
+        break;
       default:
         break;
     }
@@ -549,9 +581,19 @@ const StatusBar: React.FC = () => {
       thirdNotificationCount,
       thirdMode,
       connectNotificationCount,
+      connectStatus,
+      connectRoomCode,
+      connectCanRequestRematch,
+      connectActiveMatch: connectMode !== 'idle',
+      connectMultiplayerAvailable,
     });
   }, [
+    connectCanRequestRematch,
+    connectMode,
     connectNotificationCount,
+    connectMultiplayerAvailable,
+    connectRoomCode,
+    connectStatus,
     meWindowCount,
     subsystemMenu,
     thirdNotificationCount,

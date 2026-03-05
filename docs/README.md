@@ -1,6 +1,6 @@
 # Terminal-OS Documentation Hub
 
-Last updated: 2026-03-02
+Last updated: 2026-03-05
 
 This folder is the human-readable documentation for Terminal-OS.
 
@@ -27,6 +27,8 @@ If you are working in a specific subsystem:
   - `docs/you-exe/YOU-API-SOURCE-OF-TRUTH.md` (product constraints and M6 scope)
 - THIRD.EXE:
   - `docs/third-exe/THIRD-V1-RUNTIME-CONTRACT.md` (runtime contract for the 3D editor baseline)
+- CONNECT.EXE:
+  - `docs/connect-exe/CONNECT-TRON-V1.md` (Tron runtime, matchmaking, and Supabase env contract)
 - Program / roadmap:
   - `docs/subsystem-expansion-roadmap.md` (M6 program definition and exit criteria)
 

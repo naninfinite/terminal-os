@@ -12,6 +12,11 @@ describe('subsystemContextMenu model', () => {
       thirdNotificationCount: 0,
       thirdMode: 'play',
       connectNotificationCount: 0,
+      connectStatus: 'idle',
+      connectRoomCode: null,
+      connectCanRequestRematch: false,
+      connectActiveMatch: false,
+      connectMultiplayerAvailable: true,
     });
 
     expect(model.title).toBe('ME.EXE');
@@ -49,6 +54,11 @@ describe('subsystemContextMenu model', () => {
       thirdNotificationCount: 0,
       thirdMode: 'play',
       connectNotificationCount: 0,
+      connectStatus: 'idle',
+      connectRoomCode: null,
+      connectCanRequestRematch: false,
+      connectActiveMatch: false,
+      connectMultiplayerAvailable: true,
     });
 
     expect(model.rows.map((row) => row.kind)).toEqual([
@@ -87,6 +97,11 @@ describe('subsystemContextMenu model', () => {
       thirdNotificationCount: 0,
       thirdMode: 'play',
       connectNotificationCount: 0,
+      connectStatus: 'idle',
+      connectRoomCode: null,
+      connectCanRequestRematch: false,
+      connectActiveMatch: false,
+      connectMultiplayerAvailable: true,
     });
     const noDraftActions = noDraft.rows
       .filter((row): row is Extract<typeof row, { kind: 'action' }> => row.kind === 'action');
@@ -105,6 +120,11 @@ describe('subsystemContextMenu model', () => {
       thirdNotificationCount: 0,
       thirdMode: 'play',
       connectNotificationCount: 0,
+      connectStatus: 'idle',
+      connectRoomCode: null,
+      connectCanRequestRematch: false,
+      connectActiveMatch: false,
+      connectMultiplayerAvailable: true,
     });
     const withDraftActions = withDraft.rows
       .filter((row): row is Extract<typeof row, { kind: 'action' }> => row.kind === 'action');
@@ -115,7 +135,7 @@ describe('subsystemContextMenu model', () => {
     expect(withDraftActions.find((row) => row.id === 'you_clear_input')?.disabled).toBe(false);
   });
 
-  it('builds THIRD menu with mode action and CONNECT TODO placeholder', () => {
+  it('builds THIRD menu with mode action and CONNECT room controls', () => {
     const third = buildSubsystemContextMenu({
       scope: 'third',
       origin: 'dock',
@@ -125,6 +145,11 @@ describe('subsystemContextMenu model', () => {
       thirdNotificationCount: 0,
       thirdMode: 'play',
       connectNotificationCount: 0,
+      connectStatus: 'idle',
+      connectRoomCode: null,
+      connectCanRequestRematch: false,
+      connectActiveMatch: false,
+      connectMultiplayerAvailable: true,
     });
     const connect = buildSubsystemContextMenu({
       scope: 'connect',
@@ -135,16 +160,25 @@ describe('subsystemContextMenu model', () => {
       thirdNotificationCount: 0,
       thirdMode: 'edit',
       connectNotificationCount: 0,
+      connectStatus: 'round_over',
+      connectRoomCode: 'AB12ZX',
+      connectCanRequestRematch: true,
+      connectActiveMatch: true,
+      connectMultiplayerAvailable: true,
     });
 
     const thirdModeAction = third.rows.find(
       (row) => row.kind === 'action' && row.id === 'third_set_edit_mode'
     );
-    const connectTodo = connect.rows.find(
-      (row) => row.kind === 'action' && row.id === 'todo_connect_notifications'
+    const connectRematch = connect.rows.find(
+      (row) => row.kind === 'action' && row.id === 'connect_rematch'
+    );
+    const connectLeave = connect.rows.find(
+      (row) => row.kind === 'action' && row.id === 'connect_leave_match'
     );
 
     expect(thirdModeAction && thirdModeAction.kind === 'action' ? thirdModeAction.disabled : undefined).toBeFalsy();
-    expect(connectTodo && connectTodo.kind === 'action' ? connectTodo.disabled : undefined).toBe(true);
+    expect(connectRematch && connectRematch.kind === 'action' ? connectRematch.disabled : undefined).toBe(false);
+    expect(connectLeave && connectLeave.kind === 'action' ? connectLeave.disabled : undefined).toBe(false);
   });
 });

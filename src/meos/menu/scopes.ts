@@ -18,7 +18,8 @@ export type MenuCommandId =
   | 'third_toggle_mode'
   | 'third_reset_scene'
   | 'focus_connect_panel'
-  | 'connect_copy_banner'
+  | 'connect_quick_match'
+  | 'connect_play_cpu'
   | 'noop';
 
 export type MenuItemConfig = {
@@ -78,7 +79,8 @@ export const MENU_SCOPE_CONFIG: Record<MenuScopeId, MenuScopeConfig> = {
     title: 'CONNECT',
     items: [
       { id: 'focus_connect_panel', label: 'FOCUS CONNECT PANEL' },
-      { id: 'connect_copy_banner', label: 'COPY BANNER' },
+      { id: 'connect_quick_match', label: 'QUICK MATCH' },
+      { id: 'connect_play_cpu', label: 'PLAY CPU' },
       ...THEME_MENU_ITEMS,
     ],
   },

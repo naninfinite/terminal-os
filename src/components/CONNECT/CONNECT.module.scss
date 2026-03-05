@@ -1,16 +1,13 @@
 @use '../../styles/variables' as *;
 
 .root {
-  /* Full inner clickable area, matching ME inset hover footprint. */
   width: 100%;
   height: 100%;
   min-height: 0;
   min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   border: 1px solid transparent;
   box-sizing: border-box;
+  display: grid;
 }
 
 .root:hover,
@@ -24,92 +21,230 @@
   box-shadow: none;
 }
 
-.banner {
-  /* Keep ASCII centered inside the panel regardless of panel width. */
-  text-align: center;
-  max-width: 100%;
-  margin: 0;
-  /* Prevent browser typography rules from collapsing ASCII line alignment. */
-  white-space: pre;
-  /* Match the terminal vibe and avoid fallback font width jitter. */
-  font-family: $font-mono;
-  /* Slightly tighter spacing keeps the banner readable in smaller panels. */
-  line-height: 1.1;
-  font-size: clamp(6px, 2vw, $font-sm);
-  /* Prevent inner horizontal scrollbar in the CONNECT panel. */
-  overflow: hidden;
-}
-
-.fullscreenLayer {
-  position: fixed;
-  inset: 0 0 calc(#{$status-height} + env(safe-area-inset-bottom, 0px)) 0;
-  z-index: 33;
-  border: $border;
-  background: var(--ui-overlay-bg);
-  box-sizing: border-box;
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
-}
-
-.fullscreenSurface {
+.surface {
   height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  background: $bg-black;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
+  gap: 8px;
+  padding: 8px;
+  border: $border;
+  background:
+    radial-gradient(circle at top left, rgb(125 255 183 / 0.08), transparent 36%),
+    radial-gradient(circle at bottom right, rgb(102 207 255 / 0.08), transparent 30%),
+    $bg-black;
+  box-sizing: border-box;
 }
 
-.fullscreenHeader {
+.topRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-width: 0;
-  padding: 4px 8px;
-  border-bottom: $border-thin solid $phosphor-green;
 }
 
-.fullscreenTitle {
-  font-size: $font-sm;
-  letter-spacing: $letter-spacing;
+.identity {
   min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.stateToken,
+.connectionToken,
+.scoreLabel,
+.selectLabel {
+  font-size: $font-xs;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stateToken {
+  color: $phosphor-cyan;
+}
+
+.connectionToken {
+  color: var(--ui-text-muted);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.fullscreenCloseBtn {
+.modeBtn,
+.actionBtn,
+.touchBtn,
+.select,
+.joinInput {
   border: $border;
   background: $bg-black;
   color: $phosphor-green;
-  padding: 2px 8px;
-  flex: 0 0 auto;
+  font: inherit;
 }
 
-.fullscreenBody {
+.modeBtn,
+.actionBtn,
+.touchBtn {
+  padding: 4px 10px;
+  font-size: $font-xs;
+  letter-spacing: 0.04em;
+}
+
+.modeBtn:disabled,
+.actionBtn:disabled {
+  opacity: 0.5;
+}
+
+.scoreboard {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.scoreCard {
+  border: 1px solid var(--ui-border-soft);
+  background: rgb(7 19 12 / 0.88);
+  padding: 6px 8px;
+  display: grid;
+  gap: 4px;
+}
+
+.scoreValue {
+  font-size: $font-md;
+}
+
+.hint,
+.noteText,
+.errorText {
+  margin: 0;
+  font-size: $font-xs;
+  line-height: 1.4;
+}
+
+.hint {
+  border: 1px solid var(--ui-border-soft);
+  background: rgb(7 19 12 / 0.78);
+  padding: 6px 8px;
+}
+
+.boardShell,
+.statusPanel {
   min-height: 0;
   display: grid;
-  place-items: center;
+  gap: 8px;
+}
+
+.statusPanel {
+  border: 1px solid var(--ui-border-soft);
+  background: rgb(7 19 12 / 0.78);
+  padding: 10px;
+}
+
+.canvasFrame {
+  min-height: 0;
+  height: 100%;
+  border: 1px solid var(--ui-border-soft);
+  background: rgb(4 12 8 / 0.95);
+  padding: 8px;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+}
+
+.boardMeta {
+  display: grid;
+  gap: 6px;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: $font-xs;
+  color: var(--ui-text-muted);
+  letter-spacing: 0.04em;
+}
+
+.actionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.joinRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  grid-column: 1 / -1;
+}
+
+.joinInput {
+  width: 100%;
+  min-width: 0;
+  padding: 4px 8px;
+  box-sizing: border-box;
+}
+
+.selectWrap {
+  display: grid;
+  gap: 4px;
+}
+
+.select {
+  width: 100%;
+  padding: 4px 8px;
+}
+
+.roomRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.roomCode {
+  border: 1px solid var(--ui-border-soft);
+  background: rgb(7 19 12 / 0.88);
+  padding: 4px 8px;
+  font-size: $font-sm;
+  letter-spacing: 0.16em;
+}
+
+.touchControls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.touchBtn {
+  min-height: 38px;
+}
+
+.errorText {
+  color: var(--ui-text-alert, #ff8e8e);
+}
+
+@media (max-width: $bp-tablet) {
+  .surface {
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .scoreboard,
+  .actionGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: $bp-phone) {
-  .fullscreenHeader {
-    padding: 3px 6px;
-    gap: 6px;
+  .joinRow {
+    grid-template-columns: 1fr;
   }
 
-  .fullscreenCloseBtn {
-    padding: 2px 6px;
-  }
-
-  .banner {
-    line-height: 1.05;
-  }
-}
-
-@media (max-width: $bp-narrow) {
-  .fullscreenLayer {
-    border-left: 0;
-    border-right: 0;
+  .metaRow {
+    flex-wrap: wrap;
   }
 }

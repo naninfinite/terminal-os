@@ -1821,3 +1821,42 @@ Why it matters:
 Risks / Notes:
 - Hover labels are visual-only and are intentionally suppressed for touch/mobile interactions.
 - Click nudges do not auto-switch to `EDIT`; they only highlight the existing mode toggle affordance.
+
+---
+
+## Entry 86 - CONNECT.EXE Tron V1
+
+Summary:
+- Replaced the static `CONNECT.EXE` ASCII placeholder with a shared Tron runtime rendered in canvas 2D.
+- Added deterministic engine/state serialization, CPU difficulties, quick match, and room-code invites over Supabase Realtime presence/broadcast.
+- Updated CONNECT menu/context actions to expose quick match, CPU, rematch, leave, and room-code copy flows.
+
+Why it matters:
+- Delivers the first real multiplayer subsystem in Terminal-OS while preserving the shared panel/fullscreen runtime contract.
+- Keeps backend scope intentionally small for v1 by using Realtime only and falling back cleanly to CPU mode when env/config is missing.
+
+Risks / Notes:
+- Realtime sync is intentionally lightweight host-authoritative correction, not full rollback netcode.
+- CONNECT v1 does not persist replays, rankings, or stats, and it does not require any Postgres schema changes.
+
+---
+
+## Entry 87 - World-First Shell Recovery (ME Hub + THIRD Preview Pass)
+
+Summary:
+- Reworked the large-screen desktop shell into a hero-plus-rail layout so `ME.EXE` reads as the primary world hub.
+- Added explicit panel-header entry actions (`ENTER`, `OPEN`, `ENTER SCENE LAB`) so fullscreen entry is discoverable without relying on background gestures.
+- Curated the ME desktop icon set down to `Start Here`, `Projects`, `Media`, `About`, and `Contact`.
+- Turned canonical `README.txt` into the `Start Here` hub surface with explicit next-open actions for `Projects`, `Media`, and `About`.
+- Updated `About`, `Contact`, project cards, and FileMan folder surfaces so ME feels more authored and less placeholder-heavy.
+- Simplified `THIRD.EXE` panel mode into a clean live preview and reduced fullscreen top-level utility tabs to `SCENE`, `OBJECT`, and `CAMERA`.
+
+Why it matters:
+- Gives Terminal-OS a clearer first minute: users now land in a world hub instead of an evenly weighted 2x2 grid and a sparse file browser.
+- Makes `ME.EXE` feel more like an operating-system surface with orientation, payoff, and hierarchy instead of only shell mechanics.
+- Reduces `THIRD.EXE` panel clutter so the desktop stays readable while preserving the fuller scene-lab workflow in fullscreen.
+
+Risks / Notes:
+- `Home` and `Archive` remain canonical VFS folders but are intentionally absent from the desktop surface.
+- `THIRD.EXE` still uses the same provider/runtime boundary; this pass simplifies the user-facing UI rather than adding new editor capabilities.
+- Added focused regressions for ME desktop entries, the `Start Here` hub, panel header actions, and the simplified THIRD panel/fullscreen split.

@@ -29,6 +29,7 @@
     "@fortawesome/free-regular-svg-icons": "^7.2.0",
     "@fortawesome/free-solid-svg-icons": "^7.2.0",
     "@fortawesome/react-fontawesome": "^3.2.0",
+    "@supabase/supabase-js": "^2.98.0",
     "cannon-es": "^0.20.0",
     "gsap": "^3.14.2",
     "react": "^19.1.1",
