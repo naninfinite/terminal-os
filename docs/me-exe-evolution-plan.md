@@ -101,3 +101,17 @@ That roadmap now holds:
 2. Step-by-step delivery order.
 3. Separate complexity tracks for `THIRD`, `YOU`, and `CONNECT`.
 4. M7 post-parity preview.
+
+## 11) Deferred Shell Follow-Ups
+
+These items are intentionally deferred behind the current shell recovery baseline:
+
+1. Featured-panel identity pass:
+   - when a subsystem is promoted into the left-hand hero slot, give it a materially stronger hero-state presentation instead of only reflowing layout.
+2. `ME.EXE` media payoff pass:
+   - deepen the `Media` surface with richer browsing, stronger poster/reel framing, and more authored atmosphere.
+3. Desktop stage-transition motion pass:
+   - evaluate a GSAP-driven desktop-only promotion transition where panels shift and slot into place,
+   - preserve fullscreen behavior,
+   - respect reduced-motion preferences,
+   - avoid turning the shell into an auto-rotating carousel.

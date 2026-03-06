@@ -1821,3 +1821,30 @@ Why it matters:
 Risks / Notes:
 - Hover labels are visual-only and are intentionally suppressed for touch/mobile interactions.
 - Click nudges do not auto-switch to `EDIT`; they only highlight the existing mode toggle affordance.
+
+---
+
+## Entry 88 - Deferred Follow-Ups: Hero-State Depth + ME Media + Desktop Slot Motion
+
+Summary:
+- Captured the next deferred shell follow-ups after the world-first recovery pass:
+  - stronger subsystem-specific hero-state presentation when a panel is promoted into the left-hand stage,
+  - a deeper `ME.EXE` media/payoff pass,
+  - a desktop-only GSAP stage-promotion animation where panels shift and slot into place.
+
+Why it matters:
+- Prevents the new swappable hero layout from stopping at pure rearrangement.
+- Keeps the next visual/interaction steps explicit without mixing them into the current recovery commit.
+- Preserves the direction that Terminal-OS should feel like an authored operating environment, not a generic panel carousel.
+
+Deferred TODOs:
+- Shell / Desktop:
+  - add distinct featured-state treatments for `ME.EXE`, `YOU.EXE`, `THIRD.EXE`, and `CONNECT.EXE` when each owns the main stage.
+  - evaluate GSAP-driven stage transitions for desktop hero swaps so panels visibly shift into their new slots.
+  - keep any stage transition desktop-only, preserve current fullscreen behavior, and respect reduced-motion preferences.
+- `ME.EXE`:
+  - schedule a deeper `Media` pass focused on richer browsing hierarchy, featured poster/reel treatment, and stronger authored atmosphere.
+
+Risks / Notes:
+- This is backlog capture only; no new runtime motion behavior was added in this pass.
+- The GSAP idea is framed as staged layout motion, not autoplay or rotating-carousel behavior.
