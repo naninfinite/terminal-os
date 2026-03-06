@@ -7,11 +7,11 @@
   padding: $grid-gap;
   padding-bottom: calc(#{$grid-gap} + #{$status-height} + env(safe-area-inset-bottom, 0px));
 
-  /* Default desktop layout: 2x2 app matrix. */
+  /* Large screens: world hub plus subsystem rail. */
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: repeat(2, minmax(260px, 1fr));
-  grid-auto-rows: minmax(260px, 1fr);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(220px, 1fr));
+  grid-auto-rows: minmax(220px, 1fr);
   gap: $grid-gap;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE/Edge legacy */
@@ -41,6 +41,52 @@
     /* Narrow phones: keep panel stack readable without forcing tall rows. */
     gap: 4px;
     grid-auto-rows: minmax(250px, 1fr);
+  }
+}
+
+.desktopPanel {
+  min-height: 0;
+  min-width: 0;
+  transition: opacity 180ms ease, filter 180ms ease;
+  transform-origin: center center;
+  backface-visibility: hidden;
+}
+
+.panelFeatured {
+  grid-column: 1 / span 8;
+  grid-row: 1 / span 3;
+  z-index: 1;
+}
+
+.panelRailTop {
+  grid-column: 9 / span 4;
+  grid-row: 1 / span 1;
+}
+
+.panelRailMiddle {
+  grid-column: 9 / span 4;
+  grid-row: 2 / span 1;
+}
+
+.panelRailBottom {
+  grid-column: 9 / span 4;
+  grid-row: 3 / span 1;
+}
+
+.mePanel,
+.youPanel,
+.thirdPanel,
+.connectPanel {
+  min-height: 0;
+}
+
+@media (max-width: $bp-tablet) {
+  .panelFeatured,
+  .panelRailTop,
+  .panelRailMiddle,
+  .panelRailBottom {
+    grid-column: auto;
+    grid-row: auto;
   }
 }
 

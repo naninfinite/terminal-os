@@ -7,6 +7,10 @@ export type MeOsDisplayMode = 'panel' | 'fullscreen';
 
 export type MeOsViewerKind = 'text' | 'image' | 'video' | 'project' | 'contact' | 'game';
 
+export type MeOsShellScope = 'me' | 'you' | 'third' | 'connect';
+
+export type MeOsActiveScope = Exclude<MeOsShellScope, 'me'> | null;
+
 export type MeOsDesktopEntryId =
   | 'home'
   | 'projects'

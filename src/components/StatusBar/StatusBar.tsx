@@ -25,6 +25,7 @@ import {
   formatGenericDockLabel,
   formatMeDockLabel,
   getDockClickIntent,
+  getDockDoubleClickIntent,
   type SubsystemScope,
 } from './subsystemDock';
 import {
@@ -34,6 +35,7 @@ import {
   type SubsystemContextMenuEventDetail,
   type SubsystemContextMenuRow,
 } from './subsystemContextMenu';
+import { isDesktopHeroLayoutViewport } from '../Desktop/desktopPanelLayout';
 
 type DesktopPanelScope = 'you' | 'third' | 'connect' | 'me';
 type SubsystemMenuState = SubsystemContextMenuEventDetail & { left: number; top: number };
@@ -67,6 +69,10 @@ const isMobileViewportWidth = (): boolean => (
   typeof window !== 'undefined' && window.innerWidth <= MOBILE_FULLSCREEN_LOCK_MAX_WIDTH_PX
 );
 
+const isDesktopHeroLayoutEnabled = (): boolean => (
+  typeof window !== 'undefined' && isDesktopHeroLayoutViewport(window.innerWidth)
+);
+
 const StatusBar: React.FC = () => {
   const {
     displayMode: meDisplayMode,
@@ -74,6 +80,8 @@ const StatusBar: React.FC = () => {
     windows,
     openFullscreen: openMeFullscreen,
     closeFullscreen: closeMeFullscreen,
+    featuredPanel,
+    setFeaturedPanel,
     openNode,
     restoreWindow,
   } = useMeOs();
@@ -107,6 +115,9 @@ const StatusBar: React.FC = () => {
   const [subsystemMenu, setSubsystemMenu] = useState<SubsystemMenuState | null>(null);
   const [youLastSeenAt, setYouLastSeenAt] = useState<string | null>(null);
   const [mobileViewport, setMobileViewport] = useState<boolean>(() => isMobileViewportWidth());
+  const [desktopHeroLayoutEnabled, setDesktopHeroLayoutEnabled] = useState<boolean>(
+    () => isDesktopHeroLayoutEnabled()
+  );
 
   // Keep the clock fresh while desktop shell is mounted.
   useEffect(() => {
@@ -126,7 +137,10 @@ const StatusBar: React.FC = () => {
   }, [menuOpen]);
 
   useEffect(() => {
-    const onResize = () => setMobileViewport(isMobileViewportWidth());
+    const onResize = () => {
+      setMobileViewport(isMobileViewportWidth());
+      setDesktopHeroLayoutEnabled(isDesktopHeroLayoutEnabled());
+    };
     window.addEventListener('resize', onResize);
     window.addEventListener('orientationchange', onResize);
     return () => {
@@ -308,11 +322,17 @@ const StatusBar: React.FC = () => {
     openNode(nodeId);
   };
 
-  const focusPanel = (scopeId: DesktopPanelScope) => {
+  const focusPanel = (scopeId: DesktopPanelScope, options?: { promote?: boolean }) => {
+    if (options?.promote && desktopHeroLayoutEnabled) {
+      setFeaturedPanel(scopeId);
+    }
     const panel = document.querySelector(`[data-panel-scope="${scopeId}"]`) as HTMLElement | null;
     if (!panel) return;
     panel.scrollIntoView({ block: 'center', behavior: 'smooth' });
     panel.focus();
+    if (scopeId === 'you' && youDockState.latestMessageAt) {
+      setYouLastSeenAt(youDockState.latestMessageAt);
+    }
   };
 
   const dispatchShellEvent = (eventName: string) => {
@@ -359,13 +379,39 @@ const StatusBar: React.FC = () => {
       targetScope,
       anyFullscreenOpen,
       activeFullscreenScope,
+      desktopHeroLayoutEnabled,
     });
 
     if (intent === 'noop') return;
 
     if (intent === 'focus_panel') {
-      focusPanel('you');
-      if (youDockState.latestMessageAt) setYouLastSeenAt(youDockState.latestMessageAt);
+      focusPanel(targetScope);
+      return;
+    }
+
+    closeAllFullscreen();
+    openSubsystemFullscreen(targetScope);
+  };
+
+  const onSubsystemDockDoubleClick = (targetScope: SubsystemScope) => {
+    setSubsystemMenu(null);
+    const intent = getDockDoubleClickIntent({
+      targetScope,
+      anyFullscreenOpen,
+      activeFullscreenScope,
+      featuredScope: featuredPanel,
+      desktopHeroLayoutEnabled,
+    });
+
+    if (intent === 'noop') return;
+
+    if (intent === 'focus_panel') {
+      focusPanel(targetScope);
+      return;
+    }
+
+    if (intent === 'feature_panel') {
+      focusPanel(targetScope, { promote: true });
       return;
     }
 
@@ -478,25 +524,39 @@ const StatusBar: React.FC = () => {
   };
 
   const runSubsystemContextAction = (actionId: SubsystemContextMenuActionId) => {
+    const useDockPromoteAction = subsystemMenu?.origin === 'dock' && desktopHeroLayoutEnabled && !anyFullscreenOpen;
+    const runDockOpenAction = (targetScope: SubsystemScope) => {
+      if (useDockPromoteAction) {
+        if (targetScope === featuredPanel) {
+          focusPanel(targetScope);
+        } else {
+          focusPanel(targetScope, { promote: true });
+        }
+        setSubsystemMenu(null);
+        return;
+      }
+      onSubsystemDockClick(targetScope);
+    };
+
     switch (actionId) {
       case 'open_me':
-        onSubsystemDockClick('me');
+        runDockOpenAction('me');
         return;
       case 'open_me_recent':
         openMostRecentMeWindow();
         return;
       case 'open_you':
-        onSubsystemDockClick('you');
+        runDockOpenAction('you');
         return;
       case 'you_type_message':
-        onSubsystemDockClick('you');
+        runDockOpenAction('you');
         dispatchYouTypeMessage();
         return;
       case 'open_third':
-        onSubsystemDockClick('third');
+        runDockOpenAction('third');
         return;
       case 'open_connect':
-        onSubsystemDockClick('connect');
+        runDockOpenAction('connect');
         return;
       case 'open_home':
         openNodeForScope(HOME_ID);
@@ -543,6 +603,7 @@ const StatusBar: React.FC = () => {
     return buildSubsystemContextMenu({
       scope: subsystemMenu.scope,
       origin: subsystemMenu.origin,
+      dockPromotesPanels: desktopHeroLayoutEnabled,
       meWindowCount: meWindowCount,
       youHasDraft: youDockState.hasDraft,
       youUnreadCount: youDockState.unreadCount,
@@ -552,6 +613,7 @@ const StatusBar: React.FC = () => {
     });
   }, [
     connectNotificationCount,
+    desktopHeroLayoutEnabled,
     meWindowCount,
     subsystemMenu,
     thirdNotificationCount,
@@ -676,6 +738,7 @@ const StatusBar: React.FC = () => {
           className={`${styles.taskBtn} ${styles.taskBtnSubsystem}`.trim()}
           data-subsystem-dock="me"
           onClick={() => onSubsystemDockClick('me')}
+          onDoubleClick={() => onSubsystemDockDoubleClick('me')}
           title="Open ME.EXE"
           onContextMenu={meDockContextTrigger.onContextMenu}
           onPointerDown={meDockContextTrigger.onPointerDown}
@@ -696,6 +759,7 @@ const StatusBar: React.FC = () => {
           className={`${styles.taskBtn} ${styles.taskBtnSubsystem} ${styles.taskBtnYou} ${youDockState.showCombinedDot ? styles.taskBtnYouCombined : ''}`.trim()}
           data-subsystem-dock="you"
           onClick={() => onSubsystemDockClick('you')}
+          onDoubleClick={() => onSubsystemDockDoubleClick('you')}
           title="Focus or open YOU.EXE"
           onContextMenu={youDockContextTrigger.onContextMenu}
           onPointerDown={youDockContextTrigger.onPointerDown}
@@ -716,6 +780,7 @@ const StatusBar: React.FC = () => {
           className={`${styles.taskBtn} ${styles.taskBtnSubsystem}`.trim()}
           data-subsystem-dock="third"
           onClick={() => onSubsystemDockClick('third')}
+          onDoubleClick={() => onSubsystemDockDoubleClick('third')}
           title="Open THIRD.EXE"
           onContextMenu={thirdDockContextTrigger.onContextMenu}
           onPointerDown={thirdDockContextTrigger.onPointerDown}
@@ -736,6 +801,7 @@ const StatusBar: React.FC = () => {
           className={`${styles.taskBtn} ${styles.taskBtnSubsystem}`.trim()}
           data-subsystem-dock="connect"
           onClick={() => onSubsystemDockClick('connect')}
+          onDoubleClick={() => onSubsystemDockDoubleClick('connect')}
           title="Open CONNECT.EXE"
           onContextMenu={connectDockContextTrigger.onContextMenu}
           onPointerDown={connectDockContextTrigger.onPointerDown}
