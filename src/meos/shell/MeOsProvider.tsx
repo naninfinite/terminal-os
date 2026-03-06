@@ -19,16 +19,19 @@ import {
   sanitizeSurfaceItemOrder,
 } from './surfaceItemOrder';
 import type {
+  MeOsActiveScope,
   MeOsAppId,
   MeOsDesktopEntryId,
   MeOsDisplayMode,
   MeOsPersistedSnapshot,
+  MeOsShellScope,
   MeOsSurfaceKey,
   MeOsViewerKind,
   MeOsWindow,
   MeOsWindowRect,
 } from './types';
 import { sanitizePersistedWindowState, toggleWindowMaximize } from './windowState';
+import { clearSnakeGameSession } from '../apps/viewers/snakeGameSession';
 
 const STORAGE_KEY = 'terminalOS.meos.v1.shell';
 const STORAGE_VERSION = 3 as const;
@@ -55,6 +58,7 @@ const VIEWER_APP_BY_KIND: Record<MeOsViewerKind, MeOsAppId> = {
   video: 'viewer_video',
   project: 'viewer_project',
   contact: 'viewer_contact',
+  game: 'viewer_game',
 };
 
 const VIEWER_SIZE_BY_KIND: Record<MeOsViewerKind, { width: number; height: number }> = {
@@ -63,6 +67,7 @@ const VIEWER_SIZE_BY_KIND: Record<MeOsViewerKind, { width: number; height: numbe
   video: { width: 740, height: 460 },
   project: { width: 560, height: 360 },
   contact: { width: 500, height: 340 },
+  game: { width: 540, height: 640 },
 };
 
 const INFO_WINDOW_RECT = { x: 88, y: 72, width: 340, height: 260 };
@@ -87,6 +92,7 @@ const isLegacyAppId = (value: unknown): value is LegacyAppId => (
   || value === 'viewer_video'
   || value === 'viewer_project'
   || value === 'viewer_contact'
+  || value === 'viewer_game'
   || value === 'file'
   || value === 'about'
   || value === 'projects'
@@ -173,6 +179,7 @@ const getViewerKindForNode = (node: VfsNode): MeOsViewerKind => (
   || node.kind === 'video'
   || node.kind === 'project'
   || node.kind === 'contact'
+  || node.kind === 'game'
     ? node.kind
     : 'text'
 );
@@ -291,6 +298,7 @@ const sanitizeWindow = (raw: unknown): LegacyWindow | null => {
     || data.viewerKind === 'video'
     || data.viewerKind === 'project'
     || data.viewerKind === 'contact'
+    || data.viewerKind === 'game'
   ) ? data.viewerKind : undefined;
 
   return {
@@ -408,8 +416,10 @@ const loadPersistedShellState = (): LoadedShellState => {
 type MeOsContextValue = {
   displayMode: MeOsDisplayMode;
   windows: MeOsWindow[];
-  activeScope: 'you' | 'third' | 'connect' | null;
-  setActiveScope: (scope: 'you' | 'third' | 'connect' | null) => void;
+  activeScope: MeOsActiveScope;
+  setActiveScope: (scope: MeOsActiveScope) => void;
+  featuredPanel: MeOsShellScope;
+  setFeaturedPanel: (scope: MeOsShellScope) => void;
   openFullscreen: () => void;
   closeFullscreen: () => void;
   openNode: (nodeId: string) => void;
@@ -436,7 +446,8 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [surfaceItemOrder, setSurfaceItemOrder] = useState<Record<string, string[]>>(
     () => initialShellState.surfaceItemOrder
   );
-  const [activeScope, setActiveScopeState] = useState<'you' | 'third' | 'connect' | null>(null);
+  const [activeScope, setActiveScopeState] = useState<MeOsActiveScope>(null);
+  const [featuredPanel, setFeaturedPanelState] = useState<MeOsShellScope>('me');
   const zRef = useRef<number>(getMaxZ(windows));
 
   useEffect(() => {
@@ -456,8 +467,12 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  const setActiveScope = useCallback((scope: 'you' | 'third' | 'connect' | null) => {
+  const setActiveScope = useCallback((scope: MeOsActiveScope) => {
     setActiveScopeState(scope);
+  }, []);
+
+  const setFeaturedPanel = useCallback((scope: MeOsShellScope) => {
+    setFeaturedPanelState(scope);
   }, []);
 
   const openFullscreen = useCallback(() => {
@@ -635,6 +650,10 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const closeWindow = useCallback((id: string) => {
     setWindows((prev) => {
+      const closingWindow = prev.find((win) => win.id === id);
+      if (closingWindow?.appId === 'viewer_game') {
+        clearSnakeGameSession(id);
+      }
       const next = prev.filter((win) => win.id !== id);
       if (next.length === 0) zRef.current = 1;
       return next;
@@ -669,6 +688,8 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     windows,
     activeScope,
     setActiveScope,
+    featuredPanel,
+    setFeaturedPanel,
     openFullscreen,
     closeFullscreen,
     openNode,
@@ -688,6 +709,7 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     closeFullscreen,
     closeWindow,
     displayMode,
+    featuredPanel,
     focusWindow,
     getSurfaceItemOrder,
     minimizeWindow,
@@ -700,6 +722,7 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     resizeWindow,
     restoreWindow,
     setActiveScope,
+    setFeaturedPanel,
     toggleMaximizeWindow,
     windows,
   ]);

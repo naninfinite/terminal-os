@@ -3,6 +3,7 @@ import {
   formatGenericDockLabel,
   formatMeDockLabel,
   getDockClickIntent,
+  getDockDoubleClickIntent,
   isSameTargetFullscreenNoop,
 } from './subsystemDock';
 
@@ -33,25 +34,44 @@ describe('subsystemDock helpers', () => {
       targetScope: 'you',
       anyFullscreenOpen: false,
       activeFullscreenScope: null,
+      desktopHeroLayoutEnabled: false,
     })).toBe('focus_panel');
   });
 
-  it('opens fullscreen for non-YOU targets from desktop', () => {
+  it('opens fullscreen for non-YOU targets from stacked layouts', () => {
     expect(getDockClickIntent({
       targetScope: 'me',
       anyFullscreenOpen: false,
       activeFullscreenScope: null,
+      desktopHeroLayoutEnabled: false,
     })).toBe('open_target_fullscreen');
     expect(getDockClickIntent({
       targetScope: 'third',
       anyFullscreenOpen: false,
       activeFullscreenScope: null,
+      desktopHeroLayoutEnabled: false,
     })).toBe('open_target_fullscreen');
     expect(getDockClickIntent({
       targetScope: 'connect',
       anyFullscreenOpen: false,
       activeFullscreenScope: null,
+      desktopHeroLayoutEnabled: false,
     })).toBe('open_target_fullscreen');
+  });
+
+  it('uses single-click focus for all panels in wide desktop hero layouts', () => {
+    expect(getDockClickIntent({
+      targetScope: 'me',
+      anyFullscreenOpen: false,
+      activeFullscreenScope: null,
+      desktopHeroLayoutEnabled: true,
+    })).toBe('focus_panel');
+    expect(getDockClickIntent({
+      targetScope: 'third',
+      anyFullscreenOpen: false,
+      activeFullscreenScope: null,
+      desktopHeroLayoutEnabled: true,
+    })).toBe('focus_panel');
   });
 
   it('switches fullscreen targets whenever fullscreen is already open', () => {
@@ -59,11 +79,13 @@ describe('subsystemDock helpers', () => {
       targetScope: 'you',
       anyFullscreenOpen: true,
       activeFullscreenScope: 'me',
+      desktopHeroLayoutEnabled: false,
     })).toBe('open_target_fullscreen');
     expect(getDockClickIntent({
       targetScope: 'third',
       anyFullscreenOpen: true,
       activeFullscreenScope: 'you',
+      desktopHeroLayoutEnabled: true,
     })).toBe('open_target_fullscreen');
   });
 
@@ -72,6 +94,24 @@ describe('subsystemDock helpers', () => {
       targetScope: 'connect',
       anyFullscreenOpen: true,
       activeFullscreenScope: 'connect',
+      desktopHeroLayoutEnabled: true,
     })).toBe('noop');
+  });
+
+  it('uses double-click to promote non-featured panels in wide desktop hero layouts', () => {
+    expect(getDockDoubleClickIntent({
+      targetScope: 'me',
+      anyFullscreenOpen: false,
+      activeFullscreenScope: null,
+      featuredScope: 'you',
+      desktopHeroLayoutEnabled: true,
+    })).toBe('feature_panel');
+    expect(getDockDoubleClickIntent({
+      targetScope: 'third',
+      anyFullscreenOpen: false,
+      activeFullscreenScope: null,
+      featuredScope: 'third',
+      desktopHeroLayoutEnabled: true,
+    })).toBe('focus_panel');
   });
 });

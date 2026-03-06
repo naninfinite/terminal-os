@@ -10,6 +10,7 @@ type NodeInfoWindowProps = {
 
 const formatKind = (win: MeOsWindow, nodeKind: string | undefined, isFolder: boolean): string => {
   if (isFolder) return 'Folder';
+  if (nodeKind === 'game' || win.viewerKind === 'game') return 'Game';
   if (nodeKind === 'contact' || win.viewerKind === 'contact') return 'Contact Card';
   if (nodeKind === 'project' || win.viewerKind === 'project') return 'Project Document';
   if (nodeKind === 'image' || win.viewerKind === 'image') return 'Image';

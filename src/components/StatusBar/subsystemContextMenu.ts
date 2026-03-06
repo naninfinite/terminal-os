@@ -50,6 +50,7 @@ export type SubsystemContextMenuModel = {
 type BuildSubsystemContextMenuArgs = {
   scope: SubsystemScope;
   origin: SubsystemContextMenuOrigin;
+  dockPromotesPanels: boolean;
   meWindowCount: number;
   youHasDraft: boolean;
   youUnreadCount: number;
@@ -78,11 +79,21 @@ const titleForScope = (scope: SubsystemScope): string => {
   }
 };
 
-const openLabelForScope = (scope: SubsystemScope, origin: SubsystemContextMenuOrigin): string => {
-  if (scope === 'you') {
-    return origin === 'panel' ? 'OPEN YOU.EXE FULLSCREEN' : 'OPEN / FOCUS YOU.EXE';
+const openLabelForScope = (args: {
+  scope: SubsystemScope;
+  origin: SubsystemContextMenuOrigin;
+  dockPromotesPanels: boolean;
+}): string => {
+  if (args.origin === 'panel') {
+    return `OPEN ${titleForScope(args.scope)} FULLSCREEN`;
   }
-  return `OPEN ${titleForScope(scope)}`;
+  if (args.dockPromotesPanels) {
+    return `PROMOTE / FOCUS ${titleForScope(args.scope)}`;
+  }
+  if (args.scope === 'you') {
+    return 'OPEN / FOCUS YOU.EXE';
+  }
+  return `OPEN ${titleForScope(args.scope)}`;
 };
 
 export const buildSubsystemContextMenu = (args: BuildSubsystemContextMenuArgs): SubsystemContextMenuModel => {
@@ -99,7 +110,12 @@ export const buildSubsystemContextMenu = (args: BuildSubsystemContextMenuArgs): 
         title,
         rows: [
           { key: 'status_windows', kind: 'status', label: `OPEN WINDOWS: ${args.meWindowCount}` },
-          { key: 'act_open_me', kind: 'action', id: 'open_me', label: openLabelForScope('me', args.origin) },
+          {
+            key: 'act_open_me',
+            kind: 'action',
+            id: 'open_me',
+            label: openLabelForScope({ scope: 'me', origin: args.origin, dockPromotesPanels: args.dockPromotesPanels }),
+          },
           ...panelRows,
           { key: 'div_apps', kind: 'divider' },
           { key: 'act_open_home', kind: 'action', id: 'open_home', label: 'OPEN HOME' },
@@ -117,7 +133,12 @@ export const buildSubsystemContextMenu = (args: BuildSubsystemContextMenuArgs): 
           { key: 'status_unread', kind: 'status', label: `UNREAD: ${args.youUnreadCount}` },
           { key: 'status_draft', kind: 'status', label: `DRAFT: ${args.youHasDraft ? 'YES' : 'NO'}` },
           { key: 'div_actions', kind: 'divider' },
-          { key: 'act_open_you', kind: 'action', id: 'open_you', label: openLabelForScope('you', args.origin) },
+          {
+            key: 'act_open_you',
+            kind: 'action',
+            id: 'open_you',
+            label: openLabelForScope({ scope: 'you', origin: args.origin, dockPromotesPanels: args.dockPromotesPanels }),
+          },
           { key: 'act_you_type', kind: 'action', id: 'you_type_message', label: 'TYPE MESSAGE' },
           {
             key: 'act_you_save',
@@ -146,7 +167,12 @@ export const buildSubsystemContextMenu = (args: BuildSubsystemContextMenuArgs): 
         rows: [
           { key: 'status_notifications', kind: 'status', label: `NOTIFICATIONS: ${args.thirdNotificationCount}` },
           { key: 'status_mode', kind: 'status', label: `MODE: ${args.thirdMode.toUpperCase()}` },
-          { key: 'act_open_third', kind: 'action', id: 'open_third', label: openLabelForScope('third', args.origin) },
+          {
+            key: 'act_open_third',
+            kind: 'action',
+            id: 'open_third',
+            label: openLabelForScope({ scope: 'third', origin: args.origin, dockPromotesPanels: args.dockPromotesPanels }),
+          },
           { key: 'act_third_mode', kind: 'action', id: modeAction.id, label: modeAction.label },
           { key: 'act_third_reset', kind: 'action', id: 'third_reset_scene', label: 'RESET SCENE' },
         ],
@@ -166,7 +192,11 @@ export const buildSubsystemContextMenu = (args: BuildSubsystemContextMenuArgs): 
             key: 'act_open_connect',
             kind: 'action',
             id: 'open_connect',
-            label: openLabelForScope('connect', args.origin),
+            label: openLabelForScope({
+              scope: 'connect',
+              origin: args.origin,
+              dockPromotesPanels: args.dockPromotesPanels,
+            }),
           },
           {
             key: 'act_connect_quick_match',

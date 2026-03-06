@@ -10,6 +10,7 @@ Implemented now:
 - Desktop shell with panel grid, status bar, and scope-aware menu/task behavior.
 - ME runtime foundation: windowing, focus/z-order, minimize/maximize, fullscreen layer.
 - FileMan + viewer apps inside ME (`text`, `image`, `video`, `project`).
+- `Snake.exe` in ME Projects now defaults to classic Snake: wraparound edges, canvas trail rendering, and score-based fixed-tick speed-up.
 - `YOU.EXE` persistent message board backed by Supabase Edge Function.
 - `THIRD.EXE` object-mode playground baseline (primitives, edit/play modes, physics grab, local autosave).
 - `CONNECT.EXE` Tron V1 with a shared panel/fullscreen runtime, 4-seat engine, mixed local/online/CPU lobbies, and Supabase Realtime quick match + rooms.

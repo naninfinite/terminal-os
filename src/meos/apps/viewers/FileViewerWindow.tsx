@@ -11,6 +11,7 @@ import { useTheme } from '../../../theme/ThemeProvider';
 import naninfinitePortrait from '../../../assets/images/NaNinfinite.jpg';
 import { resolveImagePreviewSrc, resolveVideoPosterSrc } from './mediaPreview';
 import { resolvePortraitImageViewerSize } from './imageViewerSizing';
+import SnakeGameWindow from './SnakeGameWindow';
 
 type FileViewerWindowProps = {
   win: MeOsWindow;
@@ -258,6 +259,22 @@ const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
             <a className={styles.link} href={card.repoUrl} target="_blank" rel="noreferrer">OPEN REPO</a>
           ) : null}
         </article>
+      </div>
+    );
+  }
+
+  if (kind === 'game') {
+    return (
+      <div className={styles.viewer}>
+        <header className={styles.viewerHeader}>
+          <span className={styles.viewerKind}>{getKindLabel(kind)}</span>
+          <span className={styles.viewerName}>{node.name}</span>
+        </header>
+        <SnakeGameWindow
+          windowId={win.id}
+          name={node.name}
+          description={node.textContent}
+        />
       </div>
     );
   }

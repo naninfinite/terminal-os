@@ -2,9 +2,9 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { ThemeProvider } from '../../../theme/ThemeProvider';
+import { MeOsProvider } from '../../shell/MeOsProvider';
 import { CONTACT_CARD_ID } from '../../vfs/seed';
 import { MeOsVfsProvider } from '../../vfs/MeOsVfsProvider';
-import { MeOsProvider } from '../../shell/MeOsProvider';
 import type { MeOsWindow } from '../../shell/types';
 import FileViewerWindow from './FileViewerWindow';
 
@@ -27,11 +27,11 @@ describe('FileViewerWindow', () => {
 
     const markup = renderToStaticMarkup(
       <ThemeProvider>
-        <MeOsProvider>
-          <MeOsVfsProvider>
+        <MeOsVfsProvider>
+          <MeOsProvider>
             <FileViewerWindow win={win} />
-          </MeOsVfsProvider>
-        </MeOsProvider>
+          </MeOsProvider>
+        </MeOsVfsProvider>
       </ThemeProvider>
     );
 

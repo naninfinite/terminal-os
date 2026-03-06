@@ -17,6 +17,7 @@ export const IMG_0285_ID = 'img_0285_jpg';
 export const REEL_ID = 'reel_mp4';
 export const PROJECT_TERMINAL_OS_ID = 'project_terminalos';
 export const PROJECT_PROZILLA_ID = 'project_prozilla';
+export const SNAKE_GAME_ID = 'snake_game';
 export const ARCHIVE_LEGACY_ID = 'archive_legacy';
 export const REEL_THUMBNAIL_ID = 'reel_cover';
 
@@ -162,6 +163,14 @@ const seedNodes: VfsNode[] = [
       stack: ['React', 'TypeScript'],
       repoUrl: 'https://github.com/naninfinite/ProzillaOS',
     },
+  },
+  {
+    id: SNAKE_GAME_ID,
+    name: 'Snake.exe',
+    type: 'file',
+    parentId: PROJECTS_ID,
+    kind: 'game',
+    textContent: 'Classic Snake. Wraparound edges, thin trail, Arrow Keys or WASD to move, Space to pause, and R to restart.',
   },
 ];
 
