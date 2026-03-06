@@ -123,14 +123,24 @@ export type TronSnapshot = TronGameState & {
   version: 1;
 };
 
+export type TronCpuWeights = {
+  reachableArea: number;
+  liberties: number;
+  corridorRisk: number;
+  opponentPressure: number;
+  cutoffPotential: number;
+  centerBias: number;
+  antiJitter: number;
+  forcedDeathRisk: number;
+};
+
 export type TronCpuProfile = {
   difficulty: TronCpuDifficulty;
   reactionDelayTicks: number;
   lookaheadDepth: number;
-  searchBudget: number;
-  mistakeRate: number;
-  aggressionWeight: number;
-  riskWeight: number;
+  rolloutCandidates: number;
+  randomness: number;
+  weights: TronCpuWeights;
 };
 
 export type ConnectQueuePresence = {
