@@ -22,7 +22,7 @@ export type PanelProps = {
   title: string;
   children?: React.ReactNode;
   className?: string;
-  /** Optional right-aligned header actions. */
+  /** Optional action content rendered on the right side of the header. */
   headerActions?: React.ReactNode;
   /** Scope identifier used by menu routing/focus helpers. */
   scopeId?: PanelScopeId;
@@ -321,12 +321,14 @@ const Panel: React.FC<PanelProps> = ({
       onKeyDown={contextTrigger.onKeyDown}
     >
       <header className={`${styles.header} ${hideHeader ? styles.hiddenHeader : ''}`.trim()}>
-        <span>[{title}]</span>
-        {headerActions ? (
-          <div className={styles.headerActions} data-panel-zoom-block="true">
-            {headerActions}
-          </div>
-        ) : null}
+        <div className={styles.headerInner}>
+          <span className={styles.headerTitle}>[{title}]</span>
+          {headerActions ? (
+            <div className={styles.headerActions} data-panel-zoom-block="true">
+              {headerActions}
+            </div>
+          ) : null}
+        </div>
       </header>
       <div
         className={`${styles.body} ${stretchBody ? styles.bodyStretch : ''} ${enableMobilePinchZoom ? styles.bodyZoomEnabled : ''} ${bodyClassName ?? ''}`.trim()}

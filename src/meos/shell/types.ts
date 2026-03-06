@@ -11,13 +11,15 @@ export type MeOsShellScope = 'me' | 'you' | 'third' | 'connect';
 
 export type MeOsActiveScope = Exclude<MeOsShellScope, 'me'> | null;
 
+export type MeOsShellScope = 'me' | 'you' | 'third' | 'connect';
+
+export type MeOsActiveScope = Exclude<MeOsShellScope, 'me'> | null;
+
 export type MeOsDesktopEntryId =
-  | 'home'
   | 'projects'
   | 'media'
   | 'about'
   | 'contact'
-  | 'archive'
   | 'readme';
 
 export type MeOsSurfaceKey = 'desktop' | `folder:${string}`;

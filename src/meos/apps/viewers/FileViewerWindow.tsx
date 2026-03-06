@@ -6,6 +6,11 @@ import React, { useRef, useState } from 'react';
 import { useMeOs } from '../../shell/MeOsProvider';
 import type { MeOsWindow } from '../../shell/types';
 import { useMeOsVfs } from '../../vfs/MeOsVfsProvider';
+import {
+  ABOUT_DOC_ID,
+  MEDIA_ID,
+  PROJECTS_ID,
+} from '../../vfs/seed';
 import styles from './FileViewerWindow.module.scss';
 import { useTheme } from '../../../theme/ThemeProvider';
 import naninfinitePortrait from '../../../assets/images/NaNinfinite.jpg';
@@ -18,7 +23,24 @@ type FileViewerWindowProps = {
 };
 
 const fallbackText = (name: string): string => `No inline text content configured for "${name}".`;
-const getKindLabel = (kind: string): string => kind.toUpperCase();
+
+const getKindLabel = (kind: string): string => {
+  switch (kind) {
+    case 'image':
+      return 'STILL';
+    case 'video':
+      return 'REEL';
+    case 'project':
+      return 'PROJECT DOSSIER';
+    case 'contact':
+      return 'CONTACT CARD';
+    case 'game':
+      return 'PLAY SURFACE';
+    case 'text':
+    default:
+      return 'FIELD NOTE';
+  }
+};
 
 const formatVideoTime = (seconds: number): string => {
   if (!Number.isFinite(seconds) || seconds < 0) return '00:00';
@@ -150,7 +172,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 };
 
 const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
-  const { resizeWindow } = useMeOs();
+  const { openNode, resizeWindow } = useMeOs();
   const { resolvedTheme } = useTheme();
   const { snapshot } = useMeOsVfs();
   const node = win.nodeId ? snapshot.nodes[win.nodeId] : null;
@@ -172,6 +194,22 @@ const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
   }
 
   const kind = node.kind ?? win.viewerKind ?? 'text';
+  const projectArtifact = node.projectMeta?.artifactUrl
+    ? {
+      label: node.projectMeta.artifactLabel ?? 'OPEN ARTIFACT',
+      url: node.projectMeta.artifactUrl,
+    }
+    : node.projectMeta?.demoUrl
+      ? {
+        label: 'OPEN DEMO',
+        url: node.projectMeta.demoUrl,
+      }
+      : node.projectMeta?.repoUrl
+        ? {
+          label: 'OPEN REPOSITORY',
+          url: node.projectMeta.repoUrl,
+        }
+        : null;
 
   if (kind === 'image') {
     const source = resolveImagePreviewSrc(node, resolvedTheme);
@@ -244,19 +282,24 @@ const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
           <span className={styles.viewerName}>{node.name}</span>
         </header>
         <article className={styles.projectCard}>
-          <p className={styles.projectLabel}>PROJECT CARD</p>
+          <p className={styles.projectLabel}>WORLD ARTIFACT</p>
           <h3 className={styles.projectTitle}>{card?.title || node.name}</h3>
           <p className={styles.metaCopy}>{card?.summary || 'Project summary not configured yet.'}</p>
+          <div className={styles.projectMetaBlock}>
+            <p className={styles.metaEyebrow}>WHY IT MATTERS</p>
+            <p className={styles.metaCopy}>
+              {card?.whyItMatters || 'This artifact still needs a reason for being written into the world.'}
+            </p>
+          </div>
           <div className={styles.stack}>
             {(card?.stack ?? []).map((item) => (
               <span key={item} className={styles.stackItem}>{item}</span>
             ))}
           </div>
-          {card?.demoUrl ? (
-            <a className={styles.link} href={card.demoUrl} target="_blank" rel="noreferrer">OPEN DEMO</a>
-          ) : null}
-          {card?.repoUrl ? (
-            <a className={styles.link} href={card.repoUrl} target="_blank" rel="noreferrer">OPEN REPO</a>
+          {projectArtifact ? (
+            <a className={styles.link} href={projectArtifact.url} target="_blank" rel="noreferrer">
+              {projectArtifact.label}
+            </a>
           ) : null}
         </article>
       </div>
@@ -281,6 +324,24 @@ const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
 
   if (kind === 'contact') {
     const contact = node.contactMeta;
+    const contactLinks = [
+      contact?.email ? {
+        label: 'Email',
+        value: contact.email,
+        href: `mailto:${contact.email}`,
+      } : null,
+      contact?.githubUrl ? {
+        label: 'GitHub',
+        value: contact.githubUrl,
+        href: contact.githubUrl,
+      } : null,
+      contact?.instagramUrl ? {
+        label: 'Instagram',
+        value: contact.instagramUrl,
+        href: contact.instagramUrl,
+      } : null,
+    ].filter((item): item is { label: string; value: string; href: string } => item != null);
+
     return (
       <div className={styles.viewer}>
         <article className={styles.contactCard} data-allow-select="true">
@@ -296,25 +357,61 @@ const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
               <p className={styles.projectLabel}>CONTACT CARD</p>
               <h2 className={styles.contactTitle}>{node.name}</h2>
               <p className={styles.metaCopy}>
-                {contact?.status || 'Add status copy for this contact card.'}
+                {contact?.status || 'No active contact channel is configured yet.'}
               </p>
             </div>
           </div>
           <p className={styles.metaCopy}>{node.textContent || fallbackText(node.name)}</p>
-          <div className={styles.contactActions}>
-            <a className={styles.linkCard} href={`mailto:${contact?.email || 'add-email@example.com'}`}>
-              <span className={styles.linkCardLabel}>Email</span>
-              <span className={styles.linkCardValue}>{contact?.email || 'add-email@example.com'}</span>
-            </a>
-            <a className={styles.linkCard} href={contact?.githubUrl || 'https://github.com/your-handle'} target="_blank" rel="noreferrer">
-              <span className={styles.linkCardLabel}>GitHub</span>
-              <span className={styles.linkCardValue}>{contact?.githubUrl || 'https://github.com/your-handle'}</span>
-            </a>
-            <a className={styles.linkCard} href={contact?.instagramUrl || 'https://instagram.com/your-handle'} target="_blank" rel="noreferrer">
-              <span className={styles.linkCardLabel}>Instagram</span>
-              <span className={styles.linkCardValue}>{contact?.instagramUrl || 'https://instagram.com/your-handle'}</span>
-            </a>
-          </div>
+          {contactLinks.length > 0 ? (
+            <div className={styles.contactActions}>
+              {contactLinks.map((item) => (
+                <a
+                  key={item.label}
+                  className={styles.linkCard}
+                  href={item.href}
+                  target={item.href.startsWith('mailto:') ? undefined : '_blank'}
+                  rel={item.href.startsWith('mailto:') ? undefined : 'noreferrer'}
+                >
+                  <span className={styles.linkCardLabel}>{item.label}</span>
+                  <span className={styles.linkCardValue}>{item.value}</span>
+                </a>
+              ))}
+            </div>
+          ) : (
+            <p className={styles.metaCopy}>No external channels are published on this card yet.</p>
+          )}
+        </article>
+      </div>
+    );
+  }
+
+  if (node.documentLayout === 'hub') {
+    return (
+      <div className={styles.viewer}>
+        <header className={styles.viewerHeader}>
+          <span className={styles.viewerKind}>WORLD HUB</span>
+          <span className={styles.viewerName}>{node.name}</span>
+        </header>
+        <article className={styles.hubDoc} data-allow-select="true">
+          <section className={styles.hubHero}>
+            <p className={styles.projectLabel}>START HERE</p>
+            <h2 className={styles.contactTitle}>ME.EXE World Hub</h2>
+            <p className={styles.metaCopy}>{node.textContent || fallbackText(node.name)}</p>
+          </section>
+          <section className={styles.hubActions} aria-label="Recommended next opens">
+            <button type="button" className={styles.actionCard} onClick={() => openNode(PROJECTS_ID)}>
+              <span className={styles.actionCardLabel}>OPEN PROJECTS</span>
+              <span className={styles.actionCardValue}>Follow the systems, experiments, and interface artefacts.</span>
+            </button>
+            <button type="button" className={styles.actionCard} onClick={() => openNode(MEDIA_ID)}>
+              <span className={styles.actionCardLabel}>OPEN MEDIA</span>
+              <span className={styles.actionCardValue}>Take the faster atmospheric path through stills, motion, and the reel.</span>
+            </button>
+            <button type="button" className={styles.actionCard} onClick={() => openNode(ABOUT_DOC_ID)}>
+              <span className={styles.actionCardLabel}>OPEN ABOUT</span>
+              <span className={styles.actionCardValue}>Read the interface practice and the logic behind the shell.</span>
+            </button>
+          </section>
         </article>
       </div>
     );
@@ -326,10 +423,10 @@ const FileViewerWindow: React.FC<FileViewerWindowProps> = ({ win }) => {
         <article className={styles.aboutDoc} data-allow-select="true">
           <section className={styles.aboutHero}>
             <div className={styles.aboutHeroPlaceholder} aria-hidden="true">
-              <span>PORTRAIT</span>
+              <span>ME.EXE</span>
             </div>
             <div className={styles.aboutHeroCopy}>
-              <p className={styles.projectLabel}>ABOUT</p>
+              <p className={styles.projectLabel}>WORLD NOTE</p>
               <h2 className={styles.contactTitle}>{node.name}</h2>
               <p className={styles.metaCopy}>{node.textContent || fallbackText(node.name)}</p>
             </div>

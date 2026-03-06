@@ -3,6 +3,7 @@
  * It renders system status text and a live-updating local clock.
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { flushSync } from 'react-dom';
 import styles from './StatusBar.module.scss';
 import { useMeOs } from '../../meos/shell/MeOsProvider';
 import { MENU_SCOPE_CONFIG, resolveMenuScope, type MenuCommandId } from '../../meos/menu/scopes';
@@ -21,6 +22,7 @@ import { useContextTrigger } from '../shared/useContextTrigger';
 import { nextLocationCaseMode } from './locationCase';
 import { getNextThemeMode, getThemeToggleLabel } from './themeMenu';
 import { deriveYouDockState } from './youDock';
+import { DESKTOP_HERO_LAYOUT_MAX_WIDTH_PX } from '../Desktop/desktopPanelLayout';
 import {
   formatGenericDockLabel,
   formatMeDockLabel,
@@ -48,7 +50,6 @@ const MOBILE_DOCK_LONG_PRESS_MS = 380;
 const MOBILE_DOCK_MOVE_TOLERANCE_PX = 18;
 const SUBSYSTEM_CONTEXT_MENU_OFFSET_X_PX = 8;
 const SUBSYSTEM_CONTEXT_MENU_OFFSET_Y_PX = 32;
-const MOBILE_FULLSCREEN_LOCK_MAX_WIDTH_PX = 1024;
 
 const FULLSCREEN_LAYER_LABEL_BY_SCOPE: Record<SubsystemScope, string> = {
   me: 'ME.EXE fullscreen',
@@ -66,7 +67,7 @@ const getLocationLabel = (): string => {
 };
 
 const isMobileViewportWidth = (): boolean => (
-  typeof window !== 'undefined' && window.innerWidth <= MOBILE_FULLSCREEN_LOCK_MAX_WIDTH_PX
+  typeof window !== 'undefined' && window.innerWidth <= DESKTOP_HERO_LAYOUT_MAX_WIDTH_PX
 );
 
 const isDesktopHeroLayoutEnabled = (): boolean => (
@@ -77,11 +78,12 @@ const StatusBar: React.FC = () => {
   const {
     displayMode: meDisplayMode,
     activeScope,
+    featuredPanel,
+    setActiveScope,
+    setFeaturedPanel,
     windows,
     openFullscreen: openMeFullscreen,
     closeFullscreen: closeMeFullscreen,
-    featuredPanel,
-    setFeaturedPanel,
     openNode,
     restoreWindow,
   } = useMeOs();
@@ -206,6 +208,7 @@ const StatusBar: React.FC = () => {
   );
   const anyFullscreenOpen = activeFullscreenScope != null;
   const shouldLockMobileFullscreenScroll = anyFullscreenOpen && mobileViewport;
+  const dockPromotesPanels = desktopHeroLayoutEnabled && !anyFullscreenOpen;
   const inYouContext = activeScope === 'you' || youDisplayMode === 'fullscreen';
   const resolveSubsystemAnchorPoint = useCallback((detail: SubsystemContextMenuEventDetail): { x: number; y: number } => {
     if (detail.origin === 'dock') {
@@ -333,8 +336,11 @@ const StatusBar: React.FC = () => {
 
   const focusPanel = (scopeId: DesktopPanelScope, options?: { promote?: boolean }) => {
     if (options?.promote && desktopHeroLayoutEnabled) {
-      setFeaturedPanel(scopeId);
+      flushSync(() => {
+        setFeaturedPanel(scopeId);
+      });
     }
+    setActiveScope(scopeId === 'me' ? null : scopeId);
     const panel = document.querySelector(`[data-panel-scope="${scopeId}"]`) as HTMLElement | null;
     if (!panel) return;
     panel.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -404,6 +410,9 @@ const StatusBar: React.FC = () => {
 
     if (intent === 'focus_panel') {
       focusPanel(targetScope);
+      if (targetScope === 'you' && youDockState.latestMessageAt) {
+        setYouLastSeenAt(youDockState.latestMessageAt);
+      }
       return;
     }
 
@@ -425,11 +434,17 @@ const StatusBar: React.FC = () => {
 
     if (intent === 'focus_panel') {
       focusPanel(targetScope);
+      if (targetScope === 'you' && youDockState.latestMessageAt) {
+        setYouLastSeenAt(youDockState.latestMessageAt);
+      }
       return;
     }
 
     if (intent === 'feature_panel') {
       focusPanel(targetScope, { promote: true });
+      if (targetScope === 'you' && youDockState.latestMessageAt) {
+        setYouLastSeenAt(youDockState.latestMessageAt);
+      }
       return;
     }
 
@@ -511,7 +526,7 @@ const StatusBar: React.FC = () => {
         setThemeMode(getNextThemeMode(resolvedTheme));
         break;
       case 'focus_you_panel':
-        focusPanel('you');
+        focusPanel('you', { promote: desktopHeroLayoutEnabled });
         break;
       case 'you_save_input':
         dispatchShellEvent('terminalos:you:save-input');
@@ -520,7 +535,7 @@ const StatusBar: React.FC = () => {
         dispatchShellEvent('terminalos:you:clear-input');
         break;
       case 'focus_third_panel':
-        focusPanel('third');
+        focusPanel('third', { promote: desktopHeroLayoutEnabled });
         break;
       case 'third_toggle_mode':
         toggleThirdMode();
@@ -529,7 +544,7 @@ const StatusBar: React.FC = () => {
         resetThirdScene();
         break;
       case 'focus_connect_panel':
-        focusPanel('connect');
+        focusPanel('connect', { promote: desktopHeroLayoutEnabled });
         break;
       case 'connect_quick_match':
         startQuickMatch();
@@ -561,12 +576,24 @@ const StatusBar: React.FC = () => {
 
     switch (actionId) {
       case 'open_me':
+        if (subsystemMenu?.origin === 'panel') {
+          closeAllFullscreen();
+          openSubsystemFullscreen('me');
+          setSubsystemMenu(null);
+          return;
+        }
         runDockOpenAction('me');
         return;
       case 'open_me_recent':
         openMostRecentMeWindow();
         return;
       case 'open_you':
+        if (subsystemMenu?.origin === 'panel') {
+          closeAllFullscreen();
+          openSubsystemFullscreen('you');
+          setSubsystemMenu(null);
+          return;
+        }
         runDockOpenAction('you');
         return;
       case 'you_type_message':
@@ -574,9 +601,21 @@ const StatusBar: React.FC = () => {
         dispatchYouTypeMessage();
         return;
       case 'open_third':
+        if (subsystemMenu?.origin === 'panel') {
+          closeAllFullscreen();
+          openSubsystemFullscreen('third');
+          setSubsystemMenu(null);
+          return;
+        }
         runDockOpenAction('third');
         return;
       case 'open_connect':
+        if (subsystemMenu?.origin === 'panel') {
+          closeAllFullscreen();
+          openSubsystemFullscreen('connect');
+          setSubsystemMenu(null);
+          return;
+        }
         runDockOpenAction('connect');
         return;
       case 'connect_quick_match':
@@ -635,7 +674,7 @@ const StatusBar: React.FC = () => {
     return buildSubsystemContextMenu({
       scope: subsystemMenu.scope,
       origin: subsystemMenu.origin,
-      dockPromotesPanels: desktopHeroLayoutEnabled,
+      dockPromotesPanels,
       meWindowCount: meWindowCount,
       youHasDraft: youDockState.hasDraft,
       youUnreadCount: youDockState.unreadCount,
@@ -655,7 +694,7 @@ const StatusBar: React.FC = () => {
     connectMultiplayerAvailable,
     connectRoomCode,
     connectStatus,
-    desktopHeroLayoutEnabled,
+    dockPromotesPanels,
     meWindowCount,
     subsystemMenu,
     thirdNotificationCount,

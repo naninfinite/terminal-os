@@ -1,7 +1,7 @@
 # ME.EXE Finder Reset Spec
 
 Status: Implemented baseline
-Date: 2026-03-01
+Date: 2026-03-05
 Owner: Terminal-OS
 Related: `docs/me-exe-evolution-plan.md`, `docs/fileman-v2-build-spec.md`, `docs/overview.md`, `docs/conversation-log.md`
 
@@ -9,7 +9,7 @@ Related: `docs/me-exe-evolution-plan.md`, `docs/fileman-v2-build-spec.md`, `docs
 
 ## 1) Summary
 
-`ME.EXE` now centers on a sparse desktop-and-window metaphor instead of the older centered launcher shelf. The active implementation uses a left-column desktop icon lane, minimal folder windows, canonical `Home` documents surfaced as desktop aliases, and read-only `Get Info` windows. Gallery/video browsing remains deferred; `Media` continues to use the current viewer windows inside the new shell.
+`ME.EXE` now centers on a sparse desktop-and-window metaphor with a clearer world-hub payoff instead of the older centered launcher shelf. The active implementation uses a curated desktop icon lane, minimal folder windows, a `Start Here` hub alias backed by canonical `README.txt`, richer project/media surfaces, and read-only `Get Info` windows.
 
 ---
 
@@ -36,17 +36,16 @@ Out of scope:
 ## 3) Desktop Model
 
 Canonical desktop order:
-1. `Home`
+1. `Start Here`
 2. `Projects`
 3. `Media`
 4. `About`
 5. `Contact`
-6. `Archive`
-7. `README.txt`
 
 Entry rules:
-- `Home`, `Projects`, `Media`, and `Archive` are canonical folders.
-- `About`, `Contact`, and `README.txt` are desktop aliases pointing at canonical files inside `Home`.
+- `Projects` and `Media` are desktop aliases pointing at canonical folders inside `Home`.
+- `About`, `Contact`, and `Start Here` are desktop aliases pointing at canonical files inside `Home`.
+- `Home` and `Archive` remain canonical folders in the VFS but are not desktop icons.
 - Desktop entries are shell config, not VFS alias nodes.
 
 Interaction rules:
@@ -123,10 +122,11 @@ Document rules:
 - Text remains selectable/copyable.
 
 Viewer specifics:
-- `About`: richer document layout with hero placeholder and sections.
-- `Contact`: custom contact-card viewer with `Email`, `GitHub`, and `Instagram` actions plus explicit placeholders when data is missing.
-- `README.txt`: standard text-document viewer.
-- `Projects`, `Media`, image, video, and project viewers keep current behavior in this pass.
+- `About`: richer world-note layout with authored practice/system sections.
+- `Contact`: custom contact-card viewer that renders only real configured channels.
+- `README.txt`: `Start Here` hub layout with explicit next-open actions for `Projects`, `Media`, and `About`.
+- `Projects`: project cards now foreground purpose, one artifact link, and a `Why it matters` line.
+- `Media`: folder browsing remains FileMan-based, but with stronger thumbnail hierarchy and featured reel treatment.
 
 ---
 
@@ -173,11 +173,11 @@ Migration:
 ## 9) Acceptance Baseline
 
 - `ME.EXE` no longer shows the centered launcher shelf.
-- The shell reads as folders/files opening into windows.
+- The shell reads as folders/files opening into windows, with `Start Here` acting as the orientation hub.
+- Desktop entry order is exactly `Start Here`, `Projects`, `Media`, `About`, `Contact`.
 - `About`, `Contact`, and `README.txt` behave as desktop aliases to canonical `Home` files.
 - Visible FileMan authoring controls are gone from ME.
 - Session restore and window mechanics remain intact.
-- Gallery/video redesign is explicitly deferred.
 
 ---
 

@@ -11,7 +11,6 @@ import { ConnectProvider } from '../../connect/ConnectProvider';
 vi.mock('../CONNECT/CONNECT', () => ({
   default: () => React.createElement('div', null, 'CONNECT'),
 }));
-
 import Desktop from './Desktop';
 
 describe('Desktop', () => {

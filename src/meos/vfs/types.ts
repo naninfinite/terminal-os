@@ -6,7 +6,7 @@ export type VfsNodeType = 'folder' | 'file';
 
 export type VfsFileKind = 'text' | 'image' | 'video' | 'project' | 'contact' | 'game';
 
-export type VfsDocumentLayout = 'standard' | 'about';
+export type VfsDocumentLayout = 'standard' | 'about' | 'hub';
 
 export type VfsDocumentSection = {
   title: string;
@@ -17,6 +17,9 @@ export type VfsProjectMeta = {
   title: string;
   summary: string;
   stack: string[];
+  artifactLabel?: string;
+  artifactUrl?: string;
+  whyItMatters?: string;
   demoUrl?: string;
   repoUrl?: string;
 };

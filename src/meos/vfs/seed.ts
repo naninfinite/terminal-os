@@ -24,24 +24,22 @@ export const REEL_THUMBNAIL_ID = 'reel_cover';
 const ABOUT_SECTIONS: VfsDocumentSection[] = [
   {
     title: 'Practice',
-    body: 'Building interface systems that feel authored, tactile, and slightly strange without losing clarity.',
+    body: 'Building interface systems that feel authored, tactile, and a little haunted without collapsing into novelty for its own sake.',
   },
   {
-    title: 'Systems',
-    body: 'Exploring browser-based operating systems, durable UI metaphors, and playful interaction patterns that still behave predictably.',
+    title: 'Worldbuilding',
+    body: 'Using browser-based operating systems, scene spaces, and dense interface rituals to make portfolio work feel like a place instead of a gallery.',
   },
   {
     title: 'Current Focus',
-    body: 'Sharpening Terminal-OS into a portfolio surface that feels closer to a real desktop than a stack of panels.',
+    body: 'Sharpening Terminal-OS until the shell, the archive, and the strange edges all feel like parts of one coherent world.',
   },
 ];
 
 const CONTACT_META: VfsContactMeta = {
-  email: 'add-email@example.com',
-  githubUrl: 'https://github.com/your-handle',
-  instagramUrl: 'https://instagram.com/your-handle',
-  status: 'Available for projects and collaborations.',
-  avatarPlaceholder: true,
+  githubUrl: 'https://github.com/naninfinite',
+  status: 'GitHub is the active contact point while the rest of the signal chain is being rebuilt.',
+  avatarPlaceholder: false,
 };
 
 const seedNodes: VfsNode[] = [
@@ -60,7 +58,7 @@ const seedNodes: VfsNode[] = [
     kind: 'text',
     documentLayout: 'about',
     heroPlaceholder: true,
-    textContent: 'Creative developer building interface systems, interactive environments, and OS-flavored web work.',
+    textContent: 'This space is built around interface fiction, tactile systems, and portfolio work that behaves more like a place than a slide deck.',
     documentSections: ABOUT_SECTIONS,
   },
   {
@@ -69,7 +67,7 @@ const seedNodes: VfsNode[] = [
     type: 'file',
     parentId: HOME_ID,
     kind: 'contact',
-    textContent: 'Reach out through the channels below. Replace placeholders with final values when ready.',
+    textContent: 'The fastest route in right now is GitHub. The rest of the contact surface will return once the shell settles.',
     contactMeta: CONTACT_META,
   },
   {
@@ -78,17 +76,13 @@ const seedNodes: VfsNode[] = [
     type: 'file',
     parentId: HOME_ID,
     kind: 'text',
-    documentLayout: 'standard',
+    documentLayout: 'hub',
     textContent: [
-      'Welcome to ME.EXE.',
+      'Terminal OS is a world-first portfolio shell.',
       '',
-      'This desktop is the portfolio layer for Terminal-OS.',
-      'Open folders and documents directly from the desktop to browse the work.',
+      'Start here if you want the fastest route through the archive: projects for the systems, media for the atmosphere, and about for the operating logic underneath it.',
       '',
-      'Current milestone:',
-      '- Finder-style desktop entry model',
-      '- Folder and document windows',
-      '- Existing image, video, and project viewers preserved',
+      'The OS metaphor is not decoration. It is the navigation model that turns the work into a place you move through.',
     ].join('\n'),
   },
   {
@@ -146,8 +140,11 @@ const seedNodes: VfsNode[] = [
     kind: 'project',
     projectMeta: {
       title: 'Terminal-OS',
-      summary: 'Pseudo operating-system portfolio shell with panel/fullscreen subsystem runtime and folder-document workflows.',
+      summary: 'A browser-built operating-system shell for turning portfolio work into a navigable world.',
       stack: ['React', 'TypeScript', 'SCSS', 'Vite'],
+      artifactLabel: 'VIEW REPOSITORY',
+      artifactUrl: 'https://github.com/naninfinite/terminal-os',
+      whyItMatters: 'It is the current proving ground for shell UX, authored interaction, and how far a fictional desktop can carry real work.',
       repoUrl: 'https://github.com/naninfinite/terminal-os',
     },
   },
@@ -159,8 +156,11 @@ const seedNodes: VfsNode[] = [
     kind: 'project',
     projectMeta: {
       title: 'ProzillaOS',
-      summary: 'Earlier OS-interface experiment used as a reference for windowing, explorer behavior, and desktop structure.',
+      summary: 'An earlier OS-interface experiment that mapped out the desktop language this project is now rebuilding with more rigor.',
       stack: ['React', 'TypeScript'],
+      artifactLabel: 'OPEN ARCHIVE',
+      artifactUrl: 'https://github.com/naninfinite/ProzillaOS',
+      whyItMatters: 'It carries the early windowing and explorer instincts that still inform the current shell, but in a rougher, more volatile form.',
       repoUrl: 'https://github.com/naninfinite/ProzillaOS',
     },
   },

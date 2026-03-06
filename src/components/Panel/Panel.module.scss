@@ -147,3 +147,41 @@
   gap: 6px;
   margin-left: auto;
 }
+
+.headerInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.headerTitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headerActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.headerActions button {
+  border: 1px solid var(--ui-border-soft);
+  background: transparent;
+  color: inherit;
+  padding: 1px 7px;
+  font-size: $font-xs;
+}
+
+.headerActions button:hover,
+.headerActions button:focus-visible {
+  border-color: var(--ui-border);
+  background: var(--ui-fill-hover);
+  box-shadow: var(--ui-shadow-focus);
+  outline: none;
+}

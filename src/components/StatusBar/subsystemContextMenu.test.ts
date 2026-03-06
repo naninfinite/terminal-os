@@ -188,7 +188,7 @@ describe('subsystemContextMenu model', () => {
     expect(connectLeave && connectLeave.kind === 'action' ? connectLeave.disabled : undefined).toBe(false);
   });
 
-  it('labels dock open actions as promote/focus when the hero layout is active', () => {
+  it('labels dock entry actions as promote/focus when the desktop hero layout is active', () => {
     const model = buildSubsystemContextMenu({
       scope: 'third',
       origin: 'dock',
@@ -199,6 +199,11 @@ describe('subsystemContextMenu model', () => {
       thirdNotificationCount: 0,
       thirdMode: 'play',
       connectNotificationCount: 0,
+      connectStatus: 'idle',
+      connectRoomCode: null,
+      connectCanRequestRematch: false,
+      connectActiveMatch: false,
+      connectMultiplayerAvailable: true,
     });
 
     const openAction = model.rows.find(

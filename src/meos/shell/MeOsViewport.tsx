@@ -72,7 +72,6 @@ export const isPanelBackgroundTarget = (
 };
 
 const getEntryIcon = (entry: MeOsDesktopEntry): AppIconName => {
-  if (entry.id === 'home') return 'home';
   if (entry.id === 'media') return 'media';
   if (entry.id === 'projects') return 'projects';
   if (entry.iconVariant === 'folder') return 'folder';

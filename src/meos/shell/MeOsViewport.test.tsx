@@ -6,7 +6,7 @@ import { MeOsProvider } from './MeOsProvider';
 import { MeOsViewport, isPanelBackgroundTarget } from './MeOsViewport';
 
 describe('MeOsViewport', () => {
-  it('renders the fullscreen chrome and the fixed desktop aliases', () => {
+  it('renders the fullscreen chrome and the curated desktop stack', () => {
     const markup = renderToStaticMarkup(
       <MeOsVfsProvider>
         <MeOsProvider>
@@ -18,14 +18,14 @@ describe('MeOsViewport', () => {
     expect(markup).toContain('aria-label="Close ME.EXE fullscreen"');
     expect(markup).toContain('>CLOSE<');
     expect(markup).toContain('ME.EXE</span><button');
-    expect(markup).toContain('Home');
+    expect(markup).toContain('Start Here');
+    expect(markup).toContain('Projects');
     expect(markup).toContain('Media');
     expect(markup).toContain('About');
     expect(markup).toContain('Contact');
     expect(markup).not.toContain('draggable="true"');
-    expect(markup).not.toContain('Projects');
+    expect(markup).not.toContain('Home');
     expect(markup).not.toContain('Archive');
-    expect(markup).not.toContain('README.txt');
   });
 
   it('marks the panel desktop surface as a valid background target', () => {

@@ -60,21 +60,22 @@ When proposing future ME.EXE changes:
 - Avoid broad visual experimentation in one shot.
 - Keep decisions anchored to this document and `docs/me-exe-finder-reset-spec.md` unless explicitly re-approved.
 
-## 8) Current Finder Reset Lock (2026-03-01)
+## 8) Current Finder Reset Lock (2026-03-05)
 
-1. Sparse desktop icon lane complete: `Home`, `Projects`, `Media`, `About`, `Contact`, `Archive`, `README.txt`.
+1. Curated desktop icon lane complete: `Start Here`, `Projects`, `Media`, `About`, `Contact`.
 2. Desktop semantics complete: pointer single-click selects, double-click opens; touch single tap opens; keyboard navigation remains active.
 3. Background-only fullscreen entry complete: icon/window interactions never trigger fullscreen.
 4. Desktop-panel runtime parity complete: panel renders the same ME runtime and active windows as fullscreen.
 5. Folder/file baseline complete: centered launcher shelf removed in favor of folder/document windows.
 6. Deterministic window ids complete: folders, viewers, and info windows focus existing windows when reopened.
-7. Canonical `Home` docs complete: `About`, `Contact`, and `README.txt` live in `Home` and appear on the desktop as aliases.
+7. Canonical `Home` docs complete: `About`, `Contact`, and `README.txt` live in `Home`, with `README.txt` surfaced on desktop as `Start Here`.
 8. Minimal folder-window contract complete: no toolbar, sidebar, path input, or visible authoring controls.
-9. Finder-leaning chrome complete: centered titles, quieter resize affordances, classic-style controls, Terminal-OS palette preserved.
+9. Finder-leaning chrome complete: centered titles, quieter resize affordances, classic-style controls, authored backdrop, and Terminal-OS palette preserved.
 10. Task-strip grouping baseline complete: show individual ME tasks only in `ME.EXE` scope and a collapsed `ME.EXE (n)` master item in non-ME scopes.
 11. Session restore + shell/VFS v2 migrations complete.
 12. Cross-surface mobile/tablet hardening remains a required baseline for the new shell.
-13. Dedicated gallery/video browsing is explicitly deferred to a later ME pass.
+13. `Start Here` now acts as the world hub with explicit next-open actions.
+14. Dedicated gallery/video browsing beyond current folder/viewer behavior remains deferred to a later ME pass.
 
 ## 9) Theme Split Lock (Auto / Dark / Light)
 
@@ -100,3 +101,18 @@ That roadmap now holds:
 2. Step-by-step delivery order.
 3. Separate complexity tracks for `THIRD`, `YOU`, and `CONNECT`.
 4. M7 post-parity preview.
+
+## 11) Deferred Shell Follow-Ups
+
+Desktop stage-transition motion is now part of the shell baseline:
+
+- desktop hero-panel promotion uses a GSAP-driven slot transition on wide layouts,
+- fullscreen behavior remains unchanged,
+- reduced-motion users stay on a static path.
+
+The remaining deferred items are intentionally held behind that baseline:
+
+1. Featured-panel identity pass:
+   - when a subsystem is promoted into the left-hand hero slot, give it a materially stronger hero-state presentation instead of only reflowing layout.
+2. `ME.EXE` media payoff pass:
+   - deepen the `Media` surface with richer browsing, stronger poster/reel framing, and more authored atmosphere.

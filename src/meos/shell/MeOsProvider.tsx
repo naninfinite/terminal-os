@@ -284,13 +284,11 @@ const sanitizeWindow = (raw: unknown): LegacyWindow | null => {
     restoreRect: data.restoreRect,
   });
   const desktopEntryId = (
-    data.desktopEntryId === 'home'
+    data.desktopEntryId === 'readme'
     || data.desktopEntryId === 'projects'
     || data.desktopEntryId === 'media'
     || data.desktopEntryId === 'about'
     || data.desktopEntryId === 'contact'
-    || data.desktopEntryId === 'archive'
-    || data.desktopEntryId === 'readme'
   ) ? data.desktopEntryId : undefined;
   const viewerKind = (
     data.viewerKind === 'text'
