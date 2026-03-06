@@ -13,6 +13,9 @@
   grid-template-rows: auto auto minmax(0, 1fr) auto auto;
   gap: 8px;
   outline: none;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: $phosphor-green $bg-black;
 }
 
 .root:focus-visible {
@@ -64,12 +67,13 @@
 }
 
 .boardFrame {
-  min-height: 240px;
+  min-height: 0;
   border: 2px solid rgb(0 255 102 / 0.45);
   background: rgb(0 255 102 / 0.08);
   padding: 10px;
   display: grid;
   place-items: center;
+  overflow: hidden;
 }
 
 .boardCanvas {
@@ -85,6 +89,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
   align-items: start;
+  min-width: 0;
 }
 
 .metaControls {
