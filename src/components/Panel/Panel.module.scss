@@ -135,4 +135,15 @@
   margin-bottom: 6px;
   font-size: $font-sm;
   letter-spacing: $letter-spacing;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
 }

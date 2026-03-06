@@ -22,6 +22,8 @@ export type PanelProps = {
   title: string;
   children?: React.ReactNode;
   className?: string;
+  /** Optional right-aligned header actions. */
+  headerActions?: React.ReactNode;
   /** Scope identifier used by menu routing/focus helpers. */
   scopeId?: PanelScopeId;
   /** Stretch the body to fill the panel instead of centering children. */
@@ -83,6 +85,7 @@ const Panel: React.FC<PanelProps> = ({
   title,
   children,
   className,
+  headerActions,
   scopeId,
   stretchBody,
   disableHover,
@@ -318,7 +321,12 @@ const Panel: React.FC<PanelProps> = ({
       onKeyDown={contextTrigger.onKeyDown}
     >
       <header className={`${styles.header} ${hideHeader ? styles.hiddenHeader : ''}`.trim()}>
-        [{title}]
+        <span>[{title}]</span>
+        {headerActions ? (
+          <div className={styles.headerActions} data-panel-zoom-block="true">
+            {headerActions}
+          </div>
+        ) : null}
       </header>
       <div
         className={`${styles.body} ${stretchBody ? styles.bodyStretch : ''} ${enableMobilePinchZoom ? styles.bodyZoomEnabled : ''} ${bodyClassName ?? ''}`.trim()}
