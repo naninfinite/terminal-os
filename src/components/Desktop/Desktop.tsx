@@ -3,8 +3,9 @@
  * Responsive behavior is handled in `Desktop.module.scss`; this component only
  * composes app panels and passes panel-specific layout flags.
  */
-import React, { Suspense, useCallback, useEffect } from 'react';
+import React, { Suspense, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { flushSync } from 'react-dom';
+import { gsap } from 'gsap';
 import Panel from '../Panel/Panel';
 import ME from '../ME/ME';
 import YOU from '../YOU/YOU';
@@ -20,12 +21,24 @@ import {
   resolveDesktopPanelStages,
 } from './desktopPanelLayout';
 import {
+  getDesktopReducedMotionQuery,
+  getInitialDesktopReducedMotion,
+  measureDesktopStageRect,
+  resolveDesktopStageFlip,
+  shouldAnimateDesktopStageTransition,
+  type DesktopStageRect,
+} from './desktopStageMotion';
+import {
   SUBSYSTEM_CONTEXT_MENU_EVENT,
   type SubsystemContextMenuEventDetail,
 } from '../StatusBar/subsystemContextMenu';
 
 type DesktopPanelScope = 'me' | 'you' | 'third' | 'connect';
+
 const ThirdSurface = React.lazy(loadThirdSurface);
+const PANEL_SCOPES: readonly DesktopPanelScope[] = ['me', 'you', 'third', 'connect'];
+const DESKTOP_STAGE_MOTION_DURATION_S = 0.42;
+const useDesktopMotionEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 const getInitialDesktopHeroLayoutEnabled = (): boolean => (
   typeof window === 'undefined' ? true : isDesktopHeroLayoutViewport(window.innerWidth)
@@ -45,7 +58,11 @@ const Desktop: React.FC = () => {
   const [desktopHeroLayoutEnabled, setDesktopHeroLayoutEnabled] = React.useState<boolean>(
     () => getInitialDesktopHeroLayoutEnabled()
   );
+  const [reducedMotion, setReducedMotion] = React.useState<boolean>(() => getInitialDesktopReducedMotion());
   const panelStages = resolveDesktopPanelStages(featuredPanel);
+  const desktopRootRef = useRef<HTMLDivElement | null>(null);
+  const previousPanelRectsRef = useRef<Partial<Record<DesktopPanelScope, DesktopStageRect>>>({});
+  const previousFeaturedPanelRef = useRef<DesktopPanelScope | null>(featuredPanel);
 
   useEffect(() => {
     const onResize = () => setDesktopHeroLayoutEnabled(isDesktopHeroLayoutViewport(window.innerWidth));
@@ -57,24 +74,66 @@ const Desktop: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined;
+
+    const mediaQuery = window.matchMedia(getDesktopReducedMotionQuery());
+    const syncReducedMotion = () => setReducedMotion(mediaQuery.matches);
+    syncReducedMotion();
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', syncReducedMotion);
+      return () => mediaQuery.removeEventListener('change', syncReducedMotion);
+    }
+
+    mediaQuery.addListener(syncReducedMotion);
+    return () => mediaQuery.removeListener(syncReducedMotion);
+  }, []);
+
   const requestPanelContextMenu = useCallback((detail: SubsystemContextMenuEventDetail) => {
     window.dispatchEvent(
       new CustomEvent<SubsystemContextMenuEventDetail>(SUBSYSTEM_CONTEXT_MENU_EVENT, { detail })
     );
   }, []);
+
   const activatePanel = useCallback((scope: DesktopPanelScope) => {
-    // Ensure active-panel zoom state is available immediately for multi-touch starts.
     flushSync(() => {
       setActiveZoomPanel(scope);
     });
     setActiveScope(scope === 'me' ? null : scope);
   }, [setActiveScope]);
+
   const focusPanelRoot = useCallback((scope: DesktopPanelScope) => {
     const panel = document.querySelector(`[data-panel-scope="${scope}"]`) as HTMLElement | null;
     if (!panel) return;
     panel.focus();
     panel.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }, []);
+
+  const getDesktopPanelNodes = useCallback(() => {
+    const root = desktopRootRef.current;
+    if (!root) return [] as Array<{ scope: DesktopPanelScope; node: HTMLElement }>;
+
+    return PANEL_SCOPES.flatMap((scope) => {
+      const node = root.querySelector<HTMLElement>(`[data-panel-scope="${scope}"]`);
+      return node ? [{ scope, node }] : [];
+    });
+  }, []);
+
+  const clearDesktopPanelMotion = useCallback(() => {
+    getDesktopPanelNodes().forEach(({ node }) => {
+      gsap.killTweensOf(node);
+      gsap.set(node, { clearProps: 'transform,willChange' });
+    });
+  }, [getDesktopPanelNodes]);
+
+  const measurePanelRects = useCallback(() => (
+    getDesktopPanelNodes().reduce((rects, { scope, node }) => {
+      rects[scope] = measureDesktopStageRect(node.getBoundingClientRect());
+      return rects;
+    }, {} as Partial<Record<DesktopPanelScope, DesktopStageRect>>)
+  ), [getDesktopPanelNodes]);
+
   const promotePanel = useCallback((scope: DesktopPanelScope) => {
     if (!desktopHeroLayoutEnabled) return;
     flushSync(() => {
@@ -84,6 +143,7 @@ const Desktop: React.FC = () => {
     setActiveScope(scope === 'me' ? null : scope);
     focusPanelRoot(scope);
   }, [desktopHeroLayoutEnabled, focusPanelRoot, setActiveScope, setFeaturedPanel]);
+
   const getPanelClassName = useCallback((scope: DesktopPanelScope, baseClassName: string): string => {
     const stage = panelStages[scope];
     const stageClassName = (
@@ -94,6 +154,7 @@ const Desktop: React.FC = () => {
     );
     return `${baseClassName} ${styles.desktopPanel} ${stageClassName}`.trim();
   }, [panelStages]);
+
   const renderHeaderActions = useCallback((args: {
     scope: DesktopPanelScope;
     fullscreenLabel: string;
@@ -115,14 +176,66 @@ const Desktop: React.FC = () => {
     </>
   ), [desktopHeroLayoutEnabled, featuredPanel, promotePanel]);
 
+  useDesktopMotionEffect(() => {
+    clearDesktopPanelMotion();
+    const nextPanelRects = measurePanelRects();
+
+    if (shouldAnimateDesktopStageTransition({
+      desktopHeroLayoutEnabled,
+      reducedMotion,
+      previousFeaturedPanel: previousFeaturedPanelRef.current,
+      featuredPanel,
+    })) {
+      getDesktopPanelNodes().forEach(({ scope, node }) => {
+        const flip = resolveDesktopStageFlip({
+          previousRect: previousPanelRectsRef.current[scope],
+          nextRect: nextPanelRects[scope],
+        });
+        if (!flip) return;
+
+        gsap.fromTo(node, {
+          x: flip.x,
+          y: flip.y,
+          scaleX: flip.scaleX,
+          scaleY: flip.scaleY,
+          willChange: 'transform',
+          transformOrigin: '50% 50%',
+          force3D: true,
+        }, {
+          x: 0,
+          y: 0,
+          scaleX: 1,
+          scaleY: 1,
+          duration: DESKTOP_STAGE_MOTION_DURATION_S,
+          ease: 'power3.out',
+          clearProps: 'transform,willChange',
+        });
+      });
+    }
+
+    previousPanelRectsRef.current = nextPanelRects;
+    previousFeaturedPanelRef.current = featuredPanel;
+  }, [
+    clearDesktopPanelMotion,
+    desktopHeroLayoutEnabled,
+    featuredPanel,
+    getDesktopPanelNodes,
+    measurePanelRects,
+    reducedMotion,
+  ]);
+
+  useEffect(() => () => {
+    clearDesktopPanelMotion();
+  }, [clearDesktopPanelMotion]);
+
   return (
     <div
+      ref={desktopRootRef}
       className={styles.desktop}
       role="main"
       data-desktop-root="true"
       data-featured-panel={featuredPanel}
     >
-      {/* Profile / portfolio entry panel. */}
       <Panel
         title="ME.EXE"
         className={getPanelClassName('me', styles.mePanel)}
@@ -146,7 +259,6 @@ const Desktop: React.FC = () => {
       >
         <ME />
       </Panel>
-      {/* Shared message-board panel (YOU runtime, preview mode). */}
       <Panel
         title="YOU.EXE"
         className={getPanelClassName('you', styles.youPanel)}
@@ -168,7 +280,6 @@ const Desktop: React.FC = () => {
       >
         <YOU />
       </Panel>
-      {/* Canvas app needs a stretching body so WebGL can fill available height. */}
       <Panel
         title="THIRD.EXE"
         className={getPanelClassName('third', styles.thirdPanel)}
@@ -198,7 +309,6 @@ const Desktop: React.FC = () => {
           </Suspense>
         )}
       </Panel>
-      {/* ASCII banner / contact panel. */}
       <Panel
         title="CONNECT.EXE"
         className={getPanelClassName('connect', styles.connectPanel)}

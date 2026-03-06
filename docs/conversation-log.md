@@ -1848,3 +1848,22 @@ Deferred TODOs:
 Risks / Notes:
 - This is backlog capture only; no new runtime motion behavior was added in this pass.
 - The GSAP idea is framed as staged layout motion, not autoplay or rotating-carousel behavior.
+
+---
+
+## Entry 89 - Desktop Hero Slot Motion (GSAP Stage Transition)
+
+Summary:
+- Added desktop-only GSAP motion for hero-panel promotion in the shell.
+- Hero swaps now use a FLIP-style stage transition so panels shift and slot into their new positions instead of only snapping between grid cells.
+- Kept tablet/mobile behavior static and preserved the current fullscreen entry model.
+- Added deterministic helper coverage for the reduced-motion gate and stage-delta math.
+
+Why it matters:
+- Gives the new swappable hero-panel model a stronger sense of physicality without turning the shell into a carousel.
+- Makes promotion feel like an operating-system surface rearranging itself rather than a plain layout re-render.
+- Keeps the motion pass constrained to the shell layer instead of leaking new animation complexity into subsystem runtimes.
+
+Risks / Notes:
+- Motion is disabled when `prefers-reduced-motion: reduce` is active.
+- This pass does not yet add subsystem-specific hero-state visual treatments; that follow-up remains deferred.

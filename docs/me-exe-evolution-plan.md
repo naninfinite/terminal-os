@@ -104,14 +104,15 @@ That roadmap now holds:
 
 ## 11) Deferred Shell Follow-Ups
 
-These items are intentionally deferred behind the current shell recovery baseline:
+Desktop stage-transition motion is now part of the shell baseline:
+
+- desktop hero-panel promotion uses a GSAP-driven slot transition on wide layouts,
+- fullscreen behavior remains unchanged,
+- reduced-motion users stay on a static path.
+
+The remaining deferred items are intentionally held behind that baseline:
 
 1. Featured-panel identity pass:
    - when a subsystem is promoted into the left-hand hero slot, give it a materially stronger hero-state presentation instead of only reflowing layout.
 2. `ME.EXE` media payoff pass:
    - deepen the `Media` surface with richer browsing, stronger poster/reel framing, and more authored atmosphere.
-3. Desktop stage-transition motion pass:
-   - evaluate a GSAP-driven desktop-only promotion transition where panels shift and slot into place,
-   - preserve fullscreen behavior,
-   - respect reduced-motion preferences,
-   - avoid turning the shell into an auto-rotating carousel.
