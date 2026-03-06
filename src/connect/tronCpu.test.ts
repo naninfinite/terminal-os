@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createTronGameState } from './tronEngine';
+import { createTronGameState, tronCellToId } from './tronEngine';
 import { pickCpuTurn, TRON_CPU_PROFILES } from './tronCpu';
 import type { TronGameState, TronPlayerId } from './types';
 
@@ -63,7 +63,81 @@ describe('tronCpu', () => {
     expect(expertAgain).toBe(expert);
     expect(expert).not.toBe('down');
     expect(easy).not.toBe('down');
-    expect(TRON_CPU_PROFILES.expert.aggressionWeight).toBeGreaterThan(TRON_CPU_PROFILES.easy.aggressionWeight);
-    expect(TRON_CPU_PROFILES.expert.riskWeight).toBeLessThan(TRON_CPU_PROFILES.easy.riskWeight);
+    expect(TRON_CPU_PROFILES.expert.lookaheadDepth).toBeGreaterThan(TRON_CPU_PROFILES.easy.lookaheadDepth);
+    expect(TRON_CPU_PROFILES.expert.searchBudget).toBeGreaterThan(TRON_CPU_PROFILES.easy.searchBudget);
+    expect(TRON_CPU_PROFILES.expert.mistakeRate).toBeLessThan(TRON_CPU_PROFILES.easy.mistakeRate);
+  });
+
+  it('avoids immediate suicidal contested moves on expert when survival options exist', () => {
+    const state = createRunningState(createTronGameState({
+      columns: 10,
+      rows: 10,
+      countdownTicks: 0,
+      seed: 44,
+      activePlayerIds: ['p1', 'p2'],
+    }));
+    const shaped = withPlayers(state, {
+      p1: {
+        head: { x: 6, y: 5 },
+        direction: 'left',
+        trailCellIds: [
+          tronCellToId(10, { x: 6, y: 5 }),
+          tronCellToId(10, { x: 6, y: 4 }),
+          tronCellToId(10, { x: 6, y: 6 }),
+        ],
+      },
+      p2: { head: { x: 4, y: 5 }, direction: 'right', trailCellIds: [54] },
+    });
+
+    const expert = pickCpuTurn({ state: shaped, playerId: 'p2', difficulty: 'expert' });
+
+    // Going straight contests the center cell and dies this tick.
+    expect(expert).not.toBe('right');
+    expect(expert === 'up' || expert === 'down').toBe(true);
+  });
+
+  it('prefers open territory over entering a dead corridor on expert', () => {
+    const state = createRunningState(createTronGameState({
+      columns: 12,
+      rows: 10,
+      countdownTicks: 0,
+      seed: 91,
+      activePlayerIds: ['p1', 'p2', 'p3'],
+    }));
+    const corridorTrail = [
+      tronCellToId(12, { x: 7, y: 4 }),
+      tronCellToId(12, { x: 8, y: 4 }),
+      tronCellToId(12, { x: 9, y: 4 }),
+      tronCellToId(12, { x: 10, y: 4 }),
+      tronCellToId(12, { x: 7, y: 6 }),
+      tronCellToId(12, { x: 8, y: 6 }),
+      tronCellToId(12, { x: 9, y: 6 }),
+      tronCellToId(12, { x: 10, y: 6 }),
+      tronCellToId(12, { x: 10, y: 5 }),
+    ];
+    const shaped = withPlayers(state, {
+      p1: {
+        head: { x: 1, y: 1 },
+        direction: 'down',
+        trailCellIds: [
+          tronCellToId(12, { x: 1, y: 1 }),
+          ...corridorTrail,
+        ],
+      },
+      p2: {
+        head: { x: 6, y: 5 },
+        direction: 'right',
+        trailCellIds: [tronCellToId(12, { x: 6, y: 5 })],
+      },
+      p3: {
+        head: { x: 10, y: 8 },
+        direction: 'left',
+        trailCellIds: [tronCellToId(12, { x: 10, y: 8 })],
+      },
+    });
+
+    const expert = pickCpuTurn({ state: shaped, playerId: 'p2', difficulty: 'expert' });
+
+    expect(expert).not.toBe('right');
   });
 });
