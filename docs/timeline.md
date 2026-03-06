@@ -1,6 +1,6 @@
 # Terminal-OS Timeline (Chronological)
 
-Last updated: 2026-03-05
+Last updated: 2026-03-06
 
 This is a curated, chronological narrative for quickly reloading context.
 It is intentionally higher-level than `docs/conversation-log.md`.
@@ -23,7 +23,7 @@ Key baseline claims:
 - `ME.OS` uses a persistent, versioned VFS service and deterministic seed/reset behavior.
 - `YOU.EXE` is a persistent message board backed by a Supabase Edge Function.
 - `THIRD.EXE` is an object-mode three.js playground with shared panel/fullscreen state and local autosave.
-- `CONNECT.EXE` is a shared Tron runtime with CPU fallback and Supabase Realtime multiplayer.
+- `CONNECT.EXE` is a shared four-seat Tron runtime with CPU fallback and Supabase Realtime multiplayer.
 
 ---
 
@@ -37,6 +37,20 @@ What changed:
 Why it matters:
 - Moves CONNECT from placeholder chrome into a real subsystem with the same runtime parity expectations as ME, YOU, and THIRD.
 - Establishes the first browser-multiplayer baseline in the repo without introducing a backend schema or Edge Function for v1.
+
+---
+
+## 2026-03-06: CONNECT.EXE Four-Seat Lobby + Visual Rewrite
+
+What changed:
+- Generalized CONNECT from a hardcoded two-player game into a four-seat Tron runtime with `p1`..`p4`.
+- Added mixed seat lobbies with `local`, `online`, `cpu`, and `closed` seat modes plus per-browser two-human-seat limits.
+- Expanded quick match into separate `2P` and `4P` queues and added custom room seat claiming for mixed online/local/cpu matches.
+- Reworked the renderer into continuous light-cycle lines with a larger Snake-style board/HUD and reliable window-level keyboard routing.
+
+Why it matters:
+- Removes the biggest architectural limit in CONNECT by making local, CPU, and online play use the same seat model.
+- Lets the subsystem scale from solo CPU sessions to full four-browser online rounds without introducing a backend schema.
 
 ---
 

@@ -84,8 +84,12 @@ export const flattenPresenceState = (state: Record<string, unknown>): ConnectQue
       const joinedAt = typeof (entry as { joinedAt?: unknown }).joinedAt === 'string'
         ? (entry as { joinedAt: string }).joinedAt
         : '';
+      const desiredPlayers = typeof (entry as { desiredPlayers?: unknown }).desiredPlayers === 'number'
+        ? (entry as { desiredPlayers: number }).desiredPlayers
+        : 0;
       if (!clientId || !joinedAt) return;
-      entries.push({ clientId, joinedAt });
+      if (desiredPlayers !== 2 && desiredPlayers !== 4) return;
+      entries.push({ clientId, joinedAt, desiredPlayers });
     });
   });
 

@@ -1,6 +1,11 @@
 import React from 'react';
 import styles from './CONNECT.module.scss';
-import { tronIdToCell } from '../../connect/tronEngine';
+import {
+  buildTrailPolyline,
+  getCellCenter,
+  getTrailStrokeWidth,
+  resolveConnectBoardMetrics,
+} from './connectBoardGeometry';
 import type { TronGameState, TronPlayerId } from '../../connect/types';
 
 type ConnectBoardCanvasProps = {
@@ -8,17 +13,27 @@ type ConnectBoardCanvasProps = {
   mode?: 'panel' | 'fullscreen';
 };
 
-const BACKGROUND_COLOR = '#03110b';
-const GRID_COLOR = 'rgba(140, 255, 190, 0.08)';
+const BACKGROUND_COLOR = '#001108';
+const GRID_COLOR = 'rgb(0 255 102 / 0.05)';
+const BOARD_BORDER = 'rgb(0 255 102 / 0.35)';
 const TRAIL_COLORS: Record<TronPlayerId, string> = {
   p1: '#7dffb7',
   p2: '#66cfff',
+  p3: '#ffb84a',
+  p4: '#f4ea63',
 };
 const HEAD_COLORS: Record<TronPlayerId, string> = {
   p1: '#d7ffe8',
   p2: '#dbf6ff',
+  p3: '#ffe2a9',
+  p4: '#fffbd1',
 };
-const DEAD_COLOR = '#ff7d7d';
+const DEAD_COLORS: Record<TronPlayerId, string> = {
+  p1: 'rgb(125 255 183 / 0.32)',
+  p2: 'rgb(102 207 255 / 0.32)',
+  p3: 'rgb(255 184 74 / 0.32)',
+  p4: 'rgb(244 234 99 / 0.32)',
+};
 
 const ConnectBoardCanvas: React.FC<ConnectBoardCanvasProps> = ({ game, mode = 'panel' }) => {
   const frameRef = React.useRef<HTMLDivElement | null>(null);
@@ -59,65 +74,80 @@ const ConnectBoardCanvas: React.FC<ConnectBoardCanvasProps> = ({ game, mode = 'p
     const canvas = canvasRef.current;
     if (!canvas || size.width <= 0 || size.height <= 0) return;
 
+    const metrics = resolveConnectBoardMetrics(size.width, size.height, game.columns, game.rows);
     const dpr = window.devicePixelRatio || 1;
     canvas.width = Math.floor(size.width * dpr);
     canvas.height = Math.floor(size.height * dpr);
     canvas.style.width = `${size.width}px`;
     canvas.style.height = `${size.height}px`;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const context = canvas.getContext('2d');
+    if (!context) return;
 
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, size.width, size.height);
-    ctx.fillStyle = BACKGROUND_COLOR;
-    ctx.fillRect(0, 0, size.width, size.height);
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.scale(dpr, dpr);
+    context.imageSmoothingEnabled = false;
+    context.clearRect(0, 0, size.width, size.height);
+    context.fillStyle = BACKGROUND_COLOR;
+    context.fillRect(0, 0, size.width, size.height);
 
-    const cellWidth = size.width / game.columns;
-    const cellHeight = size.height / game.rows;
-    const ownerByCellId = new Map<number, TronPlayerId>();
+    context.strokeStyle = BOARD_BORDER;
+    context.lineWidth = 1;
+    context.strokeRect(
+      metrics.offsetX + 0.5,
+      metrics.offsetY + 0.5,
+      metrics.boardWidth - 1,
+      metrics.boardHeight - 1,
+    );
 
-    for (const playerId of ['p1', 'p2'] as TronPlayerId[]) {
-      for (const cellId of game.players[playerId].trailCellIds) {
-        ownerByCellId.set(cellId, playerId);
-      }
-    }
-
-    ctx.fillStyle = GRID_COLOR;
+    context.strokeStyle = GRID_COLOR;
+    context.lineWidth = 1;
     for (let x = 1; x < game.columns; x += 1) {
-      ctx.fillRect((x * cellWidth) - 0.5, 0, 1, size.height);
+      const pixelX = metrics.offsetX + (x * metrics.cellSize) + 0.5;
+      context.beginPath();
+      context.moveTo(pixelX, metrics.offsetY);
+      context.lineTo(pixelX, metrics.offsetY + metrics.boardHeight);
+      context.stroke();
     }
     for (let y = 1; y < game.rows; y += 1) {
-      ctx.fillRect(0, (y * cellHeight) - 0.5, size.width, 1);
+      const pixelY = metrics.offsetY + (y * metrics.cellSize) + 0.5;
+      context.beginPath();
+      context.moveTo(metrics.offsetX, pixelY);
+      context.lineTo(metrics.offsetX + metrics.boardWidth, pixelY);
+      context.stroke();
     }
 
-    ownerByCellId.forEach((playerId, cellId) => {
-      const cell = tronIdToCell(game.columns, cellId);
-      const insetX = Math.max(1, Math.floor(cellWidth * 0.08));
-      const insetY = Math.max(1, Math.floor(cellHeight * 0.08));
-      ctx.fillStyle = game.players[playerId].alive ? TRAIL_COLORS[playerId] : DEAD_COLOR;
-      ctx.fillRect(
-        Math.floor(cell.x * cellWidth) + insetX,
-        Math.floor(cell.y * cellHeight) + insetY,
-        Math.max(1, Math.ceil(cellWidth - (insetX * 2))),
-        Math.max(1, Math.ceil(cellHeight - (insetY * 2))),
+    const strokeWidth = getTrailStrokeWidth(metrics.cellSize, mode);
+
+    game.activePlayerIds.forEach((playerId) => {
+      const player = game.players[playerId];
+      if (player.trailCellIds.length === 0) return;
+      const points = buildTrailPolyline(player.trailCellIds, game.columns, metrics);
+      if (points.length === 0) return;
+
+      context.beginPath();
+      context.moveTo(points[0]!.x, points[0]!.y);
+      for (let index = 1; index < points.length; index += 1) {
+        const point = points[index]!;
+        context.lineTo(point.x, point.y);
+      }
+      context.strokeStyle = player.alive ? TRAIL_COLORS[playerId] : DEAD_COLORS[playerId];
+      context.lineWidth = strokeWidth;
+      context.lineJoin = 'miter';
+      context.lineCap = 'square';
+      context.stroke();
+
+      const head = getCellCenter(player.head, metrics);
+      const headSize = Math.max(2, Math.floor(metrics.cellSize * 0.3));
+      context.fillStyle = player.alive ? HEAD_COLORS[playerId] : DEAD_COLORS[playerId];
+      context.fillRect(
+        Math.floor(head.x - (headSize / 2)),
+        Math.floor(head.y - (headSize / 2)),
+        headSize,
+        headSize,
       );
     });
-
-    for (const playerId of ['p1', 'p2'] as TronPlayerId[]) {
-      const head = game.players[playerId].head;
-      const insetX = Math.max(1, Math.floor(cellWidth * 0.18));
-      const insetY = Math.max(1, Math.floor(cellHeight * 0.18));
-      ctx.fillStyle = game.players[playerId].alive ? HEAD_COLORS[playerId] : DEAD_COLOR;
-      ctx.fillRect(
-        Math.floor(head.x * cellWidth) + insetX,
-        Math.floor(head.y * cellHeight) + insetY,
-        Math.max(1, Math.ceil(cellWidth - (insetX * 2))),
-        Math.max(1, Math.ceil(cellHeight - (insetY * 2))),
-      );
-    }
-  }, [game, size.height, size.width]);
+  }, [game, mode, size.height, size.width]);
 
   return (
     <div

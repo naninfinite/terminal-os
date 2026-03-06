@@ -1,7 +1,8 @@
 import {
-  TRON_PLAYERS,
+  TRON_PLAYER_IDS,
   isOppositeDirection,
   moveTronCell,
+  queueTurn,
   stepTronGame,
   tronCellToId,
   turnLeft,
@@ -48,10 +49,31 @@ type CandidateScore = {
   safe: boolean;
   reachableSpace: number;
   trapDelta: number;
+  threatPressure: number;
   centerBias: number;
   futureScore: number;
   randomBias: number;
 };
+
+const compareCandidateScores = (left: CandidateScore, right: CandidateScore): number => {
+  if (left.safe !== right.safe) return left.safe ? -1 : 1;
+  if (left.futureScore !== right.futureScore) return right.futureScore - left.futureScore;
+  if (left.reachableSpace !== right.reachableSpace) return right.reachableSpace - left.reachableSpace;
+  if (left.threatPressure !== right.threatPressure) return right.threatPressure - left.threatPressure;
+  if (left.trapDelta !== right.trapDelta) return right.trapDelta - left.trapDelta;
+  if (left.centerBias !== right.centerBias) return right.centerBias - left.centerBias;
+  return right.randomBias - left.randomBias;
+};
+
+const summarizeCandidateScore = (score: CandidateScore): number => (
+  (score.safe ? 1_000_000 : -1_000_000)
+  + (score.futureScore * 1_000)
+  + (score.reachableSpace * 100)
+  + (score.threatPressure * 10)
+  + (score.trapDelta * 5)
+  + score.centerBias
+  + score.randomBias
+);
 
 const candidateDirections = (direction: TronDirection): TronDirection[] => [
   direction,
@@ -59,13 +81,15 @@ const candidateDirections = (direction: TronDirection): TronDirection[] => [
   turnRight(direction),
 ];
 
+const getAlivePlayerIds = (state: TronGameState): TronPlayerId[] => (
+  state.activePlayerIds.filter((playerId) => state.players[playerId].alive)
+);
+
 const getOccupiedCells = (state: TronGameState): Set<number> => {
   const occupied = new Set<number>();
-  for (const playerId of TRON_PLAYERS) {
-    for (const cellId of state.players[playerId].trailCellIds) {
-      occupied.add(cellId);
-    }
-  }
+  state.activePlayerIds.forEach((playerId) => {
+    state.players[playerId].trailCellIds.forEach((cellId) => occupied.add(cellId));
+  });
   return occupied;
 };
 
@@ -132,15 +156,58 @@ const seededUnit = (seed: number, tick: number, playerId: TronPlayerId, directio
   return (hash >>> 0) / 0x1_0000_0000;
 };
 
-const predictOpponentDirection = (
+const predictDirectionalIntent = (state: TronGameState, playerId: TronPlayerId): TronDirection => {
+  const player = state.players[playerId];
+  const options = candidateDirections(player.direction);
+  const blocked = getOccupiedCells(state);
+  const safe = options
+    .filter((direction) => !isOppositeDirection(player.direction, direction))
+    .map((direction) => {
+      const nextHead = moveTronCell(player.head, direction);
+      const reachableSpace = measureReachableSpace({
+        state,
+        origin: nextHead,
+        blockedCells: blocked,
+      });
+      return {
+        direction,
+        safe: isSafeDirection(state, playerId, direction),
+        reachableSpace,
+        centerBias: centerBiasForCell(state, nextHead),
+      };
+    })
+    .sort((left, right) => {
+      if (left.safe !== right.safe) return left.safe ? -1 : 1;
+      if (left.reachableSpace !== right.reachableSpace) return right.reachableSpace - left.reachableSpace;
+      return right.centerBias - left.centerBias;
+    });
+  return safe[0]?.direction ?? player.direction;
+};
+
+const buildProjectedState = (
   state: TronGameState,
-  opponentId: TronPlayerId,
-): TronDirection => {
-  const options = candidateDirections(state.players[opponentId].direction);
-  for (const direction of options) {
-    if (isSafeDirection(state, opponentId, direction)) return direction;
-  }
-  return state.players[opponentId].direction;
+  plannedTurns: Array<{ playerId: TronPlayerId; direction: TronDirection }>,
+): TronGameState => {
+  let queued = state;
+  plannedTurns.forEach((turn) => {
+    queued = queueTurn(queued, turn.playerId, turn.direction, state.tick + 1);
+  });
+  return stepTronGame(queued);
+};
+
+const estimateThreatPressure = (
+  state: TronGameState,
+  nextHead: TronCell,
+  playerId: TronPlayerId,
+): number => {
+  let total = 0;
+  getAlivePlayerIds(state).forEach((otherId) => {
+    if (otherId === playerId) return;
+    const otherHead = state.players[otherId].head;
+    const distance = Math.abs(nextHead.x - otherHead.x) + Math.abs(nextHead.y - otherHead.y);
+    total -= Math.max(0, 12 - distance);
+  });
+  return total;
 };
 
 const scoreDirection = (
@@ -149,7 +216,6 @@ const scoreDirection = (
   direction: TronDirection,
   depth: number,
 ): CandidateScore => {
-  const opponentId = TRON_PLAYERS.find((entry) => entry !== playerId) ?? 'p2';
   const safe = isSafeDirection(state, playerId, direction);
   const randomBias = seededUnit(state.seed, state.tick, playerId, direction);
 
@@ -158,75 +224,94 @@ const scoreDirection = (
       direction,
       safe: false,
       reachableSpace: -1,
-      trapDelta: -1_000,
-      centerBias: -1_000,
-      futureScore: -1_000,
+      trapDelta: -10_000,
+      threatPressure: -10_000,
+      centerBias: -10_000,
+      futureScore: -10_000,
       randomBias,
     };
   }
 
-  const blocked = getOccupiedCells(state);
   const nextHead = moveTronCell(state.players[playerId].head, direction);
-  blocked.add(tronCellToId(state.columns, nextHead));
+  const nextHeadId = tronCellToId(state.columns, nextHead);
+  const occupied = getOccupiedCells(state);
 
-  const opponentDirection = predictOpponentDirection(state, opponentId);
-  const opponentNextHead = moveTronCell(state.players[opponentId].head, opponentDirection);
-  if (
-    opponentNextHead.x >= 0
-    && opponentNextHead.x < state.columns
-    && opponentNextHead.y >= 0
-    && opponentNextHead.y < state.rows
-  ) {
-    blocked.add(tronCellToId(state.columns, opponentNextHead));
-  }
+  const aliveOpponents = getAlivePlayerIds(state).filter((otherId) => otherId !== playerId);
+  const opponentTurns = aliveOpponents.map((otherId) => ({
+    playerId: otherId,
+    direction: predictDirectionalIntent(state, otherId),
+  }));
+  const opponentHeadByPlayerId = new Map<TronPlayerId, number>();
+  opponentTurns.forEach((turn) => {
+    const nextOpponentHead = moveTronCell(state.players[turn.playerId].head, turn.direction);
+    if (
+      nextOpponentHead.x < 0
+      || nextOpponentHead.x >= state.columns
+      || nextOpponentHead.y < 0
+      || nextOpponentHead.y >= state.rows
+    ) {
+      return;
+    }
+    opponentHeadByPlayerId.set(turn.playerId, tronCellToId(state.columns, nextOpponentHead));
+  });
 
+  const opponentSpaces: number[] = [];
+  opponentTurns.forEach((turn) => {
+    const nextOpponentHead = moveTronCell(state.players[turn.playerId].head, turn.direction);
+    if (
+      nextOpponentHead.x < 0
+      || nextOpponentHead.x >= state.columns
+      || nextOpponentHead.y < 0
+      || nextOpponentHead.y >= state.rows
+    ) {
+      opponentSpaces.push(0);
+      return;
+    }
+    const blockedForOpponent = new Set<number>(occupied);
+    blockedForOpponent.add(nextHeadId);
+    opponentHeadByPlayerId.forEach((cellId, otherPlayerId) => {
+      if (otherPlayerId !== turn.playerId) {
+        blockedForOpponent.add(cellId);
+      }
+    });
+    opponentSpaces.push(measureReachableSpace({
+      state,
+      origin: nextOpponentHead,
+      blockedCells: blockedForOpponent,
+    }));
+  });
+
+  const blockedForPlayer = new Set<number>(occupied);
+  opponentHeadByPlayerId.forEach((cellId) => blockedForPlayer.add(cellId));
   const reachableSpace = measureReachableSpace({
     state,
     origin: nextHead,
-    blockedCells: blocked,
+    blockedCells: blockedForPlayer,
   });
-  const opponentReachable = measureReachableSpace({
-    state,
-    origin: opponentNextHead,
-    blockedCells: blocked,
-  });
+  const maxOpponentReachable = opponentSpaces.length > 0 ? Math.max(...opponentSpaces) : 0;
   const centerBias = centerBiasForCell(state, nextHead);
+  const threatPressure = estimateThreatPressure(state, nextHead, playerId);
   let futureScore = 0;
 
   if (depth > 1) {
-    const stepped = stepTronGame(
-      state.pendingInputs.length === 0
-        ? {
-          ...state,
-          pendingInputs: [
-            { playerId, direction, tick: state.tick + 1 },
-            { playerId: opponentId, direction: opponentDirection, tick: state.tick + 1 },
-          ],
-        }
-        : {
-          ...state,
-          pendingInputs: [
-            ...state.pendingInputs,
-            { playerId, direction, tick: state.tick + 1 },
-            { playerId: opponentId, direction: opponentDirection, tick: state.tick + 1 },
-          ],
-        }
-    );
-
-    if (stepped.phase === 'round_over' || stepped.phase === 'match_over') {
-      if (stepped.roundResult?.winner === playerId) futureScore += 10_000;
-      if (stepped.roundResult?.winner === opponentId) futureScore -= 10_000;
+    const projected = buildProjectedState(state, [
+      { playerId, direction },
+      ...opponentTurns,
+    ]);
+    if (projected.phase === 'round_over' || projected.phase === 'match_over') {
+      if (projected.roundResult?.winner === playerId) {
+        futureScore = 10_000;
+      } else if (projected.roundResult?.winner == null && projected.roundResult?.eliminated.includes(playerId)) {
+        futureScore = -5_000;
+      } else if (projected.roundResult?.winner && projected.roundResult.winner !== playerId) {
+        futureScore = -10_000;
+      }
     } else {
-      const futureOptions = candidateDirections(stepped.players[playerId].direction)
-        .filter((option) => !isOppositeDirection(stepped.players[playerId].direction, option))
-        .map((option) => scoreDirection(stepped, playerId, option, depth - 1))
-        .sort((left, right) => {
-          if (left.safe !== right.safe) return left.safe ? -1 : 1;
-          if (left.futureScore !== right.futureScore) return right.futureScore - left.futureScore;
-          if (left.trapDelta !== right.trapDelta) return right.trapDelta - left.trapDelta;
-          return right.reachableSpace - left.reachableSpace;
-        });
-      futureScore = futureOptions[0]?.futureScore ?? 0;
+      const nextOptions = candidateDirections(projected.players[playerId].direction)
+        .filter((option, index, list) => list.indexOf(option) === index)
+        .map((option) => scoreDirection(projected, playerId, option, depth - 1))
+        .sort(compareCandidateScores);
+      futureScore = nextOptions[0] ? summarizeCandidateScore(nextOptions[0]) : 0;
     }
   }
 
@@ -234,7 +319,8 @@ const scoreDirection = (
     direction,
     safe,
     reachableSpace,
-    trapDelta: reachableSpace - opponentReachable,
+    trapDelta: reachableSpace - maxOpponentReachable,
+    threatPressure,
     centerBias,
     futureScore,
     randomBias,
@@ -249,6 +335,7 @@ export const pickCpuTurn = (args: {
   const { state, playerId, difficulty } = args;
   const player = state.players[playerId];
   if (!player.alive || state.phase !== 'running') return null;
+  if (!state.activePlayerIds.includes(playerId)) return null;
 
   const profile = TRON_CPU_PROFILES[difficulty];
   const scores = candidateDirections(player.direction)
@@ -257,23 +344,13 @@ export const pickCpuTurn = (args: {
 
   const safeScores = scores.filter((entry) => entry.safe);
   const pool = safeScores.length > 0 ? safeScores : scores;
-  const ranked = [...pool].sort((left, right) => {
-    if (left.safe !== right.safe) return left.safe ? -1 : 1;
-    if (left.futureScore !== right.futureScore) return right.futureScore - left.futureScore;
-    if (left.reachableSpace !== right.reachableSpace) return right.reachableSpace - left.reachableSpace;
-    if (left.trapDelta !== right.trapDelta) return right.trapDelta - left.trapDelta;
-    if (left.centerBias !== right.centerBias) return right.centerBias - left.centerBias;
-    return right.randomBias - left.randomBias;
-  });
-  const best = ranked[0];
-  if (!best) return null;
+  const ranked = [...pool].sort(compareCandidateScores);
 
-  if (ranked.length > 1 && profile.randomness > 0) {
-    const jitter = seededUnit(state.seed, state.tick + 1, playerId, best.direction);
-    if (jitter < profile.randomness) {
-      return ranked[1]?.direction ?? best.direction;
-    }
+  if (ranked.length === 0) return null;
+
+  const roll = seededUnit(state.seed, state.tick, playerId, player.direction);
+  if (ranked.length > 1 && roll < profile.randomness) {
+    return ranked[1]?.direction ?? ranked[0]!.direction;
   }
-
-  return best.direction;
+  return ranked[0]!.direction;
 };

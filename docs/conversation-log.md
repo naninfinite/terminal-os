@@ -1860,3 +1860,20 @@ Risks / Notes:
 - `Home` and `Archive` remain canonical VFS folders but are intentionally absent from the desktop surface.
 - `THIRD.EXE` still uses the same provider/runtime boundary; this pass simplifies the user-facing UI rather than adding new editor capabilities.
 - Added focused regressions for ME desktop entries, the `Start Here` hub, panel header actions, and the simplified THIRD panel/fullscreen split.
+
+---
+
+## Entry 90 - CONNECT.EXE Four-Seat Runtime + Mixed Lobby Pass
+
+Summary:
+- Generalized CONNECT from a fixed two-player game into a four-seat Tron runtime with `p1`..`p4`.
+- Added seat-mode lobbies (`local`, `online`, `cpu`, `closed`), `2P`/`4P` quick match queues, and custom room seat claiming with a two-human-seat-per-browser cap.
+- Reworked the board renderer into continuous light-cycle lines, enlarged the board presentation, and moved input handling to a gated window-level keyboard path.
+
+Why it matters:
+- CONNECT can now cover solo CPU play, two-local-human sessions, and four-browser online rounds without separate game modes or duplicated logic.
+- The new seat model removes the main scaling limit in the original Tron v1 implementation while keeping the networking contract lightweight and deterministic.
+
+Risks / Notes:
+- Host-authoritative snapshots remain intentionally simple and do not attempt rollback netcode or host migration.
+- If a non-host client drops mid-match, the host converts that client’s seats to CPU takeover after the grace period; if the host drops, the room ends.

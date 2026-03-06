@@ -12,7 +12,7 @@ Implemented now:
 - FileMan + viewer apps inside ME (`text`, `image`, `video`, `project`).
 - `YOU.EXE` persistent message board backed by Supabase Edge Function.
 - `THIRD.EXE` object-mode playground baseline (primitives, edit/play modes, physics grab, local autosave).
-- `CONNECT.EXE` Tron V1 with shared panel/fullscreen runtime, CPU opponent, quick match, and room-code multiplayer over Supabase Realtime.
+- `CONNECT.EXE` Tron V1 with a shared panel/fullscreen runtime, 4-seat engine, mixed local/online/CPU lobbies, and Supabase Realtime quick match + rooms.
 - Permanent subsystem dock navbar (`ME`, `YOU`, `THIRD`, `CONNECT`) with fullscreen/focus routing.
 - `YOU.EXE` dock indicator with session-only draft/unread signals.
 - Unified right-click / long-press context menus for subsystem dock + desktop panel roots (V1 scope).
@@ -89,8 +89,11 @@ Vite server baseline is configured in `vite.config.ts`:
 - `CONNECT.EXE` uses Supabase Realtime only in v1: queue matchmaking uses presence on `connect:queue:v1`, and matches run on `connect:room:<CODE>:v1`.
 - No Postgres schema or Edge Function is required for Tron v1.
 - If `VITE_CONNECT_SUPABASE_URL` or `VITE_CONNECT_SUPABASE_ANON_KEY` is missing, CONNECT stays in CPU-only mode and multiplayer buttons remain unavailable.
-- Quick Match pairs the oldest two waiting clients; room-code invites let one player host and another join directly.
-- Local development: set the two Connect env vars, run `npm install`, then `npm run dev`. Open two tabs to test quick match or room-code flow.
+- CONNECT now supports four canonical seats (`p1`..`p4`) with `local`, `online`, `cpu`, and `closed` seat modes.
+- Quick Match supports `2P` and `4P` online queues with one human seat per browser.
+- Custom lobbies support mixed setups such as `2 local + 2 cpu`, `1 local + 1 online + 2 cpu`, or `3 online + 1 cpu`.
+- A single browser can control up to two human seats: one-seat play uses `WASD` plus arrows, and two-seat local play uses `WASD` for the first owned seat and arrows for the second.
+- Local development: set the two Connect env vars, run `npm install`, then `npm run dev`. Open multiple tabs to test `2P`/`4P` quick match or hosted room flow.
 
 ## References
 

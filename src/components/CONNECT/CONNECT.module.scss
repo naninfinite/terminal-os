@@ -3,115 +3,127 @@
 .root {
   width: 100%;
   height: 100%;
-  min-height: 0;
   min-width: 0;
+  min-height: 0;
   overflow: hidden;
-  border: 1px solid transparent;
   box-sizing: border-box;
   display: grid;
+  outline: none;
 }
 
-.root:hover,
 .root:focus-visible {
-  border-color: var(--ui-border);
   box-shadow: var(--ui-shadow-focus);
 }
 
 .rootFullscreen {
   border-color: var(--ui-border);
-  box-shadow: none;
 }
 
 .surface {
+  --connect-lcd-bg: #001108;
+  --connect-lcd-ink: #00ff66;
+  --connect-lcd-grid: rgb(0 255 102 / 0.08);
   width: 100%;
   height: 100%;
   min-width: 0;
   min-height: 0;
+  border: $border;
+  background: $bg-black;
+  color: $phosphor-green;
+  padding: 8px;
   display: grid;
   grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
   gap: 8px;
-  padding: 8px;
-  border: $border;
-  background:
-    radial-gradient(circle at top left, rgb(125 255 183 / 0.08), transparent 36%),
-    radial-gradient(circle at bottom right, rgb(102 207 255 / 0.08), transparent 30%),
-    $bg-black;
   box-sizing: border-box;
 }
 
-.topRow {
+.headerRow {
   display: flex;
-  align-items: center;
+  align-items: start;
   justify-content: space-between;
   gap: 8px;
 }
 
-.identity {
-  min-width: 0;
+.titleBlock,
+.headerMeta,
+.seatMain,
+.selectWrap {
   display: grid;
-  gap: 2px;
+  gap: 4px;
 }
 
-.stateToken,
-.connectionToken,
-.scoreLabel,
-.selectLabel {
-  font-size: $font-xs;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.stateToken {
-  color: $phosphor-cyan;
-}
-
-.connectionToken {
-  color: var(--ui-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
+.modeLabel,
+.statusLine,
+.metaToken,
+.hint,
+.noteText,
+.errorText,
+.seatLabel,
+.seatMode,
+.seatMeta,
+.selectLabel,
+.roomCode,
 .modeBtn,
 .actionBtn,
 .touchBtn,
 .select,
 .joinInput {
-  border: $border;
-  background: $bg-black;
-  color: $phosphor-green;
-  font: inherit;
-}
-
-.modeBtn,
-.actionBtn,
-.touchBtn {
-  padding: 4px 10px;
-  font-size: $font-xs;
+  font-family: $font-mono;
   letter-spacing: 0.04em;
 }
 
-.modeBtn:disabled,
-.actionBtn:disabled {
-  opacity: 0.5;
+.modeLabel,
+.statusLine {
+  margin: 0;
 }
 
-.scoreboard {
+.modeLabel {
+  font-size: $font-xs;
+  font-weight: 700;
+}
+
+.statusLine,
+.metaToken,
+.seatMeta,
+.selectLabel {
+  font-size: $font-xs;
+}
+
+.headerMeta {
+  justify-items: end;
+}
+
+.metaToken {
+  border: 1px solid rgb(0 255 102 / 0.36);
+  background: rgb(0 255 102 / 0.08);
+  padding: 4px 6px;
+}
+
+.hudRow {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
 }
 
-.scoreCard {
-  border: 1px solid var(--ui-border-soft);
-  background: rgb(7 19 12 / 0.88);
-  padding: 6px 8px;
+.hudChip {
+  border: 1px solid rgb(0 255 102 / 0.28);
+  background: rgb(0 255 102 / 0.05);
+  padding: 5px 6px;
+  font-size: $font-xs;
   display: grid;
-  gap: 4px;
+  gap: 2px;
 }
 
-.scoreValue {
-  font-size: $font-md;
+.hudChipOwned {
+  border-color: rgb(102 207 255 / 0.7);
+  background: rgb(102 207 255 / 0.08);
+}
+
+.hint,
+.statusPanel,
+.seatList {
+  border: 1px solid rgb(0 255 102 / 0.26);
+  background: rgb(0 255 102 / 0.05);
 }
 
 .hint,
@@ -119,58 +131,42 @@
 .errorText {
   margin: 0;
   font-size: $font-xs;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .hint {
-  border: 1px solid var(--ui-border-soft);
-  background: rgb(7 19 12 / 0.78);
   padding: 6px 8px;
 }
 
-.boardShell,
-.statusPanel {
-  min-height: 0;
+.boardShell {
   min-width: 0;
+  min-height: 0;
   display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: 8px;
 }
 
-.boardShell {
-  grid-template-rows: minmax(0, 1fr) auto;
-  align-items: stretch;
-  overflow: hidden;
-}
-
-.statusPanel {
-  border: 1px solid var(--ui-border-soft);
-  background: rgb(7 19 12 / 0.78);
-  padding: 10px;
-}
-
 .canvasFrame {
-  min-height: 220px;
   min-width: 0;
+  min-height: 280px;
   width: 100%;
-  max-width: 100%;
-  aspect-ratio: 3 / 2;
+  height: 100%;
+  border: 2px solid rgb(0 255 102 / 0.42);
+  background: rgb(0 255 102 / 0.05);
+  padding: 6px;
   box-sizing: border-box;
   overflow: hidden;
-  border: 1px solid var(--ui-border-soft);
-  background: rgb(4 12 8 / 0.95);
-  padding: 8px;
 }
 
 .canvasFrameFullscreen {
-  height: 100%;
-  max-height: none;
-  aspect-ratio: auto;
+  min-height: 0;
 }
 
 .canvas {
   display: block;
   width: 100%;
   height: 100%;
+  background: var(--connect-lcd-bg);
 }
 
 .boardMeta {
@@ -184,38 +180,12 @@
   justify-content: space-between;
   gap: 8px;
   font-size: $font-xs;
-  color: var(--ui-text-muted);
-  letter-spacing: 0.04em;
 }
 
-.actionGrid {
+.statusPanel {
+  padding: 10px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-}
-
-.joinRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  grid-column: 1 / -1;
-}
-
-.joinInput {
-  width: 100%;
-  min-width: 0;
-  padding: 4px 8px;
-  box-sizing: border-box;
-}
-
-.selectWrap {
-  display: grid;
-  gap: 4px;
-}
-
-.select {
-  width: 100%;
-  padding: 4px 8px;
 }
 
 .roomRow {
@@ -226,11 +196,95 @@
 }
 
 .roomCode {
-  border: 1px solid var(--ui-border-soft);
-  background: rgb(7 19 12 / 0.88);
+  border: 1px solid rgb(0 255 102 / 0.36);
+  background: rgb(0 255 102 / 0.08);
   padding: 4px 8px;
-  font-size: $font-sm;
-  letter-spacing: 0.16em;
+}
+
+.seatList {
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.seatRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid rgb(0 255 102 / 0.16);
+  background: rgb(0 255 102 / 0.03);
+  padding: 6px;
+}
+
+.seatMain {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: center;
+}
+
+.seatLabel,
+.seatMode {
+  font-size: $font-xs;
+  font-weight: 700;
+}
+
+.seatActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.actionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.quickMatchRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  grid-column: 1 / -1;
+}
+
+.joinRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  grid-column: 1 / -1;
+}
+
+.modeBtn,
+.actionBtn,
+.touchBtn,
+.select,
+.joinInput {
+  border: 1px solid rgb(0 255 102 / 0.56);
+  background: rgb(0 255 102 / 0.08);
+  color: inherit;
+  font: inherit;
+  font-size: $font-xs;
+}
+
+.modeBtn,
+.actionBtn,
+.touchBtn {
+  min-height: 32px;
+  padding: 5px 8px;
+}
+
+.actionBtnActive {
+  border-color: rgb(102 207 255 / 0.8);
+  background: rgb(102 207 255 / 0.12);
+  color: $phosphor-cyan;
+}
+
+.select,
+.joinInput {
+  width: 100%;
+  min-width: 0;
+  padding: 5px 8px;
+  box-sizing: border-box;
 }
 
 .touchControls {
@@ -240,7 +294,7 @@
 }
 
 .touchBtn {
-  min-height: 38px;
+  min-height: 36px;
 }
 
 .errorText {
@@ -299,12 +353,18 @@
 
 @media (max-width: $bp-tablet) {
   .surface {
-    gap: 6px;
     padding: 6px;
+    gap: 6px;
   }
 
-  .scoreboard,
-  .actionGrid {
+  .hudRow,
+  .actionGrid,
+  .quickMatchRow,
+  .seatMain {
+    grid-template-columns: 1fr;
+  }
+
+  .seatRow {
     grid-template-columns: 1fr;
   }
 }
@@ -314,12 +374,16 @@
     grid-template-columns: 1fr;
   }
 
-  .metaRow {
+  .metaRow,
+  .headerRow {
     flex-wrap: wrap;
   }
 
-  .fullscreenHeader {
-    padding-left: 6px;
-    padding-right: 6px;
+  .headerMeta {
+    justify-items: start;
+  }
+
+  .canvasFrame {
+    min-height: 220px;
   }
 }

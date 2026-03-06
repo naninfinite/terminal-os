@@ -1,6 +1,12 @@
-import type { ConnectMatchOffer, ConnectQueuePresence } from './types';
+import type {
+  ConnectMatchOffer,
+  ConnectQueuePresence,
+  TronPlayerId,
+  TronQuickMatchSize,
+} from './types';
 
 const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const PLAYER_IDS: TronPlayerId[] = ['p1', 'p2', 'p3', 'p4'];
 
 export const normalizeRoomCode = (value: string): string => (
   value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
@@ -18,20 +24,45 @@ export const sortQueuePresence = (presence: ConnectQueuePresence[]): ConnectQueu
   [...presence].sort(comparePresence)
 );
 
-export const shouldLeadQuickMatch = (clientId: string, presence: ConnectQueuePresence[]): boolean => (
-  sortQueuePresence(presence)[0]?.clientId === clientId
-);
+export const createSeatAssignments = (selectedClientIds: string[]): Record<string, TronPlayerId> => {
+  const assignments: Record<string, TronPlayerId> = {};
+  selectedClientIds.forEach((clientId, index) => {
+    const playerId = PLAYER_IDS[index];
+    if (!playerId) return;
+    assignments[clientId] = playerId;
+  });
+  return assignments;
+};
 
-export const pickQuickMatchPair = (
+export const pickQuickMatchGroup = (
   presence: ConnectQueuePresence[],
-): { hostClientId: string; guestClientId: string } | null => {
-  const [host, guest] = sortQueuePresence(presence);
-  if (!host || !guest) return null;
+  desiredPlayers: TronQuickMatchSize,
+): {
+  hostClientId: string;
+  selectedClientIds: string[];
+  queueSize: TronQuickMatchSize;
+  seatAssignments: Record<string, TronPlayerId>;
+} | null => {
+  const matching = sortQueuePresence(presence)
+    .filter((entry) => entry.desiredPlayers === desiredPlayers)
+    .slice(0, desiredPlayers);
+  if (matching.length < desiredPlayers) return null;
+  const selectedClientIds = matching.map((entry) => entry.clientId);
   return {
-    hostClientId: host.clientId,
-    guestClientId: guest.clientId,
+    hostClientId: selectedClientIds[0]!,
+    selectedClientIds,
+    queueSize: desiredPlayers,
+    seatAssignments: createSeatAssignments(selectedClientIds),
   };
 };
+
+export const shouldLeadQuickMatch = (
+  clientId: string,
+  presence: ConnectQueuePresence[],
+  desiredPlayers: TronQuickMatchSize,
+): boolean => (
+  pickQuickMatchGroup(presence, desiredPlayers)?.hostClientId === clientId
+);
 
 const toDeterministicHash = (value: string): number => {
   let hash = 2166136261;
@@ -59,21 +90,25 @@ export const createRoomCode = (args: {
 
 export const createMatchOffer = (args: {
   hostClientId: string;
-  guestClientId: string;
   roomCode: string;
+  queueSize: TronQuickMatchSize;
+  selectedClientIds: string[];
+  seatAssignments: Record<string, TronPlayerId>;
   createdAt: string;
 }): ConnectMatchOffer => {
   const roomCode = normalizeRoomCode(args.roomCode);
   return {
     type: 'match_offer',
-    offerId: `${args.hostClientId}:${args.guestClientId}:${roomCode}:${args.createdAt}`,
+    offerId: `${args.hostClientId}:${roomCode}:${args.createdAt}`,
     roomCode,
+    queueSize: args.queueSize,
     hostClientId: args.hostClientId,
-    guestClientId: args.guestClientId,
+    selectedClientIds: [...args.selectedClientIds],
+    seatAssignments: { ...args.seatAssignments },
     createdAt: args.createdAt,
   };
 };
 
 export const isOfferTargetForClient = (offer: ConnectMatchOffer, clientId: string): boolean => (
-  offer.hostClientId === clientId || offer.guestClientId === clientId
+  offer.selectedClientIds.includes(clientId)
 );

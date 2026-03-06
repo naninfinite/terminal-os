@@ -1,8 +1,30 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { createMatchOffer, createRoomCode, isOfferTargetForClient, normalizeRoomCode, pickQuickMatchPair, shouldLeadQuickMatch } from './matchmaking';
+import {
+  buildGameConfigFromLobby,
+  canStartLobby,
+  claimOnlineSeat,
+  cloneLobby,
+  createLocalCustomLobby,
+  createOnlineCustomLobby,
+  createQuickMatchLobby,
+  deriveOwnedSeatIds,
+  listActiveSeatIds,
+  releaseClientSeats,
+  releaseOnlineSeat,
+  setSeatMode as setLobbySeatMode,
+} from './lobby';
+import {
+  createMatchOffer,
+  createRoomCode,
+  isOfferTargetForClient,
+  normalizeRoomCode,
+  pickQuickMatchGroup,
+  shouldLeadQuickMatch,
+} from './matchmaking';
 import {
   checksumTronSnapshot,
   createTronGameState,
+  createTronScoreRecord,
   hydrateTronSnapshot,
   prepareNextTronRound,
   queueTurn,
@@ -22,10 +44,13 @@ import {
   toIsoNow,
 } from './realtime';
 import type {
+  ConnectChannelMessage,
   ConnectConnectionState,
   ConnectDisplayMode,
-  ConnectInputMessage,
+  ConnectLobbyState,
+  ConnectMatchOffer,
   ConnectMatchType,
+  ConnectQueuePresence,
   ConnectRematchMessage,
   ConnectRuntimeStatus,
   TronCpuDifficulty,
@@ -33,16 +58,32 @@ import type {
   TronGameState,
   TronPlayerId,
   TronQueuedTurn,
+  TronQuickMatchSize,
+  TronSeatMode,
 } from './types';
 
-const CLIENT_KEY_STORAGE_KEY = 'terminalOS.connect.v1.clientKey';
+const CLIENT_KEY_STORAGE_KEY = 'terminalOS.connect.v2.clientKey';
 const MAX_FRAME_DELTA_MS = 250;
-const QUICK_MATCH_CPU_SUGGEST_MS = 12_000;
 const DISCONNECT_GRACE_MS = 2_000;
 const ONLINE_INPUT_BUFFER_TICKS = 2;
 const LOCAL_INPUT_BUFFER_TICKS = 1;
 const HOST_SNAPSHOT_INTERVAL_TICKS = 5;
 const DEFAULT_CPU_DIFFICULTY: TronCpuDifficulty = 'medium';
+const PLAYER_IDS: TronPlayerId[] = ['p1', 'p2', 'p3', 'p4'];
+
+type ConnectLobbyPreset = 'custom' | 'cpu';
+
+type RoomParticipant = {
+  clientId: string;
+  joinedAt: string;
+};
+
+type QuickMatchSelection = {
+  size: TronQuickMatchSize;
+  selectedClientIds: string[];
+  seatAssignments: Record<string, TronPlayerId>;
+  hostClientId: string;
+};
 
 type ConnectInternalState = {
   displayMode: ConnectDisplayMode;
@@ -50,18 +91,18 @@ type ConnectInternalState = {
   forcedStatus: ConnectRuntimeStatus | null;
   connectionState: ConnectConnectionState;
   multiplayerAvailable: boolean;
+  quickMatchSize: TronQuickMatchSize;
+  lobby: ConnectLobbyState | null;
   game: TronGameState | null;
-  roomCode: string | null;
-  localPlayerId: TronPlayerId;
   isHost: boolean;
-  remoteClientId: string | null;
   cpuDifficulty: TronCpuDifficulty;
   error: string | null;
   message: string | null;
   queueStartedAtMs: number | null;
   queueWaitMs: number;
-  rematchRequestedLocal: boolean;
-  rematchRequestedRemote: boolean;
+  rematchRequests: string[];
+  pendingQuickMatch: QuickMatchSelection | null;
+  temporaryCpuSeatIds: TronPlayerId[];
 };
 
 type ConnectContextValue = {
@@ -70,25 +111,34 @@ type ConnectContextValue = {
   status: ConnectRuntimeStatus;
   connectionState: ConnectConnectionState;
   multiplayerAvailable: boolean;
+  isHost: boolean;
   notificationCount: number;
+  quickMatchSize: TronQuickMatchSize;
   roomCode: string | null;
-  score: Record<TronPlayerId, number>;
+  lobby: ConnectLobbyState | null;
   game: TronGameState | null;
-  localPlayerId: TronPlayerId;
+  ownedSeatIds: TronPlayerId[];
+  score: Record<TronPlayerId, number>;
   cpuDifficulty: TronCpuDifficulty;
   error: string | null;
   message: string | null;
   queueWaitMs: number;
-  canSuggestCpuFallback: boolean;
+  canStartLobby: boolean;
   canRequestRematch: boolean;
+  setQuickMatchSize: (size: TronQuickMatchSize) => void;
+  openCustomLobby: (preset?: ConnectLobbyPreset) => void;
+  startCpuMatch: () => void;
   startQuickMatch: () => void;
   hostRoom: () => void;
   joinRoom: (roomCode: string) => void;
-  startCpuMatch: (difficulty?: TronCpuDifficulty) => void;
+  setSeatMode: (seatId: TronPlayerId, mode: TronSeatMode) => void;
+  claimSeat: (seatId: TronPlayerId) => void;
+  releaseSeat: (seatId: TronPlayerId) => void;
+  startLobbyMatch: () => void;
   setCpuDifficulty: (difficulty: TronCpuDifficulty) => void;
-  leaveMatch: () => void;
   requestRematch: () => void;
-  sendTurn: (direction: TronDirection) => void;
+  leaveMatch: () => void;
+  sendTurn: (playerId: TronPlayerId, direction: TronDirection) => void;
   openFullscreen: () => void;
   closeFullscreen: () => void;
 };
@@ -112,6 +162,26 @@ const getClientKey = (): string => {
   }
 };
 
+const createInitialState = (multiplayerAvailable: boolean): ConnectInternalState => ({
+  displayMode: 'panel',
+  matchType: 'idle',
+  forcedStatus: 'idle',
+  connectionState: multiplayerAvailable ? 'ready' : 'cpu_only',
+  multiplayerAvailable,
+  quickMatchSize: 2,
+  lobby: null,
+  game: null,
+  isHost: false,
+  cpuDifficulty: DEFAULT_CPU_DIFFICULTY,
+  error: null,
+  message: null,
+  queueStartedAtMs: null,
+  queueWaitMs: 0,
+  rematchRequests: [],
+  pendingQuickMatch: null,
+  temporaryCpuSeatIds: [],
+});
+
 const phaseToStatus = (game: TronGameState | null): ConnectRuntimeStatus => {
   if (!game) return 'idle';
   if (game.phase === 'countdown') return 'countdown';
@@ -120,47 +190,65 @@ const phaseToStatus = (game: TronGameState | null): ConnectRuntimeStatus => {
   return 'match_over';
 };
 
-const createInitialState = (multiplayerAvailable: boolean): ConnectInternalState => ({
-  displayMode: 'panel',
-  matchType: 'idle',
-  forcedStatus: 'idle',
-  connectionState: multiplayerAvailable ? 'ready' : 'cpu_only',
-  multiplayerAvailable,
-  game: null,
-  roomCode: null,
-  localPlayerId: 'p1',
-  isHost: false,
-  remoteClientId: null,
-  cpuDifficulty: DEFAULT_CPU_DIFFICULTY,
-  error: null,
-  message: null,
-  queueStartedAtMs: null,
-  queueWaitMs: 0,
-  rematchRequestedLocal: false,
-  rematchRequestedRemote: false,
-});
+const deriveStatus = (runtime: ConnectInternalState): ConnectRuntimeStatus => {
+  if (runtime.forcedStatus && runtime.forcedStatus !== 'idle') return runtime.forcedStatus;
+  if (runtime.game) return phaseToStatus(runtime.game);
+  if (runtime.lobby) return 'setup';
+  return 'idle';
+};
+
+const flattenRoomPresenceState = (state: Record<string, unknown>): RoomParticipant[] => {
+  const entries: RoomParticipant[] = [];
+  Object.values(state).forEach((value) => {
+    if (!Array.isArray(value)) return;
+    value.forEach((entry) => {
+      if (!entry || typeof entry !== 'object') return;
+      const clientId = typeof (entry as { clientId?: unknown }).clientId === 'string'
+        ? (entry as { clientId: string }).clientId
+        : '';
+      const joinedAt = typeof (entry as { joinedAt?: unknown }).joinedAt === 'string'
+        ? (entry as { joinedAt: string }).joinedAt
+        : '';
+      if (!clientId || !joinedAt) return;
+      entries.push({ clientId, joinedAt });
+    });
+  });
+  return entries;
+};
+
+const updateLobbyPhase = (lobby: ConnectLobbyState | null, phase: ConnectLobbyState['phase']): ConnectLobbyState | null => (
+  lobby ? {
+    ...cloneLobby(lobby),
+    phase,
+  } : null
+);
+
+const samePlayerSet = (left: TronPlayerId[], right: TronPlayerId[]): boolean => (
+  left.length === right.length && left.every((playerId, index) => playerId === right[index])
+);
 
 export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const supabaseClient = useMemo(() => createConnectSupabaseClient(), []);
-  const initialState = useMemo(
-    () => createInitialState(supabaseClient != null),
-    [supabaseClient]
-  );
+  const initialState = useMemo(() => createInitialState(supabaseClient != null), [supabaseClient]);
   const [runtime, setRuntime] = useState<ConnectInternalState>(initialState);
   const runtimeRef = useRef<ConnectInternalState>(initialState);
   const clientIdRef = useRef<string>(getClientKey());
   const queueChannelRef = useRef<ReturnType<typeof createPresenceChannel> | null>(null);
   const roomChannelRef = useRef<ReturnType<typeof createPresenceChannel> | null>(null);
-  const disconnectTimerRef = useRef<number | null>(null);
-  const localBufferedInputsRef = useRef<TronQueuedTurn[]>([]);
-  const cpuLastDecisionTickRef = useRef<number>(Number.NEGATIVE_INFINITY);
   const queueOfferKeyRef = useRef<string | null>(null);
-  const roomHasStartedRef = useRef(false);
+  const localBufferedInputsRef = useRef<TronQueuedTurn[]>([]);
   const lastFrameRef = useRef<number | null>(null);
   const accumulatorRef = useRef(0);
+  const cpuLastDecisionTickRef = useRef<Record<TronPlayerId, number>>({
+    p1: Number.NEGATIVE_INFINITY,
+    p2: Number.NEGATIVE_INFINITY,
+    p3: Number.NEGATIVE_INFINITY,
+    p4: Number.NEGATIVE_INFINITY,
+  });
+  const disconnectTimersRef = useRef<Map<string, number>>(new Map());
 
   const setRuntimeSafe = useCallback((
-    updater: ConnectInternalState | ((current: ConnectInternalState) => ConnectInternalState)
+    updater: ConnectInternalState | ((current: ConnectInternalState) => ConnectInternalState),
   ) => {
     setRuntime((current) => {
       const next = typeof updater === 'function'
@@ -171,16 +259,23 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
   }, []);
 
-  const clearDisconnectTimer = useCallback(() => {
-    if (disconnectTimerRef.current != null) {
-      window.clearTimeout(disconnectTimerRef.current);
-      disconnectTimerRef.current = null;
-    }
+  const clearDisconnectTimers = useCallback(() => {
+    disconnectTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
+    disconnectTimersRef.current.clear();
   }, []);
 
   const resetLoopClock = useCallback(() => {
     lastFrameRef.current = null;
     accumulatorRef.current = 0;
+  }, []);
+
+  const resetCpuDecisionTicks = useCallback(() => {
+    cpuLastDecisionTickRef.current = {
+      p1: Number.NEGATIVE_INFINITY,
+      p2: Number.NEGATIVE_INFINITY,
+      p3: Number.NEGATIVE_INFINITY,
+      p4: Number.NEGATIVE_INFINITY,
+    };
   }, []);
 
   const cleanupQueueChannel = useCallback(() => {
@@ -194,18 +289,42 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const cleanupRoomChannel = useCallback(() => {
     const channel = roomChannelRef.current;
     roomChannelRef.current = null;
-    roomHasStartedRef.current = false;
     if (!channel) return;
     void channel.unsubscribe();
   }, []);
 
-  const notifyRemoteLeaveIfNeeded = useCallback(() => {
-    const current = runtimeRef.current;
-    if (current.matchType !== 'online' || !roomChannelRef.current) return;
-    void sendChannelMessage(roomChannelRef.current, {
-      type: 'leave',
+  const resetRuntimeToIdle = useCallback((message?: string) => {
+    setRuntimeSafe((state) => ({
+      ...state,
+      matchType: 'idle',
+      forcedStatus: message ? 'disconnected' : 'idle',
+      connectionState: state.multiplayerAvailable ? 'ready' : 'cpu_only',
+      lobby: null,
+      game: null,
+      isHost: false,
+      error: null,
+      message: message ?? null,
+      queueStartedAtMs: null,
+      queueWaitMs: 0,
+      rematchRequests: [],
+      pendingQuickMatch: null,
+      temporaryCpuSeatIds: [],
+    }));
+  }, [setRuntimeSafe]);
+
+  const getOwnedSeatIds = useCallback((state: ConnectInternalState): TronPlayerId[] => (
+    state.lobby
+      ? deriveOwnedSeatIds(state.lobby, clientIdRef.current, state.isHost).sort((left, right) => left.localeCompare(right))
+      : []
+  ), []);
+
+  const broadcastLobby = useCallback(async (lobby: ConnectLobbyState) => {
+    const channel = roomChannelRef.current;
+    if (!channel) return;
+    await sendChannelMessage(channel, {
+      type: 'lobby_state',
       clientId: clientIdRef.current,
-      reason: 'manual',
+      lobby,
       createdAt: toIsoNow(),
     });
   }, []);
@@ -223,197 +342,392 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
   }, []);
 
-  const applyDisconnectedRound = useCallback(() => {
+  const notifyRemoteLeaveIfNeeded = useCallback(() => {
     const current = runtimeRef.current;
-    if (!current.game) {
-      setRuntimeSafe((state) => ({
-        ...state,
-        forcedStatus: 'disconnected',
-        message: 'Opponent disconnected.',
-      }));
-      return;
-    }
-
-    const remotePlayerId: TronPlayerId = current.localPlayerId === 'p1' ? 'p2' : 'p1';
-    const nextGame: TronGameState = {
-      ...current.game,
-      phase: 'round_over',
-      pendingInputs: [],
-      roundResult: {
-        winner: null,
-        eliminated: [remotePlayerId],
-        reason: 'disconnect',
-      },
-    };
-
-    localBufferedInputsRef.current = [];
-    roomHasStartedRef.current = false;
-    setRuntimeSafe((state) => ({
-      ...state,
-      game: nextGame,
-      forcedStatus: 'disconnected',
-      message: 'Opponent disconnected.',
-      rematchRequestedLocal: false,
-      rematchRequestedRemote: false,
-    }));
-  }, [setRuntimeSafe]);
-
-  const startHostControlledRound = useCallback(async (restartMatch: boolean) => {
-    const current = runtimeRef.current;
-    if (!current.isHost) return;
-
-    const nextGame = current.game == null
-      ? createTronGameState()
-      : (restartMatch || current.game.phase === 'match_over' || current.forcedStatus === 'disconnected')
-        ? restartTronMatch(current.game)
-        : prepareNextTronRound(current.game);
-
-    roomHasStartedRef.current = true;
-    localBufferedInputsRef.current = [];
-    cpuLastDecisionTickRef.current = Number.NEGATIVE_INFINITY;
-
-    setRuntimeSafe((state) => ({
-      ...state,
-      game: nextGame,
-      matchType: 'online',
-      forcedStatus: null,
-      connectionState: 'in_room',
-      rematchRequestedLocal: false,
-      rematchRequestedRemote: false,
-      error: null,
-      message: null,
-    }));
-
-    const channel = roomChannelRef.current;
-    if (!channel) return;
-    const snapshot = serializeTronSnapshot(nextGame);
-    const checksum = checksumTronSnapshot(snapshot);
-    await sendChannelMessage(channel, {
-      type: 'round_event',
+    if (current.matchType !== 'online' || !roomChannelRef.current) return;
+    void sendChannelMessage(roomChannelRef.current, {
+      type: 'leave',
       clientId: clientIdRef.current,
-      event: 'round_start',
-      state: snapshot,
-      checksum,
+      reason: 'manual',
       createdAt: toIsoNow(),
     });
-    await sendChannelMessage(channel, {
-      type: 'snapshot',
-      clientId: clientIdRef.current,
-      checksum,
-      state: snapshot,
-      createdAt: toIsoNow(),
+  }, []);
+
+  const clearDisconnectTimerForClient = useCallback((clientId: string) => {
+    const timerId = disconnectTimersRef.current.get(clientId);
+    if (timerId == null) return;
+    window.clearTimeout(timerId);
+    disconnectTimersRef.current.delete(clientId);
+  }, []);
+
+  const restoreLobbyAfterTakeover = useCallback((state: ConnectInternalState): ConnectLobbyState | null => {
+    if (!state.lobby || state.temporaryCpuSeatIds.length === 0) return state.lobby;
+    const nextLobby = cloneLobby(state.lobby);
+    state.temporaryCpuSeatIds.forEach((seatId) => {
+      const seat = nextLobby.seats[seatId];
+      nextLobby.seats[seatId] = {
+        ...seat,
+        mode: 'online',
+        ownerClientId: null,
+      };
     });
-  }, [setRuntimeSafe]);
+    nextLobby.phase = state.game?.phase ?? 'setup';
+    return nextLobby;
+  }, []);
 
-  const leaveMatch = useCallback((notifyRemote = true) => {
-    const current = runtimeRef.current;
-    if (notifyRemote && current.matchType === 'online' && roomChannelRef.current) {
-      notifyRemoteLeaveIfNeeded();
-    }
-
+  const applyHostDisconnected = useCallback(() => {
     cleanupQueueChannel();
     cleanupRoomChannel();
-    clearDisconnectTimer();
-    resetLoopClock();
+    clearDisconnectTimers();
     localBufferedInputsRef.current = [];
-    cpuLastDecisionTickRef.current = Number.NEGATIVE_INFINITY;
-
-    setRuntimeSafe((state) => ({
-      ...state,
-      matchType: 'idle',
-      forcedStatus: 'idle',
-      connectionState: state.multiplayerAvailable ? 'ready' : 'cpu_only',
-      game: null,
-      roomCode: null,
-      localPlayerId: 'p1',
-      isHost: false,
-      remoteClientId: null,
-      error: null,
-      message: null,
-      queueStartedAtMs: null,
-      queueWaitMs: 0,
-      rematchRequestedLocal: false,
-      rematchRequestedRemote: false,
-    }));
+    resetLoopClock();
+    resetCpuDecisionTicks();
+    resetRuntimeToIdle('Host disconnected - match ended.');
   }, [
     cleanupQueueChannel,
     cleanupRoomChannel,
-    clearDisconnectTimer,
+    clearDisconnectTimers,
+    resetCpuDecisionTicks,
+    resetLoopClock,
+    resetRuntimeToIdle,
+  ]);
+
+  const applyCpuTakeover = useCallback((missingClientId: string) => {
+    const current = runtimeRef.current;
+    if (!current.isHost || !current.lobby || !current.game) return;
+
+    const seatIds = listActiveSeatIds(current.lobby).filter((seatId) => (
+      current.lobby?.seats[seatId].ownerClientId === missingClientId
+      && current.lobby.seats[seatId].mode === 'online'
+    ));
+    if (seatIds.length === 0) return;
+
+    setRuntimeSafe((state) => ({
+      ...state,
+      temporaryCpuSeatIds: [...new Set([...state.temporaryCpuSeatIds, ...seatIds])].sort((left, right) => left.localeCompare(right)),
+      message: `${seatIds.join('/').toUpperCase()} DISCONNECTED - CPU TOOK OVER`,
+    }));
+
+    if (roomChannelRef.current) {
+      void sendChannelMessage(roomChannelRef.current, {
+        type: 'round_event',
+        clientId: clientIdRef.current,
+        event: 'cpu_takeover',
+        seatIds,
+        createdAt: toIsoNow(),
+      });
+    }
+  }, [setRuntimeSafe]);
+
+  const sendTurn = useCallback((playerId: TronPlayerId, direction: TronDirection) => {
+    const current = runtimeRef.current;
+    const ownedSeatIds = getOwnedSeatIds(current);
+    if (!current.game || !ownedSeatIds.includes(playerId)) return;
+
+    const targetTick = current.game.tick + (current.matchType === 'online' ? ONLINE_INPUT_BUFFER_TICKS : LOCAL_INPUT_BUFFER_TICKS);
+    const nextGame = queueTurn(current.game, playerId, direction, targetTick);
+    if (nextGame === current.game) return;
+
+    setRuntimeSafe((state) => ({
+      ...state,
+      game: nextGame,
+      error: null,
+      message: null,
+    }));
+
+    if (current.matchType === 'online' && roomChannelRef.current) {
+      if (!current.isHost) {
+        localBufferedInputsRef.current = localBufferedInputsRef.current
+          .filter((turn) => !(turn.playerId === playerId && turn.tick === targetTick))
+          .concat({ playerId, direction, tick: targetTick })
+          .sort((left, right) => left.tick - right.tick);
+      }
+      void sendChannelMessage(roomChannelRef.current, {
+        type: 'input',
+        clientId: clientIdRef.current,
+        playerId,
+        tick: targetTick,
+        direction,
+        createdAt: toIsoNow(),
+      });
+    }
+  }, [getOwnedSeatIds, setRuntimeSafe]);
+
+  const startLobbyMatch = useCallback(async () => {
+    const current = runtimeRef.current;
+    if (!current.lobby || !canStartLobby(current.lobby)) return;
+    if (current.matchType === 'online' && !current.isHost) return;
+
+    const activePlayerIds = buildGameConfigFromLobby(current.lobby).activePlayerIds;
+    let nextGame: TronGameState;
+    if (
+      current.game
+      && current.game.phase === 'round_over'
+      && samePlayerSet(current.game.activePlayerIds, activePlayerIds)
+      && current.temporaryCpuSeatIds.length === 0
+    ) {
+      nextGame = prepareNextTronRound(current.game);
+    } else if (
+      current.game
+      && current.game.phase === 'match_over'
+      && samePlayerSet(current.game.activePlayerIds, activePlayerIds)
+      && current.temporaryCpuSeatIds.length === 0
+    ) {
+      nextGame = restartTronMatch(current.game);
+    } else {
+      nextGame = createTronGameState({
+        activePlayerIds,
+        score: current.game?.phase === 'round_over'
+          && samePlayerSet(current.game.activePlayerIds, activePlayerIds)
+          ? current.game.score
+          : createTronScoreRecord(),
+      });
+    }
+
+    const nextLobby = updateLobbyPhase(current.lobby, nextGame.phase);
+    localBufferedInputsRef.current = [];
+    resetLoopClock();
+    resetCpuDecisionTicks();
+
+    setRuntimeSafe((state) => ({
+      ...state,
+      lobby: nextLobby,
+      game: nextGame,
+      forcedStatus: null,
+      error: null,
+      message: null,
+      connectionState: state.matchType === 'online' ? 'in_room' : state.connectionState,
+      rematchRequests: [],
+      temporaryCpuSeatIds: [],
+    }));
+
+    if (current.matchType === 'online' && current.isHost && roomChannelRef.current && nextLobby) {
+      await broadcastLobby(nextLobby);
+      const snapshot = serializeTronSnapshot(nextGame);
+      const checksum = checksumTronSnapshot(snapshot);
+      await sendChannelMessage(roomChannelRef.current, {
+        type: 'round_event',
+        clientId: clientIdRef.current,
+        event: 'round_start',
+        state: snapshot,
+        checksum,
+        createdAt: toIsoNow(),
+      });
+      await sendChannelMessage(roomChannelRef.current, {
+        type: 'snapshot',
+        clientId: clientIdRef.current,
+        checksum,
+        state: snapshot,
+        createdAt: toIsoNow(),
+      });
+    }
+  }, [
+    broadcastLobby,
+    resetCpuDecisionTicks,
     resetLoopClock,
     setRuntimeSafe,
   ]);
 
-  const joinRoomInternal = useCallback((rawRoomCode: string, isHost: boolean) => {
-    const roomCode = normalizeRoomCode(rawRoomCode);
-    if (roomCode.length !== 6 || !supabaseClient) {
+  const leaveMatch = useCallback((notifyRemote = true) => {
+    if (notifyRemote) notifyRemoteLeaveIfNeeded();
+    cleanupQueueChannel();
+    cleanupRoomChannel();
+    clearDisconnectTimers();
+    resetLoopClock();
+    resetCpuDecisionTicks();
+    localBufferedInputsRef.current = [];
+    resetRuntimeToIdle();
+  }, [
+    cleanupQueueChannel,
+    cleanupRoomChannel,
+    clearDisconnectTimers,
+    notifyRemoteLeaveIfNeeded,
+    resetCpuDecisionTicks,
+    resetLoopClock,
+    resetRuntimeToIdle,
+  ]);
+
+  const handleRoomPresenceSync = useCallback(async () => {
+    const current = runtimeRef.current;
+    const channel = roomChannelRef.current;
+    if (!current.lobby || !channel) return;
+
+    const participants = flattenRoomPresenceState(channel.presenceState());
+    const presentClientIds = new Set(participants.map((entry) => entry.clientId));
+
+    if (!current.isHost) {
+      const hostClientId = current.lobby.hostClientId;
+      if (hostClientId && !presentClientIds.has(hostClientId)) {
+        applyHostDisconnected();
+      }
+      return;
+    }
+
+    clearDisconnectTimerForClient(clientIdRef.current);
+
+    if (current.lobby.phase === 'setup') {
+      let nextLobby = current.lobby;
+      const ownerClientIds = new Set<string>();
+      PLAYER_IDS.forEach((seatId) => {
+        const ownerClientId = nextLobby.seats[seatId].ownerClientId;
+        if (!ownerClientId || ownerClientId === clientIdRef.current) return;
+        ownerClientIds.add(ownerClientId);
+      });
+      ownerClientIds.forEach((ownerClientId) => {
+        if (presentClientIds.has(ownerClientId)) return;
+        nextLobby = releaseClientSeats(nextLobby, ownerClientId);
+      });
+
+      if (nextLobby !== current.lobby) {
+        setRuntimeSafe((state) => ({
+          ...state,
+          lobby: nextLobby,
+          message: 'A player left the room.',
+          rematchRequests: state.rematchRequests.filter((clientId) => presentClientIds.has(clientId)),
+        }));
+      }
+
+      await broadcastLobby(nextLobby);
+      if (
+        nextLobby.source === 'quick_match'
+        && canStartLobby(nextLobby)
+      ) {
+        const requiredClients = new Set<string>();
+        PLAYER_IDS.forEach((seatId) => {
+          const ownerClientId = nextLobby.seats[seatId].ownerClientId;
+          if (ownerClientId) requiredClients.add(ownerClientId);
+        });
+        const everyonePresent = [...requiredClients].every((clientId) => presentClientIds.has(clientId));
+        if (everyonePresent) {
+          await startLobbyMatch();
+        }
+      }
+      return;
+    }
+
+    if (!current.game) return;
+    const claimedClientIds = new Set<string>();
+    PLAYER_IDS.forEach((seatId) => {
+      const seat = current.lobby?.seats[seatId];
+      if (!seat?.ownerClientId || seat.ownerClientId === clientIdRef.current || seat.mode !== 'online') return;
+      claimedClientIds.add(seat.ownerClientId);
+    });
+
+    claimedClientIds.forEach((ownerClientId) => {
+      if (presentClientIds.has(ownerClientId)) {
+        clearDisconnectTimerForClient(ownerClientId);
+        return;
+      }
+      if (disconnectTimersRef.current.has(ownerClientId)) return;
+      const timerId = window.setTimeout(() => {
+        disconnectTimersRef.current.delete(ownerClientId);
+        applyCpuTakeover(ownerClientId);
+      }, DISCONNECT_GRACE_MS);
+      disconnectTimersRef.current.set(ownerClientId, timerId);
+    });
+
+    [...disconnectTimersRef.current.keys()].forEach((ownerClientId) => {
+      if (presentClientIds.has(ownerClientId)) {
+        clearDisconnectTimerForClient(ownerClientId);
+      }
+    });
+  }, [
+    applyCpuTakeover,
+    applyHostDisconnected,
+    broadcastLobby,
+    clearDisconnectTimerForClient,
+    setRuntimeSafe,
+    startLobbyMatch,
+  ]);
+
+  const subscribeToRoomChannel = useCallback((args: {
+    roomCode: string;
+    isHost: boolean;
+    initialLobby: ConnectLobbyState | null;
+  }) => {
+    if (!supabaseClient) {
       setRuntimeSafe((state) => ({
         ...state,
         forcedStatus: 'error',
-        error: roomCode.length !== 6 ? 'Room code must be 6 characters.' : 'Supabase realtime is unavailable.',
+        error: 'Supabase realtime is unavailable.',
       }));
       return;
     }
 
-    notifyRemoteLeaveIfNeeded();
     cleanupQueueChannel();
     cleanupRoomChannel();
-    clearDisconnectTimer();
+    clearDisconnectTimers();
     resetLoopClock();
+    resetCpuDecisionTicks();
     localBufferedInputsRef.current = [];
-    cpuLastDecisionTickRef.current = Number.NEGATIVE_INFINITY;
-    roomHasStartedRef.current = false;
+
+    const channel = createPresenceChannel(supabaseClient, getConnectRoomChannelName(args.roomCode), clientIdRef.current);
+    roomChannelRef.current = channel;
 
     setRuntimeSafe((state) => ({
       ...state,
       matchType: 'online',
-      forcedStatus: isHost ? 'hosting' : 'joining',
+      forcedStatus: args.isHost ? 'hosting' : 'joining',
       connectionState: 'joining_room',
-      roomCode,
-      localPlayerId: isHost ? 'p1' : 'p2',
-      isHost,
-      remoteClientId: null,
+      lobby: args.initialLobby,
       game: null,
+      isHost: args.isHost,
       error: null,
-      message: isHost ? `Room ${roomCode} ready. Waiting for opponent.` : `Joining room ${roomCode}...`,
+      message: args.isHost ? `Room ${args.roomCode} ready.` : `Joining room ${args.roomCode}...`,
       queueStartedAtMs: null,
       queueWaitMs: 0,
-      rematchRequestedLocal: false,
-      rematchRequestedRemote: false,
+      rematchRequests: [],
+      pendingQuickMatch: null,
+      temporaryCpuSeatIds: [],
     }));
-
-    const channel = createPresenceChannel(supabaseClient, getConnectRoomChannelName(roomCode), clientIdRef.current);
-    roomChannelRef.current = channel;
 
     channel
       .on('presence', { event: 'sync' }, () => {
-        const participants = flattenPresenceState(channel.presenceState());
-        const remote = participants.find((entry) => entry.clientId !== clientIdRef.current) ?? null;
-
+        void handleRoomPresenceSync();
+      })
+      .on('broadcast', { event: 'lobby_state' }, ({ payload }) => {
+        const message = readBroadcastPayload(payload);
+        if (message?.type !== 'lobby_state' || message.clientId === clientIdRef.current) return;
         setRuntimeSafe((state) => ({
           ...state,
-          remoteClientId: remote?.clientId ?? null,
-          connectionState: participants.length > 1 ? 'in_room' : 'joining_room',
-          message: state.game
-            ? state.message
-            : participants.length > 1
-              ? null
-              : (state.isHost ? `Room ${roomCode} ready. Waiting for opponent.` : `Waiting for host in ${roomCode}...`),
+          lobby: cloneLobby(message.lobby),
+          forcedStatus: state.game ? state.forcedStatus : 'setup',
+          connectionState: 'in_room',
+          error: null,
+          message: state.game ? state.message : null,
+          rematchRequests: state.rematchRequests.filter((clientId) => {
+            const lobbyOwnerIds = new Set<string>();
+            PLAYER_IDS.forEach((seatId) => {
+              const ownerClientId = message.lobby.seats[seatId].ownerClientId;
+              if (ownerClientId) lobbyOwnerIds.add(ownerClientId);
+            });
+            return lobbyOwnerIds.has(clientId);
+          }),
         }));
-
-        if (participants.length > 1) {
-          clearDisconnectTimer();
-          if (isHost && !roomHasStartedRef.current) {
-            void startHostControlledRound(false);
-          }
-          return;
-        }
-
-        const current = runtimeRef.current;
-        if (current.matchType !== 'online' || current.roomCode !== roomCode || !current.game) return;
-        clearDisconnectTimer();
-        disconnectTimerRef.current = window.setTimeout(() => {
-          applyDisconnectedRound();
-        }, DISCONNECT_GRACE_MS);
+      })
+      .on('broadcast', { event: 'seat_claim' }, ({ payload }) => {
+        const message = readBroadcastPayload(payload);
+        if (message?.type !== 'seat_claim' || !runtimeRef.current.isHost) return;
+        let nextLobby = runtimeRef.current.lobby;
+        if (!nextLobby || nextLobby.phase !== 'setup') return;
+        message.seatIds.forEach((seatId) => {
+          nextLobby = claimOnlineSeat(nextLobby!, seatId, message.clientId);
+        });
+        if (!nextLobby) return;
+        setRuntimeSafe((state) => ({ ...state, lobby: nextLobby }));
+        void broadcastLobby(nextLobby);
+      })
+      .on('broadcast', { event: 'seat_release' }, ({ payload }) => {
+        const message = readBroadcastPayload(payload);
+        if (message?.type !== 'seat_release' || !runtimeRef.current.isHost) return;
+        let nextLobby = runtimeRef.current.lobby;
+        if (!nextLobby || nextLobby.phase !== 'setup') return;
+        message.seatIds.forEach((seatId) => {
+          nextLobby = releaseOnlineSeat(nextLobby!, seatId, message.clientId);
+        });
+        if (!nextLobby) return;
+        setRuntimeSafe((state) => ({ ...state, lobby: nextLobby }));
+        void broadcastLobby(nextLobby);
       })
       .on('broadcast', { event: 'input' }, ({ payload }) => {
         const message = readBroadcastPayload(payload);
@@ -421,11 +735,10 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         setRuntimeSafe((state) => {
           if (!state.game) return state;
-          const input = message as ConnectInputMessage;
-          const appliedTick = input.tick <= state.game.tick ? state.game.tick + 1 : input.tick;
+          const appliedTick = message.tick <= state.game.tick ? state.game.tick + 1 : message.tick;
           return {
             ...state,
-            game: queueTurn(state.game, input.playerId, input.direction, appliedTick),
+            game: queueTurn(state.game, message.playerId, message.direction, appliedTick),
           };
         });
       })
@@ -445,17 +758,17 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
           let reconciled = incoming;
           const buffered = localBufferedInputsRef.current.filter((turn) => turn.tick > incoming.tick);
-          for (const turn of buffered) {
+          buffered.forEach((turn) => {
             reconciled = queueTurn(reconciled, turn.playerId, turn.direction, turn.tick);
-          }
+          });
           localBufferedInputsRef.current = buffered;
 
           return {
             ...state,
             game: reconciled,
+            lobby: updateLobbyPhase(state.lobby, reconciled.phase),
             forcedStatus: null,
             error: null,
-            message: null,
           };
         });
       })
@@ -464,24 +777,42 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (message?.type !== 'round_event' || message.clientId === clientIdRef.current) return;
 
         if (message.event === 'round_start' && message.state) {
-          const roundStartState = message.state;
           localBufferedInputsRef.current = [];
-          cpuLastDecisionTickRef.current = Number.NEGATIVE_INFINITY;
-          roomHasStartedRef.current = true;
+          resetCpuDecisionTicks();
           setRuntimeSafe((state) => ({
             ...state,
-            game: hydrateTronSnapshot(roundStartState),
+            game: hydrateTronSnapshot(message.state!),
+            lobby: updateLobbyPhase(state.lobby, message.state!.phase),
             forcedStatus: null,
             error: null,
             message: null,
-            rematchRequestedLocal: false,
-            rematchRequestedRemote: false,
+            rematchRequests: [],
+            temporaryCpuSeatIds: [],
           }));
           return;
         }
 
-        if (message.event === 'opponent_disconnected') {
-          applyDisconnectedRound();
+        if (message.event === 'round_over' && message.state) {
+          setRuntimeSafe((state) => ({
+            ...state,
+            game: hydrateTronSnapshot(message.state!),
+            lobby: updateLobbyPhase(state.lobby, message.state!.phase),
+            forcedStatus: null,
+          }));
+          return;
+        }
+
+        if (message.event === 'cpu_takeover') {
+          setRuntimeSafe((state) => ({
+            ...state,
+            temporaryCpuSeatIds: [...new Set([...(state.temporaryCpuSeatIds), ...(message.seatIds ?? [])])].sort((left, right) => left.localeCompare(right)),
+            message: `${(message.seatIds ?? []).join('/').toUpperCase()} DISCONNECTED - CPU TOOK OVER`,
+          }));
+          return;
+        }
+
+        if (message.event === 'host_disconnected') {
+          applyHostDisconnected();
         }
       })
       .on('broadcast', { event: 'rematch' }, ({ payload }) => {
@@ -490,29 +821,28 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         setRuntimeSafe((state) => ({
           ...state,
-          rematchRequestedRemote: true,
-          message: state.rematchRequestedLocal ? null : 'Opponent wants a rematch.',
+          rematchRequests: [...new Set([...state.rematchRequests, message.clientId])].sort(),
+          message: 'Another player wants a rematch.',
         }));
-
-        const current = runtimeRef.current;
-        if (current.isHost && current.rematchRequestedLocal) {
-          void startHostControlledRound(message.restartMatch);
-        }
       })
       .on('broadcast', { event: 'leave' }, ({ payload }) => {
         const message = readBroadcastPayload(payload);
-        if (message?.type !== 'leave' || message.clientId === clientIdRef.current) return;
-        clearDisconnectTimer();
-        disconnectTimerRef.current = window.setTimeout(() => {
-          applyDisconnectedRound();
-        }, DISCONNECT_GRACE_MS);
+        if (message?.type !== 'leave' || runtimeRef.current.isHost) return;
+        if (runtimeRef.current.lobby?.hostClientId === message.clientId) {
+          applyHostDisconnected();
+        }
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
+          const queueSize = runtimeRef.current.quickMatchSize;
           void channel.track({
             clientId: clientIdRef.current,
             joinedAt: toIsoNow(),
+            desiredPlayers: queueSize,
           });
+          if (args.isHost && args.initialLobby) {
+            void broadcastLobby(args.initialLobby);
+          }
           return;
         }
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
@@ -525,14 +855,15 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
       });
   }, [
-    applyDisconnectedRound,
+    applyHostDisconnected,
+    broadcastLobby,
     cleanupQueueChannel,
     cleanupRoomChannel,
-    clearDisconnectTimer,
-    notifyRemoteLeaveIfNeeded,
+    clearDisconnectTimers,
+    handleRoomPresenceSync,
+    resetCpuDecisionTicks,
     resetLoopClock,
     setRuntimeSafe,
-    startHostControlledRound,
     supabaseClient,
   ]);
 
@@ -546,32 +877,31 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return;
     }
 
-    notifyRemoteLeaveIfNeeded();
     cleanupQueueChannel();
     cleanupRoomChannel();
-    clearDisconnectTimer();
+    clearDisconnectTimers();
     resetLoopClock();
+    resetCpuDecisionTicks();
     localBufferedInputsRef.current = [];
-    cpuLastDecisionTickRef.current = Number.NEGATIVE_INFINITY;
 
     const joinedAt = toIsoNow();
     queueOfferKeyRef.current = null;
+
     setRuntimeSafe((state) => ({
       ...state,
       matchType: 'online',
       forcedStatus: 'queueing',
       connectionState: 'queueing',
+      lobby: null,
       game: null,
-      roomCode: null,
-      localPlayerId: 'p1',
       isHost: false,
-      remoteClientId: null,
       error: null,
-      message: 'Waiting for an opponent...',
+      message: 'Waiting for players...',
       queueStartedAtMs: Date.now(),
       queueWaitMs: 0,
-      rematchRequestedLocal: false,
-      rematchRequestedRemote: false,
+      rematchRequests: [],
+      pendingQuickMatch: null,
+      temporaryCpuSeatIds: [],
     }));
 
     const channel = createPresenceChannel(supabaseClient, CONNECT_QUEUE_CHANNEL, clientIdRef.current);
@@ -580,21 +910,25 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     channel
       .on('presence', { event: 'sync' }, () => {
         const participants = flattenPresenceState(channel.presenceState());
-        const pair = pickQuickMatchPair(participants);
-        if (!pair) return;
-        if (!shouldLeadQuickMatch(clientIdRef.current, participants)) return;
+        const desiredPlayers = runtimeRef.current.quickMatchSize;
+        const group = pickQuickMatchGroup(participants, desiredPlayers);
+        if (!group) return;
+        if (!shouldLeadQuickMatch(clientIdRef.current, participants, desiredPlayers)) return;
 
-        const offerKey = `${pair.hostClientId}:${pair.guestClientId}`;
+        const offerKey = `${group.queueSize}:${group.selectedClientIds.join(':')}`;
         if (queueOfferKeyRef.current === offerKey) return;
         queueOfferKeyRef.current = offerKey;
 
         const offer = createMatchOffer({
-          hostClientId: pair.hostClientId,
-          guestClientId: pair.guestClientId,
+          hostClientId: group.hostClientId,
           roomCode: createRoomCode({
-            clientId: pair.hostClientId,
+            clientId: group.hostClientId,
             nowMs: Date.now(),
+            salt: group.queueSize,
           }),
+          queueSize: group.queueSize,
+          selectedClientIds: group.selectedClientIds,
+          seatAssignments: group.seatAssignments,
           createdAt: toIsoNow(),
         });
         void sendChannelMessage(channel, offer);
@@ -604,14 +938,27 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (message?.type !== 'match_offer') return;
         if (!isOfferTargetForClient(message, clientIdRef.current)) return;
         if (runtimeRef.current.forcedStatus !== 'queueing') return;
-        joinRoomInternal(message.roomCode, message.hostClientId === clientIdRef.current);
+
+        const initialLobby = createQuickMatchLobby({
+          size: message.queueSize,
+          hostClientId: message.hostClientId,
+          roomCode: message.roomCode,
+          seatAssignments: message.seatAssignments,
+          cpuDifficulty: runtimeRef.current.cpuDifficulty,
+        });
+        subscribeToRoomChannel({
+          roomCode: message.roomCode,
+          isHost: message.hostClientId === clientIdRef.current,
+          initialLobby,
+        });
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           void channel.track({
             clientId: clientIdRef.current,
             joinedAt,
-          });
+            desiredPlayers: runtimeRef.current.quickMatchSize,
+          } satisfies ConnectQueuePresence);
           return;
         }
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
@@ -626,140 +973,192 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [
     cleanupQueueChannel,
     cleanupRoomChannel,
-    clearDisconnectTimer,
-    joinRoomInternal,
-    notifyRemoteLeaveIfNeeded,
+    clearDisconnectTimers,
+    resetCpuDecisionTicks,
     resetLoopClock,
     setRuntimeSafe,
+    subscribeToRoomChannel,
     supabaseClient,
   ]);
 
-  const hostRoom = useCallback(() => {
-    const roomCode = createRoomCode({
-      clientId: clientIdRef.current,
-      nowMs: Date.now(),
-      salt: runtimeRef.current.queueWaitMs,
-    });
-    joinRoomInternal(roomCode, true);
-  }, [joinRoomInternal]);
-
-  const joinRoom = useCallback((roomCode: string) => {
-    joinRoomInternal(roomCode, false);
-  }, [joinRoomInternal]);
-
-  const startCpuMatch = useCallback((difficulty?: TronCpuDifficulty) => {
-    notifyRemoteLeaveIfNeeded();
+  const openCustomLobby = useCallback((preset: ConnectLobbyPreset = 'custom') => {
     cleanupQueueChannel();
     cleanupRoomChannel();
-    clearDisconnectTimer();
+    clearDisconnectTimers();
     resetLoopClock();
+    resetCpuDecisionTicks();
     localBufferedInputsRef.current = [];
-    cpuLastDecisionTickRef.current = Number.NEGATIVE_INFINITY;
 
+    const lobby = createLocalCustomLobby(runtimeRef.current.cpuDifficulty);
     setRuntimeSafe((state) => ({
       ...state,
-      matchType: 'cpu',
-      forcedStatus: null,
+      matchType: 'local',
+      forcedStatus: 'setup',
       connectionState: state.multiplayerAvailable ? 'ready' : 'cpu_only',
-      game: createTronGameState(),
-      roomCode: null,
-      localPlayerId: 'p1',
-      isHost: false,
-      remoteClientId: null,
-      cpuDifficulty: difficulty ?? state.cpuDifficulty,
+      lobby: preset === 'cpu' ? lobby : lobby,
+      game: null,
+      isHost: true,
       error: null,
       message: null,
       queueStartedAtMs: null,
       queueWaitMs: 0,
-      rematchRequestedLocal: false,
-      rematchRequestedRemote: false,
+      rematchRequests: [],
+      pendingQuickMatch: null,
+      temporaryCpuSeatIds: [],
     }));
   }, [
     cleanupQueueChannel,
     cleanupRoomChannel,
-    clearDisconnectTimer,
-    notifyRemoteLeaveIfNeeded,
+    clearDisconnectTimers,
+    resetCpuDecisionTicks,
     resetLoopClock,
     setRuntimeSafe,
   ]);
 
-  const setCpuDifficulty = useCallback((difficulty: TronCpuDifficulty) => {
-    setRuntimeSafe((state) => ({ ...state, cpuDifficulty: difficulty }));
-  }, [setRuntimeSafe]);
+  const startCpuMatch = useCallback(() => {
+    openCustomLobby('cpu');
+  }, [openCustomLobby]);
 
-  const requestRematch = useCallback(() => {
-    const current = runtimeRef.current;
-    if (!current.game) return;
-
-    if (current.matchType === 'cpu') {
-      cpuLastDecisionTickRef.current = Number.NEGATIVE_INFINITY;
+  const hostRoom = useCallback(() => {
+    if (!supabaseClient) {
       setRuntimeSafe((state) => ({
         ...state,
-        forcedStatus: null,
-        game: state.game == null
-          ? createTronGameState()
-          : (state.game.phase === 'match_over' || state.forcedStatus === 'disconnected')
-            ? restartTronMatch(state.game)
-            : prepareNextTronRound(state.game),
-        message: null,
-        error: null,
+        forcedStatus: 'error',
+        error: 'Supabase realtime is not configured. Multiplayer is unavailable.',
       }));
       return;
     }
 
-    setRuntimeSafe((state) => ({
-      ...state,
-      rematchRequestedLocal: true,
-      message: state.rematchRequestedRemote ? null : 'Rematch requested.',
-      error: null,
-    }));
+    const roomCode = createRoomCode({
+      clientId: clientIdRef.current,
+      nowMs: Date.now(),
+      salt: runtimeRef.current.quickMatchSize,
+    });
+    const initialLobby = createOnlineCustomLobby(clientIdRef.current, roomCode, runtimeRef.current.cpuDifficulty);
+    subscribeToRoomChannel({
+      roomCode,
+      isHost: true,
+      initialLobby,
+    });
+  }, [setRuntimeSafe, subscribeToRoomChannel, supabaseClient]);
 
-    const restartMatch = current.game.phase === 'match_over' || current.forcedStatus === 'disconnected';
-    const channel = roomChannelRef.current;
-    if (channel) {
-      void sendChannelMessage(channel, {
-        type: 'rematch',
-        clientId: clientIdRef.current,
-        restartMatch,
-        createdAt: toIsoNow(),
-      } satisfies ConnectRematchMessage);
+  const joinRoom = useCallback((rawRoomCode: string) => {
+    const roomCode = normalizeRoomCode(rawRoomCode);
+    if (roomCode.length !== 6) {
+      setRuntimeSafe((state) => ({
+        ...state,
+        forcedStatus: 'error',
+        error: 'Room code must be 6 characters.',
+      }));
+      return;
     }
-    if (current.isHost && current.rematchRequestedRemote) {
-      void startHostControlledRound(restartMatch);
-    }
-  }, [setRuntimeSafe, startHostControlledRound]);
+    subscribeToRoomChannel({
+      roomCode,
+      isHost: false,
+      initialLobby: null,
+    });
+  }, [setRuntimeSafe, subscribeToRoomChannel]);
 
-  const sendTurn = useCallback((direction: TronDirection) => {
-    const current = runtimeRef.current;
-    if (!current.game) return;
-
-    const targetTick = current.game.tick + (current.matchType === 'online' ? ONLINE_INPUT_BUFFER_TICKS : LOCAL_INPUT_BUFFER_TICKS);
-    const nextGame = queueTurn(current.game, current.localPlayerId, direction, targetTick);
-    if (nextGame === current.game) return;
-
-    setRuntimeSafe((state) => ({
-      ...state,
-      game: nextGame,
-      message: null,
-      error: null,
-    }));
-
-    if (current.matchType === 'online' && roomChannelRef.current) {
-      localBufferedInputsRef.current = localBufferedInputsRef.current
-        .filter((turn) => !(turn.playerId === current.localPlayerId && turn.tick === targetTick))
-        .concat({ playerId: current.localPlayerId, direction, tick: targetTick })
-        .sort((left, right) => left.tick - right.tick);
-
-      void sendChannelMessage(roomChannelRef.current, {
-        type: 'input',
-        clientId: clientIdRef.current,
-        playerId: current.localPlayerId,
-        tick: targetTick,
-        direction,
-        createdAt: toIsoNow(),
-      } satisfies ConnectInputMessage);
-    }
+  const setQuickMatchSize = useCallback((size: TronQuickMatchSize) => {
+    setRuntimeSafe((state) => ({ ...state, quickMatchSize: size }));
   }, [setRuntimeSafe]);
+
+  const setSeatMode = useCallback((seatId: TronPlayerId, mode: TronSeatMode) => {
+    const current = runtimeRef.current;
+    if (!current.lobby || current.lobby.phase !== 'setup') return;
+    if (current.matchType === 'online' && !current.isHost) return;
+
+    const nextLobby = setLobbySeatMode(current.lobby, seatId, mode);
+    setRuntimeSafe((state) => ({ ...state, lobby: nextLobby }));
+    if (current.matchType === 'online' && current.isHost) {
+      void broadcastLobby(nextLobby);
+    }
+  }, [broadcastLobby, setRuntimeSafe]);
+
+  const claimSeat = useCallback((seatId: TronPlayerId) => {
+    const current = runtimeRef.current;
+    if (!current.lobby || current.lobby.phase !== 'setup' || current.matchType !== 'online') return;
+    if (current.isHost) return;
+    const channel = roomChannelRef.current;
+    if (!channel) return;
+    void sendChannelMessage(channel, {
+      type: 'seat_claim',
+      clientId: clientIdRef.current,
+      seatIds: [seatId],
+      createdAt: toIsoNow(),
+    });
+  }, []);
+
+  const releaseSeat = useCallback((seatId: TronPlayerId) => {
+    const current = runtimeRef.current;
+    if (!current.lobby || current.lobby.phase !== 'setup' || current.matchType !== 'online') return;
+    if (current.isHost) return;
+    const channel = roomChannelRef.current;
+    if (!channel) return;
+    void sendChannelMessage(channel, {
+      type: 'seat_release',
+      clientId: clientIdRef.current,
+      seatIds: [seatId],
+      createdAt: toIsoNow(),
+    });
+  }, []);
+
+  const setCpuDifficulty = useCallback((difficulty: TronCpuDifficulty) => {
+    setRuntimeSafe((state) => {
+      const nextLobby = state.lobby ? { ...cloneLobby(state.lobby), cpuDifficulty: difficulty } : null;
+      return {
+        ...state,
+        cpuDifficulty: difficulty,
+        lobby: nextLobby,
+      };
+    });
+    const current = runtimeRef.current;
+    if (current.matchType === 'online' && current.isHost && current.lobby) {
+      const nextLobby = { ...cloneLobby(current.lobby), cpuDifficulty: difficulty };
+      void broadcastLobby(nextLobby);
+    }
+  }, [broadcastLobby, setRuntimeSafe]);
+
+  const requestRematch = useCallback(() => {
+    const current = runtimeRef.current;
+    if (!current.game || !current.lobby) return;
+
+    if (current.matchType === 'local') {
+      void startLobbyMatch();
+      return;
+    }
+
+    const channel = roomChannelRef.current;
+    if (!channel) return;
+
+    const nextRequests = [...new Set([...current.rematchRequests, clientIdRef.current])].sort();
+    setRuntimeSafe((state) => ({
+      ...state,
+      rematchRequests: nextRequests,
+      message: 'Rematch requested.',
+    }));
+
+    void sendChannelMessage(channel, {
+      type: 'rematch',
+      clientId: clientIdRef.current,
+      createdAt: toIsoNow(),
+    } satisfies ConnectRematchMessage);
+
+    if (!current.isHost) return;
+
+    const requiredClientIds = new Set<string>();
+    PLAYER_IDS.forEach((seatId) => {
+      const seat = current.lobby?.seats[seatId];
+      if (!seat) return;
+      if ((seat.mode === 'local' || seat.mode === 'online') && seat.ownerClientId) {
+        requiredClientIds.add(seat.ownerClientId);
+      }
+    });
+    const everyoneReady = [...requiredClientIds].every((clientId) => nextRequests.includes(clientId));
+    if (everyoneReady && canStartLobby(current.lobby)) {
+      void startLobbyMatch();
+    }
+  }, [setRuntimeSafe, startLobbyMatch]);
 
   const openFullscreen = useCallback(() => setRuntimeSafe((state) => ({ ...state, displayMode: 'fullscreen' })), [setRuntimeSafe]);
   const closeFullscreen = useCallback(() => setRuntimeSafe((state) => ({ ...state, displayMode: 'panel' })), [setRuntimeSafe]);
@@ -786,8 +1185,8 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     const onFrame = (timestamp: number) => {
       const current = runtimeRef.current;
-      const currentStatus = current.forcedStatus ?? phaseToStatus(current.game);
-      if (!current.game || (currentStatus !== 'countdown' && currentStatus !== 'playing')) {
+      const status = deriveStatus(current);
+      if (!current.game || (status !== 'countdown' && status !== 'playing')) {
         resetLoopClock();
         rafId = window.requestAnimationFrame(onFrame);
         return;
@@ -808,31 +1207,51 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
         accumulatorRef.current -= stepBudget * current.game.tickMs;
 
         setRuntimeSafe((state) => {
-          if (!state.game) return state;
+          if (!state.game || !state.lobby) return state;
 
           let nextGame = state.game;
-          let shouldBroadcastEnd = false;
+          let nextLobby = state.lobby;
           let shouldBroadcastSnapshotTick = false;
+          let shouldBroadcastEnd = false;
+          let shouldBroadcastLobbyState = false;
 
           for (let count = 0; count < stepBudget; count += 1) {
-            if (state.matchType === 'cpu' && nextGame.phase === 'running') {
-              const cpuPlayerId: TronPlayerId = state.localPlayerId === 'p1' ? 'p2' : 'p1';
-              const profile = TRON_CPU_PROFILES[state.cpuDifficulty];
-              if ((nextGame.tick - cpuLastDecisionTickRef.current) >= (profile.reactionDelayTicks + 1)) {
+            const cpuSeatIds = listActiveSeatIds(nextLobby).filter((seatId) => (
+              nextLobby.seats[seatId].mode === 'cpu' || state.temporaryCpuSeatIds.includes(seatId)
+            ));
+
+            if ((state.matchType === 'local' || state.isHost) && nextGame.phase === 'running') {
+              cpuSeatIds.forEach((cpuSeatId) => {
+                const profile = TRON_CPU_PROFILES[state.cpuDifficulty];
+                if ((nextGame.tick - cpuLastDecisionTickRef.current[cpuSeatId]) < (profile.reactionDelayTicks + 1)) {
+                  return;
+                }
                 const cpuDirection = pickCpuTurn({
                   state: nextGame,
-                  playerId: cpuPlayerId,
+                  playerId: cpuSeatId,
                   difficulty: state.cpuDifficulty,
                 });
-                if (cpuDirection) {
-                  nextGame = queueTurn(nextGame, cpuPlayerId, cpuDirection, nextGame.tick + 1);
-                  cpuLastDecisionTickRef.current = nextGame.tick;
+                if (!cpuDirection) return;
+                const queued = queueTurn(nextGame, cpuSeatId, cpuDirection, nextGame.tick + 1);
+                if (queued === nextGame) return;
+                nextGame = queued;
+                cpuLastDecisionTickRef.current[cpuSeatId] = nextGame.tick;
+                if (state.matchType === 'online' && state.isHost && roomChannelRef.current) {
+                  void sendChannelMessage(roomChannelRef.current, {
+                    type: 'input',
+                    clientId: clientIdRef.current,
+                    playerId: cpuSeatId,
+                    tick: nextGame.tick + 1,
+                    direction: cpuDirection,
+                    createdAt: toIsoNow(),
+                  });
                 }
-              }
+              });
             }
 
             const previousPhase = nextGame.phase;
             nextGame = stepTronGame(nextGame);
+            nextLobby = updateLobbyPhase(nextLobby, nextGame.phase) ?? nextLobby;
             shouldBroadcastSnapshotTick = shouldBroadcastSnapshotTick || (
               state.matchType === 'online'
               && state.isHost
@@ -846,12 +1265,23 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
             );
 
             if (nextGame.phase === 'round_over' || nextGame.phase === 'match_over') {
-              roomHasStartedRef.current = false;
+              if (state.temporaryCpuSeatIds.length > 0) {
+                nextLobby = restoreLobbyAfterTakeover({
+                  ...state,
+                  lobby: nextLobby,
+                  game: nextGame,
+                }) ?? nextLobby;
+                nextLobby.phase = nextGame.phase;
+                shouldBroadcastLobbyState = true;
+              }
               break;
             }
           }
 
           if (state.matchType === 'online' && state.isHost && roomChannelRef.current) {
+            if (shouldBroadcastLobbyState) {
+              void broadcastLobby(nextLobby);
+            }
             if (shouldBroadcastSnapshotTick || shouldBroadcastEnd) {
               void broadcastSnapshot(nextGame);
             }
@@ -872,9 +1302,10 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
           return {
             ...state,
             game: nextGame,
-            forcedStatus: state.forcedStatus === 'disconnected' || state.forcedStatus === 'error'
-              ? state.forcedStatus
-              : null,
+            lobby: nextLobby,
+            temporaryCpuSeatIds: nextGame.phase === 'round_over' || nextGame.phase === 'match_over'
+              ? []
+              : state.temporaryCpuSeatIds,
           };
         });
       }
@@ -884,25 +1315,27 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     rafId = window.requestAnimationFrame(onFrame);
     return () => window.cancelAnimationFrame(rafId);
-  }, [broadcastSnapshot, resetLoopClock, setRuntimeSafe]);
+  }, [broadcastLobby, broadcastSnapshot, resetLoopClock, restoreLobbyAfterTakeover, setRuntimeSafe]);
 
   useEffect(() => () => {
     cleanupQueueChannel();
     cleanupRoomChannel();
-    clearDisconnectTimer();
+    clearDisconnectTimers();
     localBufferedInputsRef.current = [];
     resetLoopClock();
   }, [
     cleanupQueueChannel,
     cleanupRoomChannel,
-    clearDisconnectTimer,
+    clearDisconnectTimers,
     resetLoopClock,
   ]);
 
-  const status = runtime.forcedStatus ?? phaseToStatus(runtime.game);
-  const score = runtime.game?.score ?? { p1: 0, p2: 0 };
-  const canSuggestCpuFallback = status === 'queueing' && runtime.queueWaitMs >= QUICK_MATCH_CPU_SUGGEST_MS;
-  const canRequestRematch = status === 'round_over' || status === 'match_over' || status === 'disconnected';
+  const status = deriveStatus(runtime);
+  const score = runtime.game?.score ?? createTronScoreRecord();
+  const ownedSeatIds = getOwnedSeatIds(runtime);
+  const roomCode = runtime.lobby?.roomCode ?? null;
+  const canStartCurrentLobby = runtime.lobby != null && canStartLobby(runtime.lobby);
+  const canRequestRematch = runtime.game != null && (runtime.game.phase === 'round_over' || runtime.game.phase === 'match_over');
   const notificationCount = (
     status === 'round_over'
     || status === 'match_over'
@@ -915,52 +1348,71 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     status,
     connectionState: runtime.connectionState,
     multiplayerAvailable: runtime.multiplayerAvailable,
+    isHost: runtime.isHost,
     notificationCount,
-    roomCode: runtime.roomCode,
-    score,
+    quickMatchSize: runtime.quickMatchSize,
+    roomCode,
+    lobby: runtime.lobby,
     game: runtime.game,
-    localPlayerId: runtime.localPlayerId,
+    ownedSeatIds,
+    score,
     cpuDifficulty: runtime.cpuDifficulty,
     error: runtime.error,
     message: runtime.message,
     queueWaitMs: runtime.queueWaitMs,
-    canSuggestCpuFallback,
+    canStartLobby: canStartCurrentLobby,
     canRequestRematch,
+    setQuickMatchSize,
+    openCustomLobby,
+    startCpuMatch,
     startQuickMatch,
     hostRoom,
     joinRoom,
-    startCpuMatch,
+    setSeatMode,
+    claimSeat,
+    releaseSeat,
+    startLobbyMatch: () => {
+      void startLobbyMatch();
+    },
     setCpuDifficulty,
-    leaveMatch: () => leaveMatch(true),
     requestRematch,
+    leaveMatch: () => leaveMatch(true),
     sendTurn,
     openFullscreen,
     closeFullscreen,
   }), [
     canRequestRematch,
-    canSuggestCpuFallback,
+    canStartCurrentLobby,
+    claimSeat,
     closeFullscreen,
     hostRoom,
     joinRoom,
     leaveMatch,
     notificationCount,
+    openCustomLobby,
     openFullscreen,
+    ownedSeatIds,
     requestRematch,
+    roomCode,
     runtime.connectionState,
     runtime.cpuDifficulty,
     runtime.displayMode,
     runtime.error,
     runtime.game,
-    runtime.localPlayerId,
+    runtime.isHost,
+    runtime.lobby,
     runtime.matchType,
     runtime.message,
     runtime.multiplayerAvailable,
     runtime.queueWaitMs,
-    runtime.roomCode,
+    runtime.quickMatchSize,
     score,
     sendTurn,
     setCpuDifficulty,
+    setQuickMatchSize,
+    setSeatMode,
     startCpuMatch,
+    startLobbyMatch,
     startQuickMatch,
     status,
   ]);

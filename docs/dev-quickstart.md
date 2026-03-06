@@ -83,7 +83,9 @@ Commit guidance:
   - `src/components/CONNECT/CONNECT.tsx`
   - Uses `ConnectProvider` plus pure logic modules in `src/connect/`.
   - Multiplayer contract uses Supabase Realtime presence/broadcast only (no DB schema for v1).
-  - Configure `VITE_CONNECT_SUPABASE_URL` and `VITE_CONNECT_SUPABASE_ANON_KEY` for quick match + room codes; otherwise CPU mode still works.
+  - Runtime is now four-seat aware: seat modes are `local`, `online`, `cpu`, and `closed`.
+  - Quick Match supports `2P` and `4P`; custom rooms support mixed local/online/CPU seat ownership with at most two human seats per browser.
+  - Configure `VITE_CONNECT_SUPABASE_URL` and `VITE_CONNECT_SUPABASE_ANON_KEY` for quick match + hosted rooms; otherwise local/CPU flows still work.
   - Runtime contract reference: `docs/connect-exe/CONNECT-TRON-V1.md`.
 
 - Cursor

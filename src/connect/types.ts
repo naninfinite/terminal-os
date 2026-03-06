@@ -1,10 +1,11 @@
 export type ConnectDisplayMode = 'panel' | 'fullscreen';
-export type ConnectMatchType = 'idle' | 'cpu' | 'online';
+export type ConnectMatchType = 'idle' | 'local' | 'online';
 export type ConnectRuntimeStatus =
   | 'idle'
   | 'queueing'
   | 'hosting'
   | 'joining'
+  | 'setup'
   | 'countdown'
   | 'playing'
   | 'round_over'
@@ -13,11 +14,15 @@ export type ConnectRuntimeStatus =
   | 'error';
 export type ConnectConnectionState = 'cpu_only' | 'ready' | 'queueing' | 'joining_room' | 'in_room';
 
-export type TronPlayerId = 'p1' | 'p2';
+export type TronPlayerId = 'p1' | 'p2' | 'p3' | 'p4';
+export type TronSeatMode = 'closed' | 'cpu' | 'local' | 'online';
+export type TronQuickMatchSize = 2 | 4;
 export type TronDirection = 'up' | 'right' | 'down' | 'left';
 export type TronRoundPhase = 'countdown' | 'running' | 'round_over' | 'match_over';
 export type TronRoundResultReason = 'wall' | 'trail' | 'same_cell' | 'swap' | 'disconnect' | 'abandon';
 export type TronCpuDifficulty = 'easy' | 'medium' | 'hard' | 'expert';
+export type ConnectLobbySource = 'local_custom' | 'online_custom' | 'quick_match';
+export type ConnectLobbyPhase = 'setup' | TronRoundPhase;
 
 export type TronCell = {
   x: number;
@@ -44,6 +49,23 @@ export type TronRoundResult = {
   reason: TronRoundResultReason;
 };
 
+export type TronSeatConfig = {
+  playerId: TronPlayerId;
+  mode: TronSeatMode;
+  ownerClientId: string | null;
+};
+
+export type ConnectLobbyState = {
+  version: 1;
+  source: ConnectLobbySource;
+  roomCode: string | null;
+  hostClientId: string | null;
+  quickMatchSize: TronQuickMatchSize | null;
+  cpuDifficulty: TronCpuDifficulty;
+  seats: Record<TronPlayerId, TronSeatConfig>;
+  phase: ConnectLobbyPhase;
+};
+
 export type TronGameConfig = {
   columns: number;
   rows: number;
@@ -51,6 +73,7 @@ export type TronGameConfig = {
   countdownTicks: number;
   firstToScore: number;
   seed: number;
+  activePlayerIds: TronPlayerId[];
   score?: Record<TronPlayerId, number>;
   round?: number;
 };
@@ -66,6 +89,7 @@ export type TronGameState = {
   tick: number;
   round: number;
   phase: TronRoundPhase;
+  activePlayerIds: TronPlayerId[];
   score: Record<TronPlayerId, number>;
   players: Record<TronPlayerId, TronPlayerState>;
   pendingInputs: TronQueuedTurn[];
@@ -86,14 +110,38 @@ export type TronCpuProfile = {
 export type ConnectQueuePresence = {
   clientId: string;
   joinedAt: string;
+  desiredPlayers: TronQuickMatchSize;
 };
 
 export type ConnectMatchOffer = {
   type: 'match_offer';
   offerId: string;
   roomCode: string;
+  queueSize: TronQuickMatchSize;
   hostClientId: string;
-  guestClientId: string;
+  selectedClientIds: string[];
+  seatAssignments: Record<string, TronPlayerId>;
+  createdAt: string;
+};
+
+export type ConnectLobbyStateMessage = {
+  type: 'lobby_state';
+  clientId: string;
+  lobby: ConnectLobbyState;
+  createdAt: string;
+};
+
+export type ConnectSeatClaimMessage = {
+  type: 'seat_claim';
+  clientId: string;
+  seatIds: TronPlayerId[];
+  createdAt: string;
+};
+
+export type ConnectSeatReleaseMessage = {
+  type: 'seat_release';
+  clientId: string;
+  seatIds: TronPlayerId[];
   createdAt: string;
 };
 
@@ -117,7 +165,8 @@ export type ConnectSnapshotMessage = {
 export type ConnectRoundEventMessage = {
   type: 'round_event';
   clientId: string;
-  event: 'room_ready' | 'round_start' | 'round_over' | 'opponent_disconnected';
+  event: 'round_start' | 'round_over' | 'cpu_takeover' | 'host_disconnected';
+  seatIds?: TronPlayerId[];
   reason?: TronRoundResultReason;
   state?: TronSnapshot;
   checksum?: string;
@@ -127,7 +176,6 @@ export type ConnectRoundEventMessage = {
 export type ConnectRematchMessage = {
   type: 'rematch';
   clientId: string;
-  restartMatch: boolean;
   createdAt: string;
 };
 
@@ -140,6 +188,9 @@ export type ConnectLeaveMessage = {
 
 export type ConnectChannelMessage =
   | ConnectMatchOffer
+  | ConnectLobbyStateMessage
+  | ConnectSeatClaimMessage
+  | ConnectSeatReleaseMessage
   | ConnectInputMessage
   | ConnectSnapshotMessage
   | ConnectRoundEventMessage
