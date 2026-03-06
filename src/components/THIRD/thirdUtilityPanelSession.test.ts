@@ -30,7 +30,7 @@ describe('thirdUtilityPanelSession', () => {
   it('prefers an existing session over viewport defaults', () => {
     const session: ThirdUtilityPanelSession = {
       panelVisible: false,
-      activeTab: 'physics',
+      activeTab: 'camera',
     };
 
     expect(resolveInitialThirdUtilityPanelSession(session)).toEqual(session);
@@ -39,7 +39,7 @@ describe('thirdUtilityPanelSession', () => {
   it('stores and returns session state safely', () => {
     const session: ThirdUtilityPanelSession = {
       panelVisible: true,
-      activeTab: 'material',
+      activeTab: 'object',
     };
     setThirdUtilityPanelSession(session);
 

@@ -5,7 +5,7 @@ Status: Implemented baseline (V1)
 
 ## 1) Scope
 
-`THIRD.EXE` is a lightweight object-mode three.js playground with shared panel/fullscreen runtime state.
+`THIRD.EXE` is a lightweight object-mode three.js scene lab with shared panel/fullscreen runtime state.
 
 V1 includes:
 - default scene bootstrapping,
@@ -16,7 +16,7 @@ V1 includes:
 - unified utility panel:
   - right-side utility window on desktop,
   - bottom drawer on phones,
-  - shared tabs: `SCENE`, `TRANSFORM`, `MATERIAL`, `ANIMATION`, `PHYSICS`, `CAMERA`,
+  - shared tabs: `SCENE`, `OBJECT`, `CAMERA`,
 - top-left scene toolbar for mode/gizmo/snap/grid/axes plus camera quick actions,
 - object hierarchy tree with drag/drop parenting, inline rename, explicit unparent, and context menus,
 - hierarchy object-menu child spawn actions (`ADD CHILD CUBE/SPHERE/CYLINDER/PLANE`),
@@ -40,6 +40,11 @@ V1 excludes:
 - `THIRD` state is owned by `ThirdProvider`.
 - Desktop panel and fullscreen layer read/write the same provider state.
 - `displayMode` transitions do not reset scene objects.
+- Panel mode is preview-first:
+  - scene render stays live,
+  - orbit/navigation remains available,
+  - utility panel, hierarchy pane, scene toolbar, and viewport menus stay hidden.
+- Fullscreen is the authored scene-lab surface where the full utility panel is available.
 - Fullscreen closes on `Escape` and yields to `ME.EXE` fullscreen scope.
 
 ## 3) Runtime State Shape
@@ -98,10 +103,7 @@ On first load / destructive reset:
 - `TransformControls` enabled for selected object.
 - Utility controls live in one shared panel with tabs:
   - `SCENE`,
-  - `TRANSFORM`,
-  - `MATERIAL`,
-  - `ANIMATION`,
-  - `PHYSICS`,
+  - `OBJECT`,
   - `CAMERA`.
 - `SCENE` tab contains hierarchy UX controls:
   - drag/drop reparenting,
@@ -124,9 +126,13 @@ On first load / destructive reset:
   - camera reset.
   - items are grouped (`transform` / `scene` / `camera`) with visual separators and consistent tooltip format.
   - phone layout collapses this toolbar behind a `TOOLS` trigger.
-- Utility section tabs (`TRANSFORM`, `MATERIAL`, `ANIMATION`, `PHYSICS`, `CAMERA`) each render one section at a time.
-- Default section expansion starts with all utility section tabs open.
-- Desktop preserves section open/closed state while switching tabs; phone layout renders section-tab content expanded without a secondary collapse toggle.
+- `OBJECT` tab contains the prior editing sections as collapsible subsections:
+  - `TRANSFORM`,
+  - `MATERIAL`,
+  - `ANIMATION`,
+  - `PHYSICS`.
+- Default subsection expansion starts with all object subsections open.
+- Desktop preserves subsection open/closed state while switching tabs; phone layout renders subsection content expanded without a secondary collapse toggle.
 - `TRANSFORM` includes a compact `LOCK` checkbox for the selected object.
 - Rotation fields display degrees and convert to radians in runtime state.
 - Valid numeric inspector edits apply live while typing.
@@ -211,7 +217,7 @@ On first load / destructive reset:
 - Phone layout uses the same unified utility panel as desktop, rendered as one bottom sheet anchored to the bottom edge.
 - When the mobile panel is closed, a bottom-edge handle remains visible and opens the panel via tap or upward drag.
 - When the mobile panel is open, the sheet handle closes it via tap or downward drag; there is no separate `HIDE` button in the mobile header.
-- Drawer tabs match desktop: `SCENE`, `TRANSFORM`, `MATERIAL`, `ANIMATION`, `PHYSICS`, `CAMERA`.
+- Drawer tabs match desktop: `SCENE`, `OBJECT`, `CAMERA`.
 - Mobile tab strip scrolls horizontally instead of wrapping.
 - First entry defaults to the panel hidden for all users; only the viewport/object plus the bottom drawer handle are shown.
 - Default active tab is `SCENE`.

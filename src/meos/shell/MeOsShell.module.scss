@@ -60,6 +60,8 @@
   overflow: hidden;
   position: relative;
   background:
+    radial-gradient(circle at top right, rgb(var(--ui-scanline-rgb, 0 255 102) / 0.14), transparent 36%),
+    linear-gradient(135deg, rgb(var(--ui-scanline-rgb, 0 255 102) / 0.06), transparent 28%),
     linear-gradient(180deg, rgb(var(--ui-scanline-rgb, 0 255 102) / 0.05), transparent 18%),
     $bg-black;
 }
@@ -75,12 +77,39 @@
 
 .desktopSurface {
   position: absolute;
-  inset: 12px;
+  inset: 10px;
   z-index: 1;
-  padding: 4px;
-  --desktop-stack-left: 4px;
-  --desktop-stack-top: 4px;
-  --desktop-stack-step: clamp(80px, 9vw, 106px);
+  padding: 8px;
+  --desktop-stack-left: 8px;
+  --desktop-stack-top: 6px;
+  --desktop-stack-step: clamp(78px, 8vw, 94px);
+}
+
+.desktopSurface::before,
+.desktopSurface::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.desktopSurface::before {
+  inset: 0 auto 0 0;
+  width: clamp(92px, 9.5vw, 116px);
+  border: 1px solid rgb(var(--ui-scanline-rgb, 0 255 102) / 0.14);
+  background:
+    linear-gradient(180deg, rgb(var(--ui-scanline-rgb, 0 255 102) / 0.09), transparent 32%),
+    rgb(var(--ui-scanline-rgb, 0 255 102) / 0.02);
+}
+
+.desktopSurface::after {
+  inset: auto 16px 14px auto;
+  width: clamp(160px, 18vw, 240px);
+  height: clamp(68px, 9vw, 112px);
+  border: 1px solid rgb(var(--ui-scanline-rgb, 0 255 102) / 0.12);
+  background:
+    linear-gradient(90deg, transparent, rgb(var(--ui-scanline-rgb, 0 255 102) / 0.08) 50%, transparent),
+    linear-gradient(180deg, rgb(var(--ui-scanline-rgb, 0 255 102) / 0.04), transparent 100%);
+  opacity: 0.7;
 }
 
 .desktopEntry {
@@ -94,33 +123,41 @@
   justify-items: center;
   gap: clamp(4px, 0.7vw, 7px);
   align-content: start;
-  width: clamp(74px, 8vw, 96px);
-  padding: clamp(4px, 0.55vw, 7px) clamp(2px, 0.45vw, 5px);
-  min-height: clamp(68px, 8vw, 92px);
-  transition: border-color 120ms ease, background 120ms ease;
+  width: clamp(78px, 8vw, 102px);
+  padding: clamp(6px, 0.65vw, 8px) clamp(4px, 0.5vw, 7px);
+  min-height: clamp(72px, 8vw, 96px);
+  transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+  z-index: 1;
 }
 
-.desktopEntry[data-desktop-entry='media'] {
+.desktopEntry[data-desktop-entry='projects'] {
   top: calc(var(--desktop-stack-top) + var(--desktop-stack-step));
 }
 
-.desktopEntry[data-desktop-entry='about'] {
+.desktopEntry[data-desktop-entry='media'] {
   top: calc(var(--desktop-stack-top) + (var(--desktop-stack-step) * 2));
 }
 
-.desktopEntry[data-desktop-entry='contact'] {
+.desktopEntry[data-desktop-entry='about'] {
   top: calc(var(--desktop-stack-top) + (var(--desktop-stack-step) * 3));
+}
+
+.desktopEntry[data-desktop-entry='contact'] {
+  top: calc(var(--desktop-stack-top) + (var(--desktop-stack-step) * 4));
 }
 
 .desktopEntry:hover,
 .desktopEntry:focus-visible {
-  border-color: var(--ui-border-soft);
-  background: rgb(var(--ui-scanline-rgb, 0 255 102) / 0.05);
+  border-color: var(--ui-border);
+  background: rgb(var(--ui-scanline-rgb, 0 255 102) / 0.08);
+  box-shadow: var(--ui-shadow-focus);
+  transform: translateY(-1px);
 }
 
 .desktopEntryActive {
   border-color: var(--ui-border);
-  background: rgb(var(--ui-scanline-rgb, 0 255 102) / 0.12);
+  background: rgb(var(--ui-scanline-rgb, 0 255 102) / 0.16);
+  box-shadow: 0 0 0 1px rgb(var(--ui-scanline-rgb, 0 255 102) / 0.18);
 }
 
 .desktopEntryIcon {
@@ -137,11 +174,16 @@
 
 .desktopEntryLabel {
   font-size: 0.64rem;
-  padding: 0 2px;
+  padding: 1px 3px;
   line-height: 1.1;
   text-align: center;
   width: 100%;
   word-break: break-word;
+}
+
+.desktopEntryActive .desktopEntryLabel {
+  background: var(--ui-accent);
+  color: var(--ui-bg);
 }
 
 .desktopContextMenu {
@@ -172,14 +214,16 @@
 .window {
   position: absolute;
   border: $border;
-  background: $bg-black;
+  background: var(--ui-bg-elevated);
   display: grid;
   grid-template-rows: auto 1fr;
   min-width: 240px;
   min-height: 170px;
   box-sizing: border-box;
   overflow: hidden;
-  box-shadow: 0 0 0 1px rgb(var(--ui-scanline-rgb, 0 255 102) / 0.16);
+  box-shadow:
+    0 0 0 1px rgb(var(--ui-scanline-rgb, 0 255 102) / 0.16),
+    0 16px 32px rgb(0 0 0 / 0.3);
 }
 
 .windowMaximized {
@@ -199,7 +243,8 @@
   cursor: move;
   min-width: 0;
   background:
-    linear-gradient(180deg, transparent 0%, transparent 42%, rgb(var(--ui-scanline-rgb, 0 255 102) / 0.16) 42%, rgb(var(--ui-scanline-rgb, 0 255 102) / 0.16) 48%, transparent 48%, transparent 100%);
+    linear-gradient(180deg, rgb(var(--ui-scanline-rgb, 0 255 102) / 0.08), transparent 100%),
+    var(--ui-fill-soft);
 }
 
 .windowActions {
@@ -224,7 +269,7 @@
 
 .windowBtn {
   border: $border;
-  background: $bg-black;
+  background: var(--ui-bg);
   color: $phosphor-green;
   width: 20px;
   height: 16px;
@@ -243,6 +288,9 @@
   padding: 8px;
   min-height: 0;
   overflow: hidden;
+  background:
+    linear-gradient(180deg, rgb(var(--ui-scanline-rgb, 0 255 102) / 0.02), transparent 100%),
+    transparent;
 }
 
 .windowBody [data-allow-select='true'],

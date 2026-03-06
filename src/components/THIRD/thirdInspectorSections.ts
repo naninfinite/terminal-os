@@ -3,7 +3,6 @@ export const THIRD_INSPECTOR_SECTION_IDS = [
   'material',
   'animation',
   'physics',
-  'camera',
 ] as const;
 
 export type ThirdInspectorSectionId = typeof THIRD_INSPECTOR_SECTION_IDS[number];

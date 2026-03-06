@@ -6,6 +6,7 @@ describe('subsystemContextMenu model', () => {
     const model = buildSubsystemContextMenu({
       scope: 'me',
       origin: 'dock',
+      dockPromotesPanels: false,
       meWindowCount: 3,
       youHasDraft: false,
       youUnreadCount: 0,
@@ -43,6 +44,7 @@ describe('subsystemContextMenu model', () => {
     const model = buildSubsystemContextMenu({
       scope: 'me',
       origin: 'panel',
+      dockPromotesPanels: false,
       meWindowCount: 2,
       youHasDraft: false,
       youUnreadCount: 0,
@@ -81,6 +83,7 @@ describe('subsystemContextMenu model', () => {
     const noDraft = buildSubsystemContextMenu({
       scope: 'you',
       origin: 'dock',
+      dockPromotesPanels: false,
       meWindowCount: 0,
       youHasDraft: false,
       youUnreadCount: 2,
@@ -99,6 +102,7 @@ describe('subsystemContextMenu model', () => {
     const withDraft = buildSubsystemContextMenu({
       scope: 'you',
       origin: 'panel',
+      dockPromotesPanels: false,
       meWindowCount: 0,
       youHasDraft: true,
       youUnreadCount: 1,
@@ -119,6 +123,7 @@ describe('subsystemContextMenu model', () => {
     const third = buildSubsystemContextMenu({
       scope: 'third',
       origin: 'dock',
+      dockPromotesPanels: false,
       meWindowCount: 0,
       youHasDraft: false,
       youUnreadCount: 0,
@@ -129,6 +134,7 @@ describe('subsystemContextMenu model', () => {
     const connect = buildSubsystemContextMenu({
       scope: 'connect',
       origin: 'dock',
+      dockPromotesPanels: false,
       meWindowCount: 0,
       youHasDraft: false,
       youUnreadCount: 0,
@@ -146,5 +152,30 @@ describe('subsystemContextMenu model', () => {
 
     expect(thirdModeAction && thirdModeAction.kind === 'action' ? thirdModeAction.disabled : undefined).toBeFalsy();
     expect(connectTodo && connectTodo.kind === 'action' ? connectTodo.disabled : undefined).toBe(true);
+  });
+
+  it('labels dock entry actions as promote/focus when the desktop hero layout is active', () => {
+    const model = buildSubsystemContextMenu({
+      scope: 'third',
+      origin: 'dock',
+      dockPromotesPanels: true,
+      meWindowCount: 0,
+      youHasDraft: false,
+      youUnreadCount: 0,
+      thirdNotificationCount: 0,
+      thirdMode: 'play',
+      connectNotificationCount: 0,
+      connectStatus: 'idle',
+      connectRoomCode: null,
+      connectCanRequestRematch: false,
+      connectActiveMatch: false,
+      connectMultiplayerAvailable: true,
+    });
+
+    const openAction = model.rows.find(
+      (row) => row.kind === 'action' && row.id === 'open_third'
+    );
+
+    expect(openAction && openAction.kind === 'action' ? openAction.label : null).toBe('PROMOTE / FOCUS THIRD.EXE');
   });
 });

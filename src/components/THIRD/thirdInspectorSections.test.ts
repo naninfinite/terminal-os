@@ -14,7 +14,6 @@ describe('thirdInspectorSections', () => {
       'material',
       'animation',
       'physics',
-      'camera',
     ]);
   });
 
@@ -24,14 +23,12 @@ describe('thirdInspectorSections', () => {
       material: true,
       animation: true,
       physics: true,
-      camera: true,
     });
     expect(createThirdInspectorSectionState(false)).toEqual({
       transform: false,
       material: false,
       animation: false,
       physics: false,
-      camera: false,
     });
   });
 
@@ -41,7 +38,6 @@ describe('thirdInspectorSections', () => {
       material: true,
       animation: true,
       physics: true,
-      camera: true,
     });
   });
 

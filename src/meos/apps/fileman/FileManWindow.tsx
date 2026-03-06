@@ -5,7 +5,14 @@ import { useMeOs } from '../../shell/MeOsProvider';
 import type { MeOsWindow } from '../../shell/types';
 import { useMeOsVfs } from '../../vfs/MeOsVfsProvider';
 import type { VfsNode } from '../../vfs/types';
-import { HOME_ID, MEDIA_ID, PHOTOS_ID, PROJECTS_ID, VIDEOS_ID } from '../../vfs/seed';
+import {
+  HOME_ID,
+  MEDIA_ID,
+  PHOTOS_ID,
+  PROJECTS_ID,
+  REEL_ID,
+  VIDEOS_ID,
+} from '../../vfs/seed';
 import styles from './FileManWindow.module.scss';
 import { Icon } from '../../../components/shared/Icon';
 import type { AppIconName } from '../../../components/shared/Icon';
@@ -279,6 +286,62 @@ const FileManWindow: React.FC<FileManWindowProps> = ({ win }) => {
       .filter((node): node is VfsNode => node != null);
   }, [defaultEntries, getSurfaceItemOrder, surfaceKey]);
   const path = folder?.type === 'folder' ? (getPath(folder.id) ?? '/') : '/';
+  const featuredMediaNode = React.useMemo(
+    () => (folder?.id === MEDIA_ID || folder?.id === VIDEOS_ID ? getNode(REEL_ID) : null),
+    [folder?.id, getNode]
+  );
+  const intro = React.useMemo(() => {
+    if (!folder || folder.type !== 'folder') return null;
+
+    if (folder.id === HOME_ID) {
+      return {
+        eyebrow: 'WORLD INDEX',
+        title: 'Home Cabinet',
+        copy: 'Canonical folders and documents live here, even when the desktop shows them as aliases.',
+      };
+    }
+
+    if (folder.id === PROJECTS_ID) {
+      return {
+        eyebrow: 'ARTIFACT INDEX',
+        title: 'Projects Cabinet',
+        copy: 'System work, experiments, and interface artefacts arranged as field notes instead of case-study tiles.',
+      };
+    }
+
+    if (folder.id === MEDIA_ID) {
+      return {
+        eyebrow: 'ATMOSPHERE',
+        title: 'Media Cabinet',
+        copy: 'Stills and motion assets that give the shell some weight. The reel is the fast way through.',
+      };
+    }
+
+    if (folder.id === PHOTOS_ID) {
+      return {
+        eyebrow: 'STILLS',
+        title: 'Photo Index',
+        copy: 'A quieter path through the visual archive: portraits, fragments, and reference frames.',
+      };
+    }
+
+    if (folder.id === VIDEOS_ID) {
+      return {
+        eyebrow: 'MOTION',
+        title: 'Video Index',
+        copy: 'The motion layer of the archive. Open the reel for the shortest path through it.',
+      };
+    }
+
+    return {
+      eyebrow: 'CABINET',
+      title: folder.name,
+      copy: 'Open items directly or use Get Info to inspect the route they take through the shell.',
+    };
+  }, [folder]);
+  const featuredPoster = featuredMediaNode && featuredMediaNode.type === 'file' && featuredMediaNode.kind === 'video'
+    ? resolveVideoPosterSrc(featuredMediaNode, resolvedTheme)
+    : null;
 
   React.useEffect(() => {
     if (selectedId && entries.some((node) => node.id === selectedId)) return;
@@ -361,6 +424,24 @@ const FileManWindow: React.FC<FileManWindowProps> = ({ win }) => {
 
   return (
     <div className={styles.root}>
+      {intro ? (
+        <section className={styles.introCard}>
+          <div className={styles.introCopy}>
+            <p className={styles.introEyebrow}>{intro.eyebrow}</p>
+            <h3 className={styles.introTitle}>{intro.title}</h3>
+            <p className={styles.introText}>{intro.copy}</p>
+          </div>
+          {featuredPoster ? (
+            <div className={styles.featureCard}>
+              <img className={styles.featurePoster} src={featuredPoster} alt="" />
+              <div className={styles.featureMeta}>
+                <span className={styles.featureLabel}>FEATURED REEL</span>
+                <span className={styles.featureValue}>{featuredMediaNode?.name ?? 'Reel.mp4'}</span>
+              </div>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
       <div
         className={[
           styles.contents,
@@ -434,7 +515,7 @@ const FileManWindow: React.FC<FileManWindowProps> = ({ win }) => {
           />
         ))}
         {entries.length === 0 ? (
-          <div className={styles.empty}>EMPTY FOLDER</div>
+          <div className={styles.empty}>THIS CABINET IS EMPTY FOR NOW.</div>
         ) : null}
       </div>
       <footer className={styles.status}>

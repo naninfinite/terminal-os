@@ -38,7 +38,7 @@ import {
 import {
   THIRD_UTILITY_TAB_IDS,
   getThirdUtilityTabLabel,
-  isThirdInspectorSectionTab,
+  isThirdObjectUtilityTab,
   resolveNextVisibleThirdUtilityTab,
   shouldShowThirdUtilityHideAction,
   type ThirdUtilityTabId,
@@ -931,11 +931,12 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     return sorted;
   }, [objects, sceneLockedOnly, sceneSortLockedFirst]);
   const hierarchyTree = useMemo(() => buildHierarchyTree(visibleHierarchyObjects), [visibleHierarchyObjects]);
+  const previewMode = mode === 'panel';
   const isEditMode = editorMode === 'edit';
   const selectedObjectLocked = selectedObject?.locked === true;
   const canEditSelectedObject = isEditMode && selectedObject != null && !selectedObjectLocked;
-  const sceneTabVisible = utilityPanelVisible && activeUtilityTab === 'scene';
-  const sceneToolbarVisible = shouldShowThirdSceneToolbar(mobileLayout, mobileToolbarExpanded);
+  const sceneTabVisible = !previewMode && utilityPanelVisible && activeUtilityTab === 'scene';
+  const sceneToolbarVisible = !previewMode && shouldShowThirdSceneToolbar(mobileLayout, mobileToolbarExpanded);
   const viewportMenuGroups = useMemo(() => buildThirdViewportMenu({
     mode: editorMode,
     snapEnabled,
@@ -2240,15 +2241,24 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
   }, [snapEnabled]);
 
   useEffect(() => {
+    if (mode === 'panel') {
+      playClickCandidateRef.current = null;
+      hideHoverCard(true);
+      return;
+    }
     if (editorMode === 'play' && !mobileLayout && !viewportMenu) return;
     playClickCandidateRef.current = null;
     hideHoverCard(true);
-  }, [editorMode, hideHoverCard, mobileLayout, viewportMenu]);
+  }, [editorMode, hideHoverCard, mobileLayout, mode, viewportMenu]);
 
   useEffect(() => {
+    if (mode === 'panel') {
+      hideEditModeNudge(true);
+      return;
+    }
     if (editorMode === 'play' && !mobileLayout) return;
     hideEditModeNudge(true);
-  }, [editorMode, hideEditModeNudge, mobileLayout]);
+  }, [editorMode, hideEditModeNudge, mobileLayout, mode]);
 
   useEffect(() => () => {
     if (editModeNudgeHideTimerRef.current != null) {
@@ -2679,7 +2689,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
 
     const updateTransformAttachment = () => {
       const selectedId = selectionIdRef.current;
-      if (modeRef.current !== 'edit' || !selectedId) {
+      if (mode === 'panel' || modeRef.current !== 'edit' || !selectedId) {
         transform.detach();
         transform.enabled = false;
         return;
@@ -2828,6 +2838,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     };
 
     const openViewportMenuAtPointer = (clientX: number, clientY: number) => {
+      if (mode === 'panel') return;
       const picked = pickObject(clientX, clientY);
       const spawnAnchor = picked?.hitPoint ?? engine.orbit.target;
       if (picked) {
@@ -2865,7 +2876,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
           }
         }
 
-        if (engine.touchPointers.size === 1) {
+        if (mode !== 'panel' && engine.touchPointers.size === 1) {
           const pointerId = event.pointerId;
           const startX = event.clientX;
           const startY = event.clientY;
@@ -2887,7 +2898,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         }
       }
 
-      if (event.button === 2 && event.pointerType !== 'touch') {
+      if (mode !== 'panel' && event.button === 2 && event.pointerType !== 'touch') {
         rightClickCandidateRef.current = {
           pointerId: event.pointerId,
           startX: event.clientX,
@@ -2895,6 +2906,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
           moved: false,
         };
       }
+
+      if (mode === 'panel') return;
 
       if (modeRef.current === 'edit') {
         if (event.button === 2 && event.pointerType !== 'touch') return;
@@ -2994,6 +3007,13 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         }
       }
 
+      if (mode === 'panel') {
+        if (event.pointerType !== 'touch') {
+          hideHoverCard(true);
+        }
+        return;
+      }
+
       const activeGrab = engine.activeGrab;
       if (
         modeRef.current === 'play'
@@ -3062,6 +3082,11 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
       } else if (activeGrab && event.pointerType === 'touch' && engine.touchPointers.size < 2) {
         activeGrab.touchCameraOverride = false;
         engine.orbit.enabled = false;
+      }
+
+      if (mode === 'panel' && event.pointerType !== 'touch') {
+        hideHoverCard(true);
+        return;
       }
 
       if (event.pointerType !== 'touch' && modeRef.current === 'play') {
@@ -4373,94 +4398,95 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     </section>
   );
 
-  const renderCameraSection = (): React.ReactNode => (
+  const renderCameraTabContent = (): React.ReactNode => (
     <section className={styles.inspectorSection}>
-      {renderInspectorSectionHeader('camera', 'CAMERA')}
-      {isThirdInspectorSectionExpanded(inspectorSections, 'camera', mobileLayout) ? (
-        <div className={styles.inspectorSectionBody}>
-          {THIRD_INSPECTOR_CAMERA_ROWS.map((row, rowIndex) => (
-            <div
-              key={`camera-row-${rowIndex}`}
-              className={`${styles.toolRow} ${row.length === 3 ? styles.toolRowThirds : ''}`.trim()}
-            >
-              {row.map((actionId) => {
-                const runCameraAction = (id: ThirdInspectorCameraActionId) => {
-                  switch (id) {
-                    case 'camera_view_top':
-                      applyCameraPreset('top');
-                      return;
-                    case 'camera_view_front':
-                      applyCameraPreset('front');
-                      return;
-                    case 'camera_view_right':
-                      applyCameraPreset('right');
-                      return;
-                    case 'camera_toggle_projection': {
-                      const nextMode: ThirdProjectionMode = cameraState.projectionMode === 'orthographic'
-                        ? 'perspective'
-                        : 'orthographic';
-                      setProjectionMode(nextMode);
-                      saveCameraFromRuntime();
-                      return;
-                    }
-                    case 'camera_reset':
-                      resetCameraView();
-                      return;
-                    default:
-                      return;
+      <div className={styles.inspectorSectionHeading}>CAMERA</div>
+      <div className={styles.inspectorSectionBody}>
+        {THIRD_INSPECTOR_CAMERA_ROWS.map((row, rowIndex) => (
+          <div
+            key={`camera-row-${rowIndex}`}
+            className={`${styles.toolRow} ${row.length === 3 ? styles.toolRowThirds : ''}`.trim()}
+          >
+            {row.map((actionId) => {
+              const runCameraAction = (id: ThirdInspectorCameraActionId) => {
+                switch (id) {
+                  case 'camera_view_top':
+                    applyCameraPreset('top');
+                    return;
+                  case 'camera_view_front':
+                    applyCameraPreset('front');
+                    return;
+                  case 'camera_view_right':
+                    applyCameraPreset('right');
+                    return;
+                  case 'camera_toggle_projection': {
+                    const nextMode: ThirdProjectionMode = cameraState.projectionMode === 'orthographic'
+                      ? 'perspective'
+                      : 'orthographic';
+                    setProjectionMode(nextMode);
+                    saveCameraFromRuntime();
+                    return;
                   }
-                };
+                  case 'camera_reset':
+                    resetCameraView();
+                    return;
+                  default:
+                    return;
+                }
+              };
 
-                const label = (() => {
-                  switch (actionId) {
-                    case 'camera_view_top':
-                      return 'TOP';
-                    case 'camera_view_front':
-                      return 'FRONT';
-                    case 'camera_view_right':
-                      return 'RIGHT';
-                    case 'camera_toggle_projection':
-                      return projectionLabel(cameraState.projectionMode);
-                    case 'camera_reset':
-                      return 'RESET';
-                    default:
-                      return '';
-                  }
-                })();
+              const label = (() => {
+                switch (actionId) {
+                  case 'camera_view_top':
+                    return 'TOP';
+                  case 'camera_view_front':
+                    return 'FRONT';
+                  case 'camera_view_right':
+                    return 'RIGHT';
+                  case 'camera_toggle_projection':
+                    return projectionLabel(cameraState.projectionMode);
+                  case 'camera_reset':
+                    return 'RESET';
+                  default:
+                    return '';
+                }
+              })();
 
-                return (
-                  <button
-                    key={actionId}
-                    type="button"
-                    className={styles.toolBtn}
-                    onClick={() => runCameraAction(actionId)}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-          <span className={styles.inlineStatus}>RMB OR TOUCH-HOLD VIEWPORT MENU HAS THE SAME CAMERA ACTIONS.</span>
-        </div>
-      ) : null}
+              return (
+                <button
+                  key={actionId}
+                  type="button"
+                  className={styles.toolBtn}
+                  onClick={() => runCameraAction(actionId)}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        ))}
+        <span className={styles.inlineStatus}>Viewport orbit stays available in panel preview. Full controls live here.</span>
+      </div>
     </section>
+  );
+
+  const renderObjectTabContent = (): React.ReactNode => (
+    <>
+      {renderTransformSection()}
+      {renderMaterialSection()}
+      {renderAnimationSection()}
+      {renderPhysicsSection()}
+    </>
   );
 
   const renderActiveUtilityTabContent = (): React.ReactNode => {
     switch (activeUtilityTab) {
       case 'scene':
         return renderSceneTabContent();
-      case 'transform':
-        return renderTransformSection();
-      case 'material':
-        return renderMaterialSection();
-      case 'animation':
-        return renderAnimationSection();
-      case 'physics':
-        return renderPhysicsSection();
+      case 'object':
+        return renderObjectTabContent();
       case 'camera':
-        return renderCameraSection();
+        return renderCameraTabContent();
       default:
         return renderSceneTabContent();
     }
@@ -4472,7 +4498,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
     const activePanelId = `third-utility-panel-${mode}-${activeUtilityTab}`;
     const mobilePanel = options.mobile === true;
     const showHideAction = shouldShowThirdUtilityHideAction(mobilePanel);
-    const showHistoryActions = isThirdInspectorSectionTab(activeUtilityTab);
+    const showHistoryActions = isThirdObjectUtilityTab(activeUtilityTab);
     const showHeaderActions = showHideAction || showHistoryActions;
 
     return (
@@ -4497,6 +4523,8 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
             <p className={styles.utilityTitle}>{activeTabLabel}</p>
             {activeUtilityTab === 'scene' ? (
               <span className={styles.utilitySubtle}>{`${objects.length} OBJECTS`}</span>
+            ) : activeUtilityTab === 'camera' ? (
+              <span className={styles.utilitySubtle}>{projectionLabel(cameraState.projectionMode)}</span>
             ) : (
               <>
                 <span className={`${styles.editTag} ${isEditMode ? styles.editTagActive : ''}`.trim()}>
@@ -4581,7 +4609,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         <span ref={hoverCardSubtitleRef} className={styles.objectHoverCardSubtitle} />
       </div>
 
-      {viewportMenu ? (
+      {!previewMode && viewportMenu ? (
         <div
           ref={viewportMenuRef}
           className={styles.viewportMenu}
@@ -4626,7 +4654,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         </div>
       ) : null}
 
-      {hierarchyMenu ? (
+      {!previewMode && hierarchyMenu ? (
         <div
           ref={hierarchyMenuRef}
           className={styles.hierarchyMenu}
@@ -4648,7 +4676,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         </div>
       ) : null}
 
-      {mobileLayout ? (
+      {!previewMode && mobileLayout ? (
         <button
           id={`third-scene-toolbar-trigger-${mode}`}
           type="button"
@@ -4708,7 +4736,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         </div>
       ) : null}
 
-      {!utilityPanelVisible && !mobileLayout ? (
+      {!previewMode && !utilityPanelVisible && !mobileLayout ? (
         <button
           type="button"
           className={`${styles.utilityRevealBtn} ${styles.panelRevealBtn}`.trim()}
@@ -4718,7 +4746,7 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         </button>
       ) : null}
 
-      {!utilityPanelVisible && mobileLayout ? (
+      {!previewMode && !utilityPanelVisible && mobileLayout ? (
         <button
           type="button"
           className={`${styles.mobileDrawerPeek} ${mobileDrawerDragging ? styles.mobileDrawerPeekDragging : ''}`.trim()}
@@ -4735,13 +4763,13 @@ const THIRD: React.FC<ThirdProps> = ({ mode = 'panel' }) => {
         </button>
       ) : null}
 
-      {utilityPanelVisible && !mobileLayout ? (
+      {!previewMode && utilityPanelVisible && !mobileLayout ? (
         <aside className={`${styles.utilityWindow} ${styles.desktopUtilityWindow}`.trim()} aria-label="THIRD utility panel">
           {renderUtilityPanel()}
         </aside>
       ) : null}
 
-      {utilityPanelVisible && mobileLayout ? (
+      {!previewMode && utilityPanelVisible && mobileLayout ? (
         <section
           ref={mobileUtilityDrawerRef}
           className={`${styles.mobileUtilityDrawer} ${mobileDrawerDragging ? styles.mobileUtilityDrawerDragging : ''}`.trim()}

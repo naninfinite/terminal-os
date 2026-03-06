@@ -19,10 +19,12 @@ import {
   sanitizeSurfaceItemOrder,
 } from './surfaceItemOrder';
 import type {
+  MeOsActiveScope,
   MeOsAppId,
   MeOsDesktopEntryId,
   MeOsDisplayMode,
   MeOsPersistedSnapshot,
+  MeOsShellScope,
   MeOsSurfaceKey,
   MeOsViewerKind,
   MeOsWindow,
@@ -277,13 +279,11 @@ const sanitizeWindow = (raw: unknown): LegacyWindow | null => {
     restoreRect: data.restoreRect,
   });
   const desktopEntryId = (
-    data.desktopEntryId === 'home'
+    data.desktopEntryId === 'readme'
     || data.desktopEntryId === 'projects'
     || data.desktopEntryId === 'media'
     || data.desktopEntryId === 'about'
     || data.desktopEntryId === 'contact'
-    || data.desktopEntryId === 'archive'
-    || data.desktopEntryId === 'readme'
   ) ? data.desktopEntryId : undefined;
   const viewerKind = (
     data.viewerKind === 'text'
@@ -408,8 +408,10 @@ const loadPersistedShellState = (): LoadedShellState => {
 type MeOsContextValue = {
   displayMode: MeOsDisplayMode;
   windows: MeOsWindow[];
-  activeScope: 'you' | 'third' | 'connect' | null;
-  setActiveScope: (scope: 'you' | 'third' | 'connect' | null) => void;
+  activeScope: MeOsActiveScope;
+  setActiveScope: (scope: MeOsActiveScope) => void;
+  featuredPanel: MeOsShellScope;
+  setFeaturedPanel: (scope: MeOsShellScope) => void;
   openFullscreen: () => void;
   closeFullscreen: () => void;
   openNode: (nodeId: string) => void;
@@ -436,7 +438,8 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [surfaceItemOrder, setSurfaceItemOrder] = useState<Record<string, string[]>>(
     () => initialShellState.surfaceItemOrder
   );
-  const [activeScope, setActiveScopeState] = useState<'you' | 'third' | 'connect' | null>(null);
+  const [activeScope, setActiveScopeState] = useState<MeOsActiveScope>(null);
+  const [featuredPanel, setFeaturedPanelState] = useState<MeOsShellScope>('me');
   const zRef = useRef<number>(getMaxZ(windows));
 
   useEffect(() => {
@@ -456,8 +459,12 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  const setActiveScope = useCallback((scope: 'you' | 'third' | 'connect' | null) => {
+  const setActiveScope = useCallback((scope: MeOsActiveScope) => {
     setActiveScopeState(scope);
+  }, []);
+
+  const setFeaturedPanel = useCallback((scope: MeOsShellScope) => {
+    setFeaturedPanelState(scope);
   }, []);
 
   const openFullscreen = useCallback(() => {
@@ -669,6 +676,8 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     windows,
     activeScope,
     setActiveScope,
+    featuredPanel,
+    setFeaturedPanel,
     openFullscreen,
     closeFullscreen,
     openNode,
@@ -688,6 +697,7 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     closeFullscreen,
     closeWindow,
     displayMode,
+    featuredPanel,
     focusWindow,
     getSurfaceItemOrder,
     minimizeWindow,
@@ -700,6 +710,7 @@ export const MeOsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     resizeWindow,
     restoreWindow,
     setActiveScope,
+    setFeaturedPanel,
     toggleMaximizeWindow,
     windows,
   ]);
