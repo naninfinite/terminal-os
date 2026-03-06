@@ -455,28 +455,9 @@ const SnakeGameWindow: React.FC<SnakeGameWindowProps> = ({ windowId, name, descr
     const computedStyles = window.getComputedStyle(root);
     const lcdBackground = computedStyles.getPropertyValue('--snake-lcd-bg').trim() || '#001108';
     const lcdInk = computedStyles.getPropertyValue('--snake-lcd-ink').trim() || '#00ff66';
-    const lcdGrid = computedStyles.getPropertyValue('--snake-lcd-grid').trim() || 'rgb(0 255 102 / 0.12)';
-
     context.clearRect(0, 0, boardWidth, boardHeight);
     context.fillStyle = lcdBackground;
     context.fillRect(0, 0, boardWidth, boardHeight);
-
-    context.strokeStyle = lcdGrid;
-    context.lineWidth = 1;
-    for (let x = 0; x <= game.columns; x += 1) {
-      const pixelX = x * surfaceMetrics.cellSize;
-      context.beginPath();
-      context.moveTo(pixelX + 0.5, 0);
-      context.lineTo(pixelX + 0.5, boardHeight);
-      context.stroke();
-    }
-    for (let y = 0; y <= game.rows; y += 1) {
-      const pixelY = y * surfaceMetrics.cellSize;
-      context.beginPath();
-      context.moveTo(0, pixelY + 0.5);
-      context.lineTo(boardWidth, pixelY + 0.5);
-      context.stroke();
-    }
 
     drawSnakeTrail({
       context,
