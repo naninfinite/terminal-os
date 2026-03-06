@@ -300,6 +300,10 @@ export const advanceSnakeGame = (state: SnakeGameState): SnakeGameState => {
     state.wrapEdges,
   );
   const eatsFood = cellsEqual(nextHead, state.food);
+  const nextSnake = [nextHead, ...cloneSnake(state.snake)];
+  if (!eatsFood) {
+    nextSnake.pop();
+  }
   const bodyToCheck = eatsFood ? state.snake : state.snake.slice(0, -1);
   const collidedWithBody = bodyToCheck.some((segment) => cellsEqual(segment, nextHead));
   const collidedWithWall = !state.wrapEdges && isOutOfBounds(nextHead, state.columns, state.rows);
@@ -307,6 +311,7 @@ export const advanceSnakeGame = (state: SnakeGameState): SnakeGameState => {
   if (collidedWithBody || collidedWithWall) {
     return {
       ...state,
+      snake: collidedWithWall ? cloneSnake(state.snake) : nextSnake,
       direction,
       queuedDirections: [],
       status: 'game_over',
@@ -315,9 +320,7 @@ export const advanceSnakeGame = (state: SnakeGameState): SnakeGameState => {
     };
   }
 
-  const nextSnake = [nextHead, ...cloneSnake(state.snake)];
   if (!eatsFood) {
-    nextSnake.pop();
     return {
       ...state,
       snake: nextSnake,

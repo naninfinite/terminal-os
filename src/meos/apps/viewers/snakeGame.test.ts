@@ -71,6 +71,7 @@ describe('snakeGame', () => {
 
     expect(next.status).toBe('game_over');
     expect(next.outcome).toBe('collision');
+    expect(next.snake[0]).toEqual({ x: 1, y: 2 });
   });
 
   it('creates deterministic starting food away from the snake body', () => {
