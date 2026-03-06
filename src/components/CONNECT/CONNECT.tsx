@@ -5,7 +5,7 @@ import { deriveSeatBindings, resolveConnectTurnIntent, shouldHandleConnectHotkey
 import { turnLeft, turnRight } from '../../connect/tronEngine';
 import { useConnectRuntime } from '../../connect/ConnectProvider';
 import { useMeOs } from '../../meos/shell/MeOsProvider';
-import type { TronCpuDifficulty, TronPlayerId, TronQuickMatchSize, TronSeatMode } from '../../connect/types';
+import type { TronCpuDifficulty, TronPlayerId, TronSeatMode } from '../../connect/types';
 
 type ConnectProps = {
   mode?: 'panel' | 'fullscreen';
@@ -14,8 +14,8 @@ type ConnectProps = {
 const STATUS_LABEL: Record<string, string> = {
   idle: 'IDLE',
   queueing: 'QUEUEING',
-  hosting: 'HOSTING ROOM',
-  joining: 'JOINING ROOM',
+  hosting: 'HOSTING',
+  joining: 'JOINING',
   setup: 'SETUP',
   countdown: 'ROUND START',
   playing: 'LIVE',
@@ -26,62 +26,55 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const CPU_DIFFICULTIES: TronCpuDifficulty[] = ['easy', 'medium', 'hard', 'expert'];
-const QUICK_MATCH_SIZES: TronQuickMatchSize[] = [2, 4];
 const PLAYER_LABELS: Record<TronPlayerId, string> = {
   p1: 'P1',
   p2: 'P2',
   p3: 'P3',
   p4: 'P4',
 };
-const MODE_LABELS: Record<TronSeatMode, string> = {
-  closed: 'CLOSED',
-  cpu: 'CPU',
-  local: 'LOCAL',
-  online: 'ONLINE',
-};
 const PLAYER_IDS: TronPlayerId[] = ['p1', 'p2', 'p3', 'p4'];
 
 const CONNECT: React.FC<ConnectProps> = ({ mode = 'panel' }) => {
   const {
     closeFullscreen,
+    connectionState,
     cpuDifficulty,
     displayMode,
     error,
     game,
-    isHost,
+    hostRoom,
     joinRoom,
     leaveMatch,
+    localHumanCount,
     lobby,
     message,
     mode: matchMode,
     multiplayerAvailable,
-    hostRoom,
-    openCustomLobby,
+    notificationCount,
     openFullscreen,
-    ownedSeatIds,
+    ownedPlayerIds,
+    participantCount,
     quickMatchSize,
-    queueWaitMs,
+    recentCrashEvents,
     requestRematch,
     roomCode,
     score,
     sendTurn,
     setCpuDifficulty,
+    setLocalHumanCount,
+    setParticipantCount,
     setQuickMatchSize,
-    setSeatMode,
-    claimSeat,
-    releaseSeat,
     startCpuMatch,
-    startLobbyMatch,
+    startLocalMatch,
     startQuickMatch,
     status,
-    canStartLobby,
     canRequestRematch,
   } = useConnectRuntime();
   const { activeScope } = useMeOs();
 
   const [joinCode, setJoinCode] = React.useState('');
   const rootRef = React.useRef<HTMLDivElement | null>(null);
-  const bindings = React.useMemo(() => deriveSeatBindings(ownedSeatIds), [ownedSeatIds]);
+  const bindings = React.useMemo(() => deriveSeatBindings(ownedPlayerIds), [ownedPlayerIds]);
 
   React.useEffect(() => {
     if (mode === 'fullscreen') {
@@ -92,6 +85,35 @@ const CONNECT: React.FC<ConnectProps> = ({ mode = 'panel' }) => {
   const focusRoot = React.useCallback(() => {
     rootRef.current?.focus();
   }, []);
+
+  React.useEffect(() => {
+    const copyPayload = async () => {
+      try {
+        if (!navigator.clipboard) return;
+        const lines = ['CONNECT.EXE'];
+        if (game) {
+          lines.push(`ROUND ${game.round}`);
+          lines.push(`STATUS ${STATUS_LABEL[status] ?? status.toUpperCase()}`);
+          lines.push(`PLAYERS ${game.activePlayerIds.join(', ').toUpperCase()}`);
+          if (game.roundResult?.winner) {
+            lines.push(`WINNER ${game.roundResult.winner.toUpperCase()}`);
+          }
+        } else {
+          lines.push('TRON READY');
+        }
+        await navigator.clipboard.writeText(lines.join('\n'));
+      } catch {
+        // Clipboard access can fail silently in browser sandboxes.
+      }
+    };
+
+    const onCopyBanner = () => {
+      void copyPayload();
+    };
+
+    window.addEventListener('terminalos:connect:copy-banner', onCopyBanner as EventListener);
+    return () => window.removeEventListener('terminalos:connect:copy-banner', onCopyBanner as EventListener);
+  }, [game, status]);
 
   React.useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -110,39 +132,32 @@ const CONNECT: React.FC<ConnectProps> = ({ mode = 'panel' }) => {
       })) {
         return;
       }
+
       const intent = resolveConnectTurnIntent({
-        ownedSeatIds,
+        ownedSeatIds: ownedPlayerIds,
         key: event.key,
       });
       if (!intent) return;
+
       event.preventDefault();
       sendTurn(intent.playerId, intent.direction);
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [activeScope, game, mode, ownedSeatIds, sendTurn]);
+  }, [activeScope, game, mode, ownedPlayerIds, sendTurn]);
 
-  const copyRoomCode = async () => {
-    if (!roomCode || !navigator.clipboard) return;
-    try {
-      await navigator.clipboard.writeText(roomCode);
-    } catch {
-      // Clipboard can fail silently in browser sandboxes.
-    }
-  };
-
-  const rotateLocal = (side: 'left' | 'right') => {
-    if (!game || ownedSeatIds.length !== 1) return;
-    const playerId = ownedSeatIds[0]!;
+  const rotateLocal = React.useCallback((side: 'left' | 'right') => {
+    if (!game || ownedPlayerIds.length !== 1) return;
+    const playerId = ownedPlayerIds[0]!;
     const currentDirection = game.players[playerId].direction;
     sendTurn(playerId, side === 'left' ? turnLeft(currentDirection) : turnRight(currentDirection));
     focusRoot();
-  };
+  }, [focusRoot, game, ownedPlayerIds, sendTurn]);
 
   const localControlHint = React.useMemo(() => {
     if (bindings.length === 0) {
-      return 'CLAIM OR CONFIGURE A LOCAL SEAT TO PLAY.';
+      return 'CONFIGURE A LOCAL MATCH TO ENABLE KEYBOARD CONTROL.';
     }
     if (bindings.length === 1) {
       return `${PLAYER_LABELS[bindings[0]!.playerId]}: WASD + ARROWS`;
@@ -151,11 +166,31 @@ const CONNECT: React.FC<ConnectProps> = ({ mode = 'panel' }) => {
   }, [bindings]);
 
   const statusLabel = STATUS_LABEL[status] ?? status.toUpperCase();
-  const activeSession = matchMode !== 'idle' || status === 'queueing';
-  const canEditLobby = lobby?.phase === 'setup'
-    && lobby.source !== 'quick_match'
-    && (matchMode === 'local' || (matchMode === 'online' && isHost));
-  const showTouchControls = ownedSeatIds.length === 1 && game != null && (game.phase === 'countdown' || game.phase === 'running');
+  const previewActivePlayerIds = PLAYER_IDS.slice(0, participantCount);
+  const activePlayerIds = game?.activePlayerIds ?? previewActivePlayerIds;
+  const showTouchControls = ownedPlayerIds.length === 1 && game != null && (game.phase === 'countdown' || game.phase === 'running');
+  const winnerLabel = game?.roundResult?.winner ? PLAYER_LABELS[game.roundResult.winner] : 'DRAW';
+
+  const getSeatMode = React.useCallback((playerId: TronPlayerId): TronSeatMode => {
+    const seat = lobby?.seats[playerId];
+    if (seat) return seat.mode;
+    const previewIndex = previewActivePlayerIds.indexOf(playerId);
+    if (previewIndex === -1) return 'closed';
+    return previewIndex < localHumanCount ? 'local' : 'cpu';
+  }, [lobby, localHumanCount, previewActivePlayerIds]);
+
+  const getSeatRoleLabel = React.useCallback((playerId: TronPlayerId): string => {
+    const seatMode = getSeatMode(playerId);
+    if (seatMode === 'local') return 'LOCAL';
+    if (seatMode === 'online') return ownedPlayerIds.includes(playerId) ? 'YOU' : 'ONLINE';
+    if (seatMode === 'cpu') return 'CPU';
+    return 'CLOSED';
+  }, [getSeatMode, ownedPlayerIds]);
+
+  const handleJoinRoom = React.useCallback(() => {
+    joinRoom(joinCode);
+    focusRoot();
+  }, [focusRoot, joinCode, joinRoom]);
 
   return (
     <div
@@ -172,7 +207,9 @@ const CONNECT: React.FC<ConnectProps> = ({ mode = 'panel' }) => {
             <p className={styles.statusLine}>{statusLabel}</p>
           </div>
           <div className={styles.headerMeta}>
-            <span className={styles.metaToken}>{roomCode ? `ROOM ${roomCode}` : `TRON ${quickMatchSize}P`}</span>
+            <span className={styles.metaToken}>{game ? `ROUND ${game.round}` : `LOCAL ${participantCount}P`}</span>
+            <span className={styles.metaToken}>{matchMode === 'idle' ? 'READY' : matchMode.toUpperCase()}</span>
+            {roomCode ? <span className={styles.metaToken}>ROOM {roomCode}</span> : null}
             {mode === 'panel' ? (
               <button type="button" className={styles.modeBtn} onClick={openFullscreen}>
                 OPEN
@@ -186,16 +223,15 @@ const CONNECT: React.FC<ConnectProps> = ({ mode = 'panel' }) => {
         </header>
 
         <div className={styles.hudRow}>
-          {PLAYER_IDS.map((playerId) => {
-            const seat = lobby?.seats[playerId] ?? null;
+          {activePlayerIds.map((playerId) => {
             const player = game?.players[playerId];
-            const isOwned = ownedSeatIds.includes(playerId);
+            const owned = ownedPlayerIds.includes(playerId);
             return (
-              <div key={playerId} className={`${styles.hudChip} ${isOwned ? styles.hudChipOwned : ''}`.trim()}>
+              <div key={playerId} className={`${styles.hudChip} ${owned ? styles.hudChipOwned : ''}`.trim()}>
                 <span>{PLAYER_LABELS[playerId]}</span>
-                <span>{seat ? MODE_LABELS[seat.mode] : '--'}</span>
+                <span>{getSeatRoleLabel(playerId)}</span>
                 <span>{String(score[playerId] ?? 0).padStart(2, '0')}</span>
-                <span>{player ? (player.alive ? 'LIVE' : 'CRASH') : '--'}</span>
+                <span>{player ? (player.alive ? 'LIVE' : 'OUT') : '--'}</span>
               </div>
             );
           })}
@@ -205,181 +241,187 @@ const CONNECT: React.FC<ConnectProps> = ({ mode = 'panel' }) => {
 
         {game ? (
           <div className={styles.boardShell}>
-            <ConnectBoardCanvas game={game} mode={mode} />
+            <ConnectBoardCanvas game={game} crashEvents={recentCrashEvents} mode={mode} />
             <div className={styles.boardMeta}>
               <div className={styles.metaRow}>
                 <span>TICK {game.tick}</span>
-                <span>ROUND {game.round}</span>
-                <span>{game.phase === 'countdown' ? `${Math.ceil(game.countdownTicksRemaining / 20)}S` : game.roundResult?.reason?.toUpperCase() ?? 'ACTIVE'}</span>
+                <span>{roomCode ? `ROOM ${roomCode}` : connectionState.toUpperCase()}</span>
+                <span>
+                  {game.phase === 'countdown'
+                    ? `${Math.ceil(game.countdownTicksRemaining / 20)}S`
+                    : game.phase === 'round_over' || game.phase === 'match_over'
+                      ? `${winnerLabel} ${game.phase === 'match_over' ? 'WINS MATCH' : 'TAKES ROUND'}`
+                      : 'ACTIVE'}
+                </span>
               </div>
-              {(message || error) ? (
-                <p className={error ? styles.errorText : styles.noteText}>{error ?? message}</p>
+              {(message || error || notificationCount > 0) ? (
+                <p className={error ? styles.errorText : styles.noteText}>
+                  {error ?? message ?? `${winnerLabel} READY.`}
+                </p>
               ) : null}
             </div>
           </div>
         ) : (
           <div className={styles.statusPanel}>
             <p className={styles.noteText}>
-              {error ?? message ?? 'Choose Quick Match or build a 4-seat custom Tron lobby.'}
+              {error ?? message ?? 'GRIDLESS LIGHT-CYCLE ARENA READY. LOCAL MATCHES SUPPORT UP TO 4 RIDERS WITH UP TO 2 HUMANS ON ONE KEYBOARD.'}
             </p>
-            {status === 'queueing' ? (
-              <p className={styles.noteText}>WAITING {Math.ceil(queueWaitMs / 1000)}S</p>
-            ) : null}
-            {roomCode ? (
-              <div className={styles.roomRow}>
-                <span className={styles.roomCode}>{roomCode}</span>
-                <button type="button" className={styles.actionBtn} onClick={copyRoomCode}>
-                  COPY ROOM CODE
-                </button>
-              </div>
-            ) : null}
+            <div className={styles.metaRow}>
+              <span>ONLINE {multiplayerAvailable ? 'READY' : 'DISABLED'}</span>
+              <span>{connectionState.toUpperCase()}</span>
+              <span>{quickMatchSize}P QUEUE</span>
+            </div>
           </div>
         )}
 
-        {lobby ? (
-          <div className={styles.seatList}>
-            {PLAYER_IDS.map((playerId) => {
-              const seat = lobby.seats[playerId];
-              const player = game?.players[playerId];
-              const canClaim = lobby.phase === 'setup' && matchMode === 'online' && seat.mode === 'online' && seat.ownerClientId == null && ownedSeatIds.length < 2;
-              const canRelease = lobby.phase === 'setup' && matchMode === 'online' && seat.mode === 'online' && seat.ownerClientId != null && ownedSeatIds.includes(playerId);
-              const seatOptions: TronSeatMode[] = lobby.source === 'local_custom'
-                ? ['closed', 'cpu', 'local']
-                : lobby.source === 'online_custom'
-                  ? ['closed', 'cpu', 'local', 'online']
-                  : ['closed', 'cpu', 'local', 'online'];
-              return (
-                <div key={playerId} className={styles.seatRow}>
-                  <div className={styles.seatMain}>
-                    <span className={styles.seatLabel}>{PLAYER_LABELS[playerId]}</span>
-                    <span className={styles.seatMode}>{MODE_LABELS[seat.mode]}</span>
-                    <span className={styles.seatMeta}>{seat.ownerClientId ? seat.ownerClientId.slice(0, 8) : '--'}</span>
-                    <span className={styles.seatMeta}>{String(score[playerId] ?? 0).padStart(2, '0')}</span>
-                    <span className={styles.seatMeta}>{player ? (player.alive ? 'LIVE' : 'CRASH') : '--'}</span>
-                  </div>
-                  <div className={styles.seatActions}>
-                    {canEditLobby ? (
-                      <select
-                        className={styles.select}
-                        value={seat.mode}
-                        onChange={(event) => {
-                          setSeatMode(playerId, event.target.value as TronSeatMode);
-                          focusRoot();
-                        }}
-                      >
-                        {seatOptions.map((option) => (
-                          <option key={option} value={option}>{MODE_LABELS[option]}</option>
-                        ))}
-                      </select>
-                    ) : null}
-                    {canClaim ? (
-                      <button type="button" className={styles.actionBtn} onClick={() => { claimSeat(playerId); focusRoot(); }}>
-                        CLAIM
-                      </button>
-                    ) : null}
-                    {canRelease ? (
-                      <button type="button" className={styles.actionBtn} onClick={() => { releaseSeat(playerId); focusRoot(); }}>
-                        RELEASE
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : null}
-
-        {!activeSession ? (
+        {!game ? (
           <div className={styles.actionGrid}>
-            <div className={styles.quickMatchRow}>
-              {QUICK_MATCH_SIZES.map((size) => (
+            <div className={styles.controlGroup}>
+              <span className={styles.selectLabel}>LOCAL MATCH</span>
+              <div className={styles.optionRow}>
+                {[2, 3, 4].map((count) => (
+                  <button
+                    key={count}
+                    type="button"
+                    className={`${styles.actionBtn} ${participantCount === count ? styles.actionBtnActive : ''}`.trim()}
+                    onClick={() => {
+                      setParticipantCount(count as 2 | 3 | 4);
+                      focusRoot();
+                    }}
+                  >
+                    {count} PLAYERS
+                  </button>
+                ))}
+              </div>
+
+              <div className={styles.optionRow}>
+                {[1, 2].map((count) => (
+                  <button
+                    key={count}
+                    type="button"
+                    className={`${styles.actionBtn} ${localHumanCount === count ? styles.actionBtnActive : ''}`.trim()}
+                    onClick={() => {
+                      setLocalHumanCount(count as 1 | 2);
+                      focusRoot();
+                    }}
+                    disabled={count > participantCount}
+                  >
+                    {count} LOCAL
+                  </button>
+                ))}
+              </div>
+
+              <label className={styles.selectWrap}>
+                <span className={styles.selectLabel}>CPU DIFFICULTY</span>
+                <select
+                  className={styles.select}
+                  value={cpuDifficulty}
+                  onChange={(event) => setCpuDifficulty(event.target.value as TronCpuDifficulty)}
+                >
+                  {CPU_DIFFICULTIES.map((difficulty) => (
+                    <option key={difficulty} value={difficulty}>{difficulty.toUpperCase()}</option>
+                  ))}
+                </select>
+              </label>
+
+              <div className={styles.optionRow}>
                 <button
-                  key={size}
                   type="button"
-                  className={`${styles.actionBtn} ${quickMatchSize === size ? styles.actionBtnActive : ''}`.trim()}
+                  className={styles.actionBtn}
                   onClick={() => {
-                    setQuickMatchSize(size);
+                    startLocalMatch();
                     focusRoot();
                   }}
                 >
-                  QUICK {size}P
+                  START LOCAL
                 </button>
-              ))}
+                <button
+                  type="button"
+                  className={styles.actionBtn}
+                  onClick={() => {
+                    startCpuMatch(cpuDifficulty);
+                    focusRoot();
+                  }}
+                >
+                  PLAY CPU
+                </button>
+              </div>
             </div>
-            <button
-              type="button"
-              className={styles.actionBtn}
-              onClick={startQuickMatch}
-              disabled={!multiplayerAvailable}
-            >
-              START QUICK MATCH
-            </button>
-            <button type="button" className={styles.actionBtn} onClick={() => { openCustomLobby('custom'); focusRoot(); }}>
-              CUSTOM MATCH
-            </button>
-            <button type="button" className={styles.actionBtn} onClick={() => { startCpuMatch(); focusRoot(); }}>
-              PLAY CPU
-            </button>
-            <button
-              type="button"
-              className={styles.actionBtn}
-              onClick={hostRoom}
-              disabled={!multiplayerAvailable}
-            >
-              HOST ROOM
-            </button>
-            <label className={styles.selectWrap}>
-              <span className={styles.selectLabel}>CPU</span>
-              <select
-                className={styles.select}
-                value={cpuDifficulty}
-                onChange={(event) => setCpuDifficulty(event.target.value as TronCpuDifficulty)}
-              >
-                {CPU_DIFFICULTIES.map((difficulty) => (
-                  <option key={difficulty} value={difficulty}>{difficulty.toUpperCase()}</option>
-                ))}
-              </select>
-            </label>
-            <div className={styles.joinRow}>
-              <input
-                className={styles.joinInput}
-                type="text"
-                inputMode="text"
-                maxLength={6}
-                value={joinCode}
-                placeholder="ROOM CODE"
-                onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
-                aria-label="Join room code"
-              />
-              <button
-                type="button"
-                className={styles.actionBtn}
-                onClick={() => joinRoom(joinCode)}
-                disabled={!multiplayerAvailable}
-              >
-                JOIN ROOM
-              </button>
+
+            <div className={styles.controlGroup}>
+              <span className={styles.selectLabel}>ONLINE</span>
+              <div className={styles.quickMatchRow}>
+                <button
+                  type="button"
+                  className={`${styles.actionBtn} ${quickMatchSize === 2 ? styles.actionBtnActive : ''}`.trim()}
+                  onClick={() => {
+                    setQuickMatchSize(2);
+                    startQuickMatch();
+                    focusRoot();
+                  }}
+                  disabled={!multiplayerAvailable}
+                >
+                  QUICK MATCH
+                </button>
+                <button
+                  type="button"
+                  className={styles.actionBtn}
+                  onClick={() => {
+                    hostRoom();
+                    focusRoot();
+                  }}
+                  disabled={!multiplayerAvailable}
+                >
+                  HOST ROOM
+                </button>
+              </div>
+
+              <label className={styles.selectWrap}>
+                <span className={styles.selectLabel}>JOIN ROOM</span>
+                <div className={styles.joinRow}>
+                  <input
+                    className={styles.joinInput}
+                    value={joinCode}
+                    onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
+                    placeholder="ROOM CODE"
+                    maxLength={6}
+                    inputMode="text"
+                    autoCapitalize="characters"
+                  />
+                  <button
+                    type="button"
+                    className={styles.actionBtn}
+                    onClick={handleJoinRoom}
+                    disabled={!multiplayerAvailable}
+                  >
+                    JOIN
+                  </button>
+                </div>
+              </label>
+
+              <p className={styles.noteText}>
+                {multiplayerAvailable
+                  ? 'ONLINE MATCHES STAY 2P IN THIS PASS. LOCAL MODES EXPAND TO 2-4 RIDERS.'
+                  : 'SUPABASE ENV VARS ARE MISSING, SO CONNECT IS RUNNING IN LOCAL/CPU MODE ONLY.'}
+              </p>
             </div>
           </div>
         ) : (
           <div className={styles.actionGrid}>
-            {roomCode ? (
-              <button type="button" className={styles.actionBtn} onClick={copyRoomCode}>
-                COPY ROOM CODE
-              </button>
-            ) : null}
-            {lobby?.phase === 'setup' && canStartLobby ? (
-              <button type="button" className={styles.actionBtn} onClick={() => { startLobbyMatch(); focusRoot(); }}>
-                START MATCH
-              </button>
-            ) : null}
             {canRequestRematch ? (
-              <button type="button" className={styles.actionBtn} onClick={() => { requestRematch(); focusRoot(); }}>
+              <button
+                type="button"
+                className={styles.actionBtn}
+                onClick={() => {
+                  requestRematch();
+                  focusRoot();
+                }}
+              >
                 REMATCH
               </button>
             ) : null}
             <button type="button" className={styles.actionBtn} onClick={leaveMatch}>
-              LEAVE MATCH
+              EXIT
             </button>
           </div>
         )}

@@ -1,5 +1,5 @@
 export type ConnectDisplayMode = 'panel' | 'fullscreen';
-export type ConnectMatchType = 'idle' | 'local' | 'online';
+export type ConnectMatchType = 'idle' | 'local' | 'cpu' | 'online';
 export type ConnectRuntimeStatus =
   | 'idle'
   | 'queueing'
@@ -29,6 +29,11 @@ export type TronCell = {
   y: number;
 };
 
+export type TronGridPoint = {
+  x: number;
+  y: number;
+};
+
 export type TronQueuedTurn = {
   playerId: TronPlayerId;
   tick: number;
@@ -41,6 +46,7 @@ export type TronPlayerState = {
   direction: TronDirection;
   alive: boolean;
   trailCellIds: number[];
+  impactPoint: TronGridPoint | null;
 };
 
 export type TronRoundResult = {
@@ -48,6 +54,18 @@ export type TronRoundResult = {
   eliminated: TronPlayerId[];
   reason: TronRoundResultReason;
 };
+
+export type TronCrashEvent = {
+  type: 'crash';
+  eventId: string;
+  playerId: TronPlayerId;
+  tick: number;
+  round: number;
+  reason: TronRoundResultReason;
+  impactPoint: TronGridPoint;
+};
+
+export type TronStepEvent = TronCrashEvent;
 
 export type TronSeatConfig = {
   playerId: TronPlayerId;
@@ -96,6 +114,11 @@ export type TronGameState = {
   roundResult: TronRoundResult | null;
 };
 
+export type TronStepResult = {
+  state: TronGameState;
+  events: TronStepEvent[];
+};
+
 export type TronSnapshot = TronGameState & {
   version: 1;
 };
@@ -104,7 +127,10 @@ export type TronCpuProfile = {
   difficulty: TronCpuDifficulty;
   reactionDelayTicks: number;
   lookaheadDepth: number;
-  randomness: number;
+  searchBudget: number;
+  mistakeRate: number;
+  aggressionWeight: number;
+  riskWeight: number;
 };
 
 export type ConnectQueuePresence = {

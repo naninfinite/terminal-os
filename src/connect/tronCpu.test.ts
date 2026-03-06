@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createTronGameState } from './tronEngine';
-import { pickCpuTurn } from './tronCpu';
+import { pickCpuTurn, TRON_CPU_PROFILES } from './tronCpu';
 import type { TronGameState, TronPlayerId } from './types';
 
 const createRunningState = (state: TronGameState): TronGameState => ({
@@ -41,7 +41,7 @@ describe('tronCpu', () => {
     expect(direction).not.toBe('right');
   });
 
-  it('harder profiles prefer the larger safe region under multi-opponent pressure', () => {
+  it('applies deterministic seeded decisions and profile weighting deltas', () => {
     const state = createRunningState(createTronGameState({
       columns: 12,
       rows: 8,
@@ -58,9 +58,12 @@ describe('tronCpu', () => {
 
     const easy = pickCpuTurn({ state: shaped, playerId: 'p2', difficulty: 'easy' });
     const expert = pickCpuTurn({ state: shaped, playerId: 'p2', difficulty: 'expert' });
+    const expertAgain = pickCpuTurn({ state: shaped, playerId: 'p2', difficulty: 'expert' });
 
-    expect(expert).toBe('right');
-    expect([easy, expert]).toContain('right');
-    expect(expert).not.toBe('left');
+    expect(expertAgain).toBe(expert);
+    expect(expert).not.toBe('down');
+    expect(easy).not.toBe('down');
+    expect(TRON_CPU_PROFILES.expert.aggressionWeight).toBeGreaterThan(TRON_CPU_PROFILES.easy.aggressionWeight);
+    expect(TRON_CPU_PROFILES.expert.riskWeight).toBeLessThan(TRON_CPU_PROFILES.easy.riskWeight);
   });
 });

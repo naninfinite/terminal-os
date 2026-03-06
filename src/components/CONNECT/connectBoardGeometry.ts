@@ -1,5 +1,5 @@
-import { tronIdToCell } from '../../connect/tronEngine';
-import type { TronCell } from '../../connect/types';
+import { toTronGridPoint, tronIdToCell } from '../../connect/tronEngine';
+import type { TronCell, TronGridPoint } from '../../connect/types';
 
 export type ConnectBoardMetrics = {
   boardWidth: number;
@@ -34,24 +34,40 @@ export const resolveConnectBoardMetrics = (
   };
 };
 
+export const toCanvasPoint = (
+  point: TronGridPoint,
+  metrics: ConnectBoardMetrics,
+): ConnectTrailPoint => ({
+  x: metrics.offsetX + (point.x * metrics.cellSize),
+  y: metrics.offsetY + (point.y * metrics.cellSize),
+});
+
 export const getCellCenter = (
   cell: TronCell,
   metrics: ConnectBoardMetrics,
-): ConnectTrailPoint => ({
-  x: metrics.offsetX + (cell.x * metrics.cellSize) + (metrics.cellSize / 2),
-  y: metrics.offsetY + (cell.y * metrics.cellSize) + (metrics.cellSize / 2),
-});
+): ConnectTrailPoint => toCanvasPoint(toTronGridPoint(cell), metrics);
 
-export const buildTrailPolyline = (
-  trailCellIds: number[],
-  columns: number,
-  metrics: ConnectBoardMetrics,
-): ConnectTrailPoint[] => trailCellIds.map((cellId) => getCellCenter(tronIdToCell(columns, cellId), metrics));
+export const buildTrailPolyline = (args: {
+  trailCellIds: number[];
+  columns: number;
+  metrics: ConnectBoardMetrics;
+  impactPoint?: TronGridPoint | null;
+}): ConnectTrailPoint[] => {
+  const points = args.trailCellIds.map((cellId) => (
+    getCellCenter(tronIdToCell(args.columns, cellId), args.metrics)
+  ));
+
+  if (args.impactPoint) {
+    points.push(toCanvasPoint(args.impactPoint, args.metrics));
+  }
+
+  return points;
+};
 
 export const getTrailStrokeWidth = (
   cellSize: number,
   mode: 'panel' | 'fullscreen',
 ): number => {
-  const base = mode === 'fullscreen' ? cellSize * 0.18 : cellSize * 0.14;
-  return Math.max(1.5, Math.min(mode === 'fullscreen' ? 6 : 4, base));
+  const base = mode === 'fullscreen' ? cellSize * 0.16 : cellSize * 0.12;
+  return Math.max(1.25, Math.min(mode === 'fullscreen' ? 5 : 3.5, base));
 };

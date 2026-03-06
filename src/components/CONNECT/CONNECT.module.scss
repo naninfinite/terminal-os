@@ -22,7 +22,6 @@
 .surface {
   --connect-lcd-bg: #001108;
   --connect-lcd-ink: #00ff66;
-  --connect-lcd-grid: rgb(0 255 102 / 0.08);
   width: 100%;
   height: 100%;
   min-width: 0;
@@ -144,22 +143,24 @@
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 8px;
+  align-items: stretch;
 }
 
 .canvasFrame {
   min-width: 0;
-  min-height: 280px;
+  min-height: 320px;
   width: 100%;
   height: 100%;
   border: 2px solid rgb(0 255 102 / 0.42);
-  background: rgb(0 255 102 / 0.05);
-  padding: 6px;
+  background: rgb(0 255 102 / 0.02);
+  padding: 4px;
   box-sizing: border-box;
   overflow: hidden;
 }
 
 .canvasFrameFullscreen {
   min-height: 0;
+  height: 100%;
 }
 
 .canvas {
@@ -238,6 +239,22 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+  align-items: start;
+}
+
+.controlGroup {
+  border: 1px solid rgb(0 255 102 / 0.26);
+  background: rgb(0 255 102 / 0.04);
+  padding: 8px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.optionRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .quickMatchRow {
@@ -271,6 +288,14 @@
 .touchBtn {
   min-height: 32px;
   padding: 5px 8px;
+  cursor: pointer;
+}
+
+.modeBtn:disabled,
+.actionBtn:disabled,
+.touchBtn:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 .actionBtnActive {
@@ -360,6 +385,7 @@
   .hudRow,
   .actionGrid,
   .quickMatchRow,
+  .optionRow,
   .seatMain {
     grid-template-columns: 1fr;
   }

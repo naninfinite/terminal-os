@@ -6,7 +6,7 @@ import { ConnectProvider } from '../../connect/ConnectProvider';
 import { MeOsProvider } from '../../meos/shell/MeOsProvider';
 
 describe('CONNECT', () => {
-  it('renders the expanded Tron launcher controls and quick-match size picker', () => {
+  it('renders the current local Tron launcher controls', () => {
     const markup = renderToStaticMarkup(
       <MeOsProvider>
         <ConnectProvider>
@@ -15,10 +15,12 @@ describe('CONNECT', () => {
       </MeOsProvider>
     );
 
-    expect(markup).toContain('QUICK 2P');
-    expect(markup).toContain('QUICK 4P');
-    expect(markup).toContain('CUSTOM MATCH');
+    expect(markup).toContain('LOCAL MATCH');
+    expect(markup).toContain('2 PLAYERS');
+    expect(markup).toContain('1 LOCAL');
+    expect(markup).toContain('START LOCAL');
     expect(markup).toContain('PLAY CPU');
+    expect(markup).toContain('ONLINE');
     expect(markup).toContain('JOIN ROOM');
     expect(markup).toContain('CONNECT.EXE');
   });

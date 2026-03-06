@@ -3,12 +3,15 @@ import type {
   TronDirection,
   TronGameConfig,
   TronGameState,
+  TronGridPoint,
   TronPlayerId,
   TronPlayerState,
   TronQueuedTurn,
   TronRoundPhase,
   TronRoundResult,
   TronRoundResultReason,
+  TronStepEvent,
+  TronStepResult,
   TronSnapshot,
 } from './types';
 
@@ -54,6 +57,7 @@ const createInactivePlayer = (playerId: TronPlayerId): TronPlayerState => ({
   direction: 'up',
   alive: false,
   trailCellIds: [],
+  impactPoint: null,
 });
 
 const clonePlayer = (player: TronPlayerState): TronPlayerState => ({
@@ -62,6 +66,7 @@ const clonePlayer = (player: TronPlayerState): TronPlayerState => ({
   direction: player.direction,
   alive: player.alive,
   trailCellIds: [...player.trailCellIds],
+  impactPoint: player.impactPoint ? { ...player.impactPoint } : null,
 });
 
 const clonePlayers = (players: Record<TronPlayerId, TronPlayerState>): Record<TronPlayerId, TronPlayerState> => ({
@@ -93,6 +98,11 @@ export const tronCellToId = (columns: number, cell: TronCell): number => ((cell.
 export const tronIdToCell = (columns: number, cellId: number): TronCell => ({
   x: cellId % columns,
   y: Math.floor(cellId / columns),
+});
+
+export const toTronGridPoint = (cell: TronCell): TronGridPoint => ({
+  x: cell.x + 0.5,
+  y: cell.y + 0.5,
 });
 
 export const moveTronCell = (cell: TronCell, direction: TronDirection): TronCell => {
@@ -172,6 +182,7 @@ const createRoundPlayers = (
       direction: anchor.direction,
       alive: true,
       trailCellIds: [tronCellToId(columns, anchor.head)],
+      impactPoint: null,
     };
   });
 
@@ -378,36 +389,113 @@ const reasonsForFlags = (flags: {
   return reasons;
 };
 
-export const stepTronGame = (state: TronGameState): TronGameState => {
-  if (state.phase === 'round_over' || state.phase === 'match_over') return state;
+const createCrashEventId = (args: {
+  playerId: TronPlayerId;
+  tick: number;
+  round: number;
+  reason: TronRoundResultReason;
+  impactPoint: TronGridPoint;
+}): string => (
+  `${args.round}:${args.tick}:${args.playerId}:${args.reason}:${args.impactPoint.x.toFixed(3)}:${args.impactPoint.y.toFixed(3)}`
+);
 
-  const nextTick = state.tick + 1;
-  if (state.phase === 'countdown') {
-    const nextCountdown = Math.max(0, state.countdownTicksRemaining - 1);
+const getWallImpactPoint = (
+  state: TronGameState,
+  currentHead: TronCell,
+  direction: TronDirection,
+): TronGridPoint => {
+  if (direction === 'left') {
+    return { x: 0, y: currentHead.y + 0.5 };
+  }
+  if (direction === 'right') {
+    return { x: state.columns, y: currentHead.y + 0.5 };
+  }
+  if (direction === 'up') {
+    return { x: currentHead.x + 0.5, y: 0 };
+  }
+  return { x: currentHead.x + 0.5, y: state.rows };
+};
+
+const getSwapImpactPoint = (state: TronGameState, playerId: TronPlayerId, nextHead: TronCell): TronGridPoint => {
+  const current = toTronGridPoint(state.players[playerId].head);
+  const next = toTronGridPoint(nextHead);
+  return {
+    x: (current.x + next.x) / 2,
+    y: (current.y + next.y) / 2,
+  };
+};
+
+const getImpactPointForFlags = (args: {
+  state: TronGameState;
+  playerId: TronPlayerId;
+  direction: TronDirection;
+  nextHead: TronCell;
+  flags: {
+    outOfBounds: boolean;
+    hitsTrail: boolean;
+    sameCell: boolean;
+    swap: boolean;
+  };
+}): TronGridPoint => {
+  const { state, playerId, direction, nextHead, flags } = args;
+  if (flags.sameCell) return toTronGridPoint(nextHead);
+  if (flags.swap) return getSwapImpactPoint(state, playerId, nextHead);
+  if (flags.outOfBounds) return getWallImpactPoint(state, state.players[playerId].head, direction);
+  return toTronGridPoint(nextHead);
+};
+
+const mergeImmediateTurns = (state: TronGameState, immediateTurns: TronQueuedTurn[]): TronGameState => {
+  if (immediateTurns.length === 0) return state;
+  return immediateTurns.reduce((current, turn) => (
+    queueTurn(current, turn.playerId, turn.direction, turn.tick)
+  ), state);
+};
+
+export const stepTronGame = (
+  state: TronGameState,
+  immediateTurns: TronQueuedTurn[] = [],
+): TronStepResult => {
+  const queuedState = mergeImmediateTurns(state, immediateTurns);
+  if (queuedState.phase === 'round_over' || queuedState.phase === 'match_over') {
     return {
-      ...cloneState(state),
-      tick: nextTick,
-      countdownTicksRemaining: nextCountdown,
-      phase: nextCountdown === 0 ? 'running' : 'countdown',
+      state: queuedState,
+      events: [],
     };
   }
 
-  const { directions, remainingInputs } = resolveDirectionsForTick(state, nextTick);
-  const occupied = collectOccupiedCells(state);
-  const nextPlayers = clonePlayers(state.players);
-  const alivePlayers = state.activePlayerIds.filter((playerId) => state.players[playerId].alive);
+  const nextTick = queuedState.tick + 1;
+  if (queuedState.phase === 'countdown') {
+    const nextCountdown = Math.max(0, queuedState.countdownTicksRemaining - 1);
+    return {
+      state: {
+        ...cloneState(queuedState),
+        tick: nextTick,
+        countdownTicksRemaining: nextCountdown,
+        phase: nextCountdown === 0 ? 'running' : 'countdown',
+      },
+      events: [],
+    };
+  }
+
+  const { directions, remainingInputs } = resolveDirectionsForTick(queuedState, nextTick);
+  const occupied = collectOccupiedCells(queuedState);
+  const nextPlayers = clonePlayers(queuedState.players);
+  const alivePlayers = queuedState.activePlayerIds.filter((playerId) => queuedState.players[playerId].alive);
 
   if (alivePlayers.length <= 1) {
     const winner = alivePlayers[0] ?? null;
-    return setTronRoundResult({
-      ...cloneState(state),
-      tick: nextTick,
-      pendingInputs: remainingInputs,
-    }, {
-      winner,
-      eliminated: state.activePlayerIds.filter((playerId) => playerId !== winner),
-      reason: winner ? 'abandon' : 'trail',
-    });
+    return {
+      state: setTronRoundResult({
+        ...cloneState(queuedState),
+        tick: nextTick,
+        pendingInputs: remainingInputs,
+      }, {
+        winner,
+        eliminated: queuedState.activePlayerIds.filter((playerId) => playerId !== winner),
+        reason: winner ? 'abandon' : 'trail',
+      }),
+      events: [],
+    };
   }
 
   const nextHeads = new Map<TronPlayerId, TronCell>();
@@ -418,10 +506,10 @@ export const stepTronGame = (state: TronGameState): TronGameState => {
   const swapPlayers = new Set<TronPlayerId>();
 
   alivePlayers.forEach((playerId) => {
-    const nextHead = moveTronCell(state.players[playerId].head, directions[playerId]);
+    const nextHead = moveTronCell(queuedState.players[playerId].head, directions[playerId]);
     nextHeads.set(playerId, nextHead);
-    nextHeadIds.set(playerId, tronCellToId(state.columns, nextHead));
-    currentHeadIds.set(playerId, tronCellToId(state.columns, state.players[playerId].head));
+    nextHeadIds.set(playerId, tronCellToId(queuedState.columns, nextHead));
+    currentHeadIds.set(playerId, tronCellToId(queuedState.columns, queuedState.players[playerId].head));
     const nextHeadId = nextHeadIds.get(playerId) ?? 0;
     nextHeadCounts.set(nextHeadId, (nextHeadCounts.get(nextHeadId) ?? 0) + 1);
   });
@@ -455,7 +543,7 @@ export const stepTronGame = (state: TronGameState): TronGameState => {
     const nextHead = nextHeads.get(playerId)!;
     const nextHeadId = nextHeadIds.get(playerId)!;
     perPlayerFlags.set(playerId, {
-      outOfBounds: isCellOutOfBounds(state, nextHead),
+      outOfBounds: isCellOutOfBounds(queuedState, nextHead),
       hitsTrail: occupied.has(nextHeadId),
       sameCell: sameCellIds.has(nextHeadId),
       swap: swapPlayers.has(playerId),
@@ -467,13 +555,39 @@ export const stepTronGame = (state: TronGameState): TronGameState => {
     return flags.outOfBounds || flags.hitsTrail || flags.sameCell || flags.swap;
   });
 
-  state.activePlayerIds.forEach((playerId) => {
+  queuedState.activePlayerIds.forEach((playerId) => {
     nextPlayers[playerId].direction = directions[playerId];
   });
 
   if (eliminated.length > 0) {
+    const events: TronStepEvent[] = [];
+
     eliminated.forEach((playerId) => {
       nextPlayers[playerId].alive = false;
+      const flags = perPlayerFlags.get(playerId)!;
+      const impactPoint = getImpactPointForFlags({
+        state: queuedState,
+        playerId,
+        direction: directions[playerId],
+        nextHead: nextHeads.get(playerId)!,
+        flags,
+      });
+      nextPlayers[playerId].impactPoint = impactPoint;
+      events.push({
+        type: 'crash',
+        eventId: createCrashEventId({
+          playerId,
+          tick: nextTick,
+          round: queuedState.round,
+          reason: pickRoundReason(reasonsForFlags(flags)),
+          impactPoint,
+        }),
+        playerId,
+        tick: nextTick,
+        round: queuedState.round,
+        reason: pickRoundReason(reasonsForFlags(flags)),
+        impactPoint,
+      });
     });
     const survivors = alivePlayers.filter((playerId) => !eliminated.includes(playerId));
     const winner = survivors.length === 1 ? survivors[0] : null;
@@ -487,28 +601,35 @@ export const stepTronGame = (state: TronGameState): TronGameState => {
         ...nextPlayers[playerId].trailCellIds,
         nextHeadId,
       ];
+      nextPlayers[playerId].impactPoint = null;
     });
 
     if (survivors.length > 1) {
       return {
-        ...cloneState(state),
-        tick: nextTick,
-        players: nextPlayers,
-        pendingInputs: remainingInputs,
-        roundResult: null,
+        state: {
+          ...cloneState(queuedState),
+          tick: nextTick,
+          players: nextPlayers,
+          pendingInputs: remainingInputs,
+          roundResult: null,
+        },
+        events,
       };
     }
 
-    return setTronRoundResult({
-      ...cloneState(state),
-      tick: nextTick,
-      players: nextPlayers,
-      pendingInputs: remainingInputs,
-    }, {
-      winner,
-      eliminated: eliminated.sort((left, right) => left.localeCompare(right)),
-      reason: pickRoundReason(reasons),
-    });
+    return {
+      state: setTronRoundResult({
+        ...cloneState(queuedState),
+        tick: nextTick,
+        players: nextPlayers,
+        pendingInputs: remainingInputs,
+      }, {
+        winner,
+        eliminated: eliminated.sort((left, right) => left.localeCompare(right)),
+        reason: pickRoundReason(reasons),
+      }),
+      events,
+    };
   }
 
   alivePlayers.forEach((playerId) => {
@@ -519,13 +640,17 @@ export const stepTronGame = (state: TronGameState): TronGameState => {
       ...nextPlayers[playerId].trailCellIds,
       nextHeadId,
     ];
+    nextPlayers[playerId].impactPoint = null;
   });
 
   return {
-    ...cloneState(state),
-    tick: nextTick,
-    players: nextPlayers,
-    pendingInputs: remainingInputs,
+    state: {
+      ...cloneState(queuedState),
+      tick: nextTick,
+      players: nextPlayers,
+      pendingInputs: remainingInputs,
+    },
+    events: [],
   };
 };
 

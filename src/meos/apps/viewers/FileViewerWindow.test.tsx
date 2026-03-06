@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { ThemeProvider } from '../../../theme/ThemeProvider';
 import { CONTACT_CARD_ID } from '../../vfs/seed';
 import { MeOsVfsProvider } from '../../vfs/MeOsVfsProvider';
+import { MeOsProvider } from '../../shell/MeOsProvider';
 import type { MeOsWindow } from '../../shell/types';
 import FileViewerWindow from './FileViewerWindow';
 
@@ -26,9 +27,11 @@ describe('FileViewerWindow', () => {
 
     const markup = renderToStaticMarkup(
       <ThemeProvider>
-        <MeOsVfsProvider>
-          <FileViewerWindow win={win} />
-        </MeOsVfsProvider>
+        <MeOsProvider>
+          <MeOsVfsProvider>
+            <FileViewerWindow win={win} />
+          </MeOsVfsProvider>
+        </MeOsProvider>
       </ThemeProvider>
     );
 
