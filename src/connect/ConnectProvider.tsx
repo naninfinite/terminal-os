@@ -32,7 +32,7 @@ import {
   serializeTronSnapshot,
   stepTronGame,
 } from './tronEngine';
-import { pickCpuTurn, TRON_CPU_PROFILES } from './tronCpu';
+import { inspectCpuTurn, TRON_CPU_PROFILES } from './tronCpu';
 import {
   CONNECT_QUEUE_CHANNEL,
   createConnectSupabaseClient,
@@ -54,6 +54,7 @@ import type {
   ConnectRematchMessage,
   ConnectRuntimeStatus,
   TronCrashEvent,
+  TronCpuDebugByPlayer,
   TronCpuDifficulty,
   TronDirection,
   TronGameState,
@@ -69,13 +70,15 @@ const DISCONNECT_GRACE_MS = 2_000;
 const ONLINE_INPUT_BUFFER_TICKS = 2;
 const LOCAL_INPUT_BUFFER_TICKS = 1;
 const HOST_SNAPSHOT_INTERVAL_TICKS = 5;
+const ROUND_TRANSITION_DELAY_MS = 1_100;
+const SPECTATE_MATCH_RESTART_DELAY_MS = 1_800;
 const DEFAULT_CPU_DIFFICULTY: TronCpuDifficulty = 'medium';
 const PLAYER_IDS: TronPlayerId[] = ['p1', 'p2', 'p3', 'p4'];
 const MAX_RECENT_CRASH_EVENTS = 24;
 
 type ConnectLobbyPreset = 'custom' | 'cpu';
 type ConnectLocalParticipantCount = 2 | 3 | 4;
-type ConnectLocalHumanCount = 1 | 2;
+type ConnectLocalHumanCount = 0 | 1 | 2;
 
 type RoomParticipant = {
   clientId: string;
@@ -110,6 +113,7 @@ type ConnectInternalState = {
   localParticipantCount: ConnectLocalParticipantCount;
   localHumanCount: ConnectLocalHumanCount;
   recentCrashEvents: TronCrashEvent[];
+  cpuDebug: TronCpuDebugByPlayer;
 };
 
 type ConnectContextValue = {
@@ -129,6 +133,7 @@ type ConnectContextValue = {
   participantCount: ConnectLocalParticipantCount;
   localHumanCount: ConnectLocalHumanCount;
   recentCrashEvents: TronCrashEvent[];
+  cpuDebug: TronCpuDebugByPlayer;
   score: Record<TronPlayerId, number>;
   cpuDifficulty: TronCpuDifficulty;
   error: string | null;
@@ -142,6 +147,7 @@ type ConnectContextValue = {
   openCustomLobby: (preset?: ConnectLobbyPreset) => void;
   startLocalMatch: () => void;
   startCpuMatch: (difficulty?: TronCpuDifficulty) => void;
+  startSpectateMatch: (difficulty?: TronCpuDifficulty) => void;
   startQuickMatch: () => void;
   hostRoom: () => void;
   joinRoom: (roomCode: string) => void;
@@ -181,7 +187,7 @@ const clampLocalParticipantCount = (count: number): ConnectLocalParticipantCount
 );
 
 const clampLocalHumanCount = (count: number): ConnectLocalHumanCount => (
-  count >= 2 ? 2 : 1
+  count >= 2 ? 2 : count <= 0 ? 0 : 1
 );
 
 const countLocalLobbySeats = (lobby: ConnectLobbyState): number => (
@@ -196,6 +202,13 @@ const resolvePreviewOwnedSeatIds = (
 const trimRecentCrashEvents = (events: TronCrashEvent[]): TronCrashEvent[] => (
   events.slice(-MAX_RECENT_CRASH_EVENTS)
 );
+
+const createEmptyCpuDebug = (): TronCpuDebugByPlayer => ({
+  p1: null,
+  p2: null,
+  p3: null,
+  p4: null,
+});
 
 const createConfiguredLocalLobby = (args: {
   participantCount: ConnectLocalParticipantCount;
@@ -238,7 +251,31 @@ const createInitialState = (multiplayerAvailable: boolean): ConnectInternalState
   localParticipantCount: 2,
   localHumanCount: 1,
   recentCrashEvents: [],
+  cpuDebug: createEmptyCpuDebug(),
 });
+
+export const shouldAutoAdvanceTronRound = (args: {
+  game: TronGameState | null;
+  lobby: ConnectLobbyState | null;
+  matchType: ConnectMatchType;
+  isHost: boolean;
+}): boolean => {
+  if (!args.game || !args.lobby) return false;
+  if (args.game.phase !== 'round_over') return false;
+  if (!canStartLobby(args.lobby)) return false;
+  return args.matchType !== 'online' || args.isHost;
+};
+
+export const shouldAutoRestartSpectateMatch = (args: {
+  game: TronGameState | null;
+  lobby: ConnectLobbyState | null;
+  matchType: ConnectMatchType;
+}): boolean => (
+  args.matchType === 'spectate'
+  && args.game?.phase === 'match_over'
+  && args.lobby != null
+  && canStartLobby(args.lobby)
+);
 
 const phaseToStatus = (game: TronGameState | null): ConnectRuntimeStatus => {
   if (!game) return 'idle';
@@ -368,6 +405,7 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
       pendingQuickMatch: null,
       temporaryCpuSeatIds: [],
       recentCrashEvents: [],
+      cpuDebug: createEmptyCpuDebug(),
     }));
   }, [setRuntimeSafe]);
 
@@ -738,6 +776,7 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
       rematchRequests: [],
       pendingQuickMatch: null,
       temporaryCpuSeatIds: [],
+      cpuDebug: createEmptyCpuDebug(),
     }));
 
     channel
@@ -755,6 +794,7 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
           error: null,
           message: state.game ? state.message : null,
           recentCrashEvents: state.game ? state.recentCrashEvents : [],
+          cpuDebug: state.game ? state.cpuDebug : createEmptyCpuDebug(),
           rematchRequests: state.rematchRequests.filter((clientId) => {
             const lobbyOwnerIds = new Set<string>();
             PLAYER_IDS.forEach((seatId) => {
@@ -830,6 +870,7 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
             forcedStatus: null,
             error: null,
             recentCrashEvents: [],
+            cpuDebug: createEmptyCpuDebug(),
           };
         });
       })
@@ -850,6 +891,7 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
             rematchRequests: [],
             temporaryCpuSeatIds: [],
             recentCrashEvents: [],
+            cpuDebug: createEmptyCpuDebug(),
           }));
           return;
         }
@@ -861,6 +903,7 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
             lobby: updateLobbyPhase(state.lobby, message.state!.phase),
             forcedStatus: null,
             recentCrashEvents: [],
+            cpuDebug: createEmptyCpuDebug(),
           }));
           return;
         }
@@ -1069,6 +1112,7 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
       pendingQuickMatch: null,
       temporaryCpuSeatIds: [],
       recentCrashEvents: [],
+      cpuDebug: createEmptyCpuDebug(),
     }));
   }, [
     cleanupQueueChannel,
@@ -1102,6 +1146,7 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     localHumanCount?: ConnectLocalHumanCount;
     cpuDifficulty?: TronCpuDifficulty;
     matchType?: ConnectMatchType;
+    persistPreviewSelection?: boolean;
   }) => {
     cleanupQueueChannel();
     cleanupRoomChannel();
@@ -1140,8 +1185,9 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
       pendingQuickMatch: null,
       temporaryCpuSeatIds: [],
       localParticipantCount: participantCount,
-      localHumanCount,
+      localHumanCount: args?.persistPreviewSelection === false ? state.localHumanCount : localHumanCount,
       recentCrashEvents: [],
+      cpuDebug: createEmptyCpuDebug(),
     }));
   }, [
     cleanupQueueChannel,
@@ -1160,6 +1206,15 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     startConfiguredLocalMatch({
       cpuDifficulty: difficulty,
       matchType: 'cpu',
+    });
+  }, [startConfiguredLocalMatch]);
+
+  const startSpectateMatch = useCallback((difficulty?: TronCpuDifficulty) => {
+    startConfiguredLocalMatch({
+      cpuDifficulty: difficulty,
+      localHumanCount: 0,
+      matchType: 'spectate',
+      persistPreviewSelection: false,
     });
   }, [startConfiguredLocalMatch]);
 
@@ -1267,7 +1322,7 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const current = runtimeRef.current;
     if (!current.game || !current.lobby) return;
 
-    if (current.matchType === 'local' || current.matchType === 'cpu') {
+    if (current.matchType === 'local' || current.matchType === 'cpu' || current.matchType === 'spectate') {
       void startLobbyMatch();
       return;
     }
@@ -1356,6 +1411,7 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
           let nextGame = state.game;
           let nextLobby = state.lobby;
           let nextRecentCrashEvents = state.recentCrashEvents;
+          let nextCpuDebug = state.cpuDebug;
           let shouldBroadcastSnapshotTick = false;
           let shouldBroadcastEnd = false;
           let shouldBroadcastLobbyState = false;
@@ -1371,13 +1427,17 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 if ((nextGame.tick - cpuLastDecisionTickRef.current[cpuSeatId]) < (profile.reactionDelayTicks + 1)) {
                   return;
                 }
-                const cpuDirection = pickCpuTurn({
+                const cpuDecision = inspectCpuTurn({
                   state: nextGame,
                   playerId: cpuSeatId,
                   difficulty: state.cpuDifficulty,
                 });
-                if (!cpuDirection) return;
-                const queued = queueTurn(nextGame, cpuSeatId, cpuDirection, nextGame.tick + 1);
+                if (!cpuDecision) return;
+                if (nextCpuDebug === state.cpuDebug) {
+                  nextCpuDebug = { ...state.cpuDebug };
+                }
+                nextCpuDebug[cpuSeatId] = cpuDecision;
+                const queued = queueTurn(nextGame, cpuSeatId, cpuDecision.chosenDirection, nextGame.tick + 1);
                 if (queued === nextGame) return;
                 nextGame = queued;
                 cpuLastDecisionTickRef.current[cpuSeatId] = nextGame.tick;
@@ -1387,7 +1447,7 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
                     clientId: clientIdRef.current,
                     playerId: cpuSeatId,
                     tick: nextGame.tick + 1,
-                    direction: cpuDirection,
+                    direction: cpuDecision.chosenDirection,
                     createdAt: toIsoNow(),
                   });
                 }
@@ -1455,6 +1515,7 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
             game: nextGame,
             lobby: nextLobby,
             recentCrashEvents: nextRecentCrashEvents,
+            cpuDebug: nextCpuDebug,
             temporaryCpuSeatIds: nextGame.phase === 'round_over' || nextGame.phase === 'match_over'
               ? []
               : state.temporaryCpuSeatIds,
@@ -1468,6 +1529,39 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     rafId = window.requestAnimationFrame(onFrame);
     return () => window.cancelAnimationFrame(rafId);
   }, [broadcastLobby, broadcastSnapshot, resetLoopClock, restoreLobbyAfterTakeover, setRuntimeSafe]);
+
+  useEffect(() => {
+    if (!shouldAutoAdvanceTronRound({
+      game: runtime.game,
+      lobby: runtime.lobby,
+      matchType: runtime.matchType,
+      isHost: runtime.isHost,
+    })) {
+      return undefined;
+    }
+
+    const timerId = window.setTimeout(() => {
+      void startLobbyMatch();
+    }, ROUND_TRANSITION_DELAY_MS);
+
+    return () => window.clearTimeout(timerId);
+  }, [runtime.game, runtime.isHost, runtime.lobby, runtime.matchType, startLobbyMatch]);
+
+  useEffect(() => {
+    if (!shouldAutoRestartSpectateMatch({
+      game: runtime.game,
+      lobby: runtime.lobby,
+      matchType: runtime.matchType,
+    })) {
+      return undefined;
+    }
+
+    const timerId = window.setTimeout(() => {
+      void startLobbyMatch();
+    }, SPECTATE_MATCH_RESTART_DELAY_MS);
+
+    return () => window.clearTimeout(timerId);
+  }, [runtime.game, runtime.lobby, runtime.matchType, startLobbyMatch]);
 
   useEffect(() => () => {
     cleanupQueueChannel();
@@ -1491,7 +1585,7 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const localHumanCount = runtime.lobby
     ? clampLocalHumanCount(countLocalLobbySeats(runtime.lobby))
     : runtime.localHumanCount;
-  const ownedPlayerIds = ownedSeatIds.length > 0
+  const ownedPlayerIds = (runtime.game || runtime.lobby)
     ? ownedSeatIds
     : resolvePreviewOwnedSeatIds(participantCount, localHumanCount);
   const roomCode = runtime.lobby?.roomCode ?? null;
@@ -1520,6 +1614,7 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     participantCount,
     localHumanCount,
     recentCrashEvents: runtime.recentCrashEvents,
+    cpuDebug: runtime.cpuDebug,
     score,
     cpuDifficulty: runtime.cpuDifficulty,
     error: runtime.error,
@@ -1533,6 +1628,7 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     openCustomLobby,
     startLocalMatch,
     startCpuMatch,
+    startSpectateMatch,
     startQuickMatch,
     hostRoom,
     joinRoom,
@@ -1566,6 +1662,7 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     requestRematch,
     roomCode,
     runtime.connectionState,
+    runtime.cpuDebug,
     runtime.cpuDifficulty,
     runtime.displayMode,
     runtime.error,
@@ -1587,6 +1684,7 @@ export const ConnectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setSeatMode,
     startLocalMatch,
     startCpuMatch,
+    startSpectateMatch,
     startLobbyMatch,
     startQuickMatch,
     status,

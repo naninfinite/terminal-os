@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   createTronGameState,
+  prepareNextTronRound,
   queueTurn,
+  restartTronMatch,
   stepTronGame,
   tronCellToId,
 } from './tronEngine';
@@ -196,5 +198,90 @@ describe('tronEngine', () => {
     };
 
     expect(run()).toEqual(run());
+  });
+
+  it('does not depend on active rider iteration order for simultaneous crashes', () => {
+    const base = createRunningState(createTronGameState({
+      columns: 12,
+      rows: 10,
+      countdownTicks: 0,
+      activePlayerIds: ['p1', 'p2', 'p3'],
+    }));
+    const shaped = withPlayers(base, {
+      p1: { head: { x: 3, y: 5 }, direction: 'right', trailCellIds: [tronCellToId(12, { x: 3, y: 5 })] },
+      p2: { head: { x: 5, y: 5 }, direction: 'left', trailCellIds: [tronCellToId(12, { x: 5, y: 5 })] },
+      p3: { head: { x: 6, y: 8 }, direction: 'up', trailCellIds: [tronCellToId(12, { x: 6, y: 8 })] },
+    });
+
+    const ordered = stepTronGame(shaped);
+    const reversed = stepTronGame({
+      ...shaped,
+      activePlayerIds: ['p3', 'p2', 'p1'],
+    });
+
+    expect(reversed.state.phase).toBe(ordered.state.phase);
+    expect(reversed.state.roundResult).toEqual(ordered.state.roundResult);
+    expect(reversed.state.players.p1.alive).toBe(ordered.state.players.p1.alive);
+    expect(reversed.state.players.p2.alive).toBe(ordered.state.players.p2.alive);
+    expect(reversed.state.players.p3.alive).toBe(ordered.state.players.p3.alive);
+    expect(reversed.events.map((event) => `${event.playerId}:${event.reason}`).sort()).toEqual(
+      ordered.events.map((event) => `${event.playerId}:${event.reason}`).sort(),
+    );
+  });
+
+  it('applies queued turns only when their scheduled turn gate is reached', () => {
+    let state = createRunningState(createTronGameState({
+      columns: 10,
+      rows: 10,
+      countdownTicks: 0,
+      activePlayerIds: ['p1', 'p2'],
+    }));
+    state = withPlayers(state, {
+      p1: { head: { x: 2, y: 2 }, direction: 'right', trailCellIds: [tronCellToId(10, { x: 2, y: 2 })] },
+      p2: { head: { x: 8, y: 8 }, direction: 'left', trailCellIds: [tronCellToId(10, { x: 8, y: 8 })] },
+    });
+
+    const queued = queueTurn(state, 'p1', 'down', state.tick + 2);
+    const firstStep = stepTronGame(queued).state;
+    const secondStep = stepTronGame(firstStep).state;
+
+    expect(firstStep.players.p1.direction).toBe('right');
+    expect(firstStep.players.p1.head).toEqual({ x: 3, y: 2 });
+    expect(secondStep.players.p1.direction).toBe('down');
+    expect(secondStep.players.p1.head).toEqual({ x: 3, y: 3 });
+  });
+
+  it('rebuilds a clean round and match state while preserving locked mode metadata', () => {
+    const base = createRunningState(createTronGameState({
+      countdownTicks: 0,
+      activePlayerIds: ['p1', 'p2', 'p3'],
+      mode: 'spectate',
+      controlSources: {
+        p1: 'cpu',
+        p2: 'cpu',
+        p3: 'cpu',
+        p4: 'human',
+      },
+      score: {
+        p1: 2,
+        p2: 1,
+        p3: 0,
+        p4: 0,
+      },
+      round: 3,
+    }));
+
+    const nextRound = prepareNextTronRound(base);
+    const restarted = restartTronMatch(base);
+
+    expect(nextRound.round).toBe(4);
+    expect(nextRound.score).toEqual(base.score);
+    expect(nextRound.mode).toBe('spectate');
+    expect(nextRound.controlSources.p1).toBe('cpu');
+    expect(nextRound.players.p1.trailCellIds.length).toBe(1);
+    expect(restarted.round).toBe(1);
+    expect(restarted.score).toEqual({ p1: 0, p2: 0, p3: 0, p4: 0 });
+    expect(restarted.mode).toBe('spectate');
+    expect(restarted.controlSources.p3).toBe('cpu');
   });
 });

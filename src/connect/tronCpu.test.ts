@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createTronGameState, queueTurn, stepTronGame, tronCellToId } from './tronEngine';
-import { pickCpuTurn, TRON_CPU_PROFILES } from './tronCpu';
+import { inspectCpuTurn, pickCpuTurn, TRON_CPU_PROFILES } from './tronCpu';
 import type { TronCpuDifficulty, TronGameState, TronPlayerId } from './types';
 
 const createRunningState = (state: TronGameState): TronGameState => ({
@@ -133,6 +133,38 @@ describe('tronCpu', () => {
     const direction = pickCpuTurn({ state: shaped, playerId: 'p2', difficulty: 'medium' });
 
     expect(direction).toBe('down');
+  });
+
+  it('exposes deterministic debug metrics for the chosen candidate', () => {
+    const state = createRunningState(createTronGameState({
+      columns: 10,
+      rows: 10,
+      countdownTicks: 0,
+      seed: 7,
+      activePlayerIds: ['p1', 'p2'],
+    }));
+    const shaped = withPlayers(state, {
+      p1: {
+        head: { x: 9, y: 4 },
+        direction: 'left',
+        trailCellIds: [cell(10, 9, 4)],
+      },
+      p2: {
+        head: { x: 9, y: 5 },
+        direction: 'right',
+        trailCellIds: [cell(10, 9, 5)],
+      },
+    });
+
+    const debug = inspectCpuTurn({ state: shaped, playerId: 'p2', difficulty: 'expert' });
+
+    expect(debug).toBeTruthy();
+    expect(debug?.mode).toBe('escape');
+    expect(debug?.chosenDirection).toBe('down');
+    expect(debug?.candidates[0]?.direction).toBe(debug?.chosenDirection);
+    expect(debug?.candidates[0]?.reachableArea).toBeGreaterThan(0);
+    expect(debug?.candidates[0]?.crashDistance).toBeGreaterThanOrEqual(0);
+    expect(debug?.candidates[0]?.totalScore).toBeGreaterThan(Number.NEGATIVE_INFINITY);
   });
 
   it('avoids immediate suicidal contested moves on expert when survival options exist', () => {

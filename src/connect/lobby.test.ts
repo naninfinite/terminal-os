@@ -63,6 +63,32 @@ describe('lobby', () => {
     expect(canStartLobby(lobby)).toBe(true);
     expect(buildGameConfigFromLobby(lobby)).toEqual({
       activePlayerIds: ['p1', 'p2', 'p3'],
+      mode: 'playerVsCpu',
+      controlSources: {
+        p1: 'human',
+        p2: 'human',
+        p3: 'cpu',
+        p4: 'human',
+      },
+    });
+  });
+
+  it('marks all-cpu local lobbies as spectate mode with no human riders', () => {
+    let lobby = createLocalCustomLobby();
+    lobby = setSeatMode(lobby, 'p1', 'cpu');
+    lobby = setSeatMode(lobby, 'p3', 'cpu');
+    lobby = setSeatMode(lobby, 'p4', 'cpu');
+
+    expect(canStartLobby(lobby)).toBe(true);
+    expect(buildGameConfigFromLobby(lobby)).toEqual({
+      activePlayerIds: ['p1', 'p2', 'p3', 'p4'],
+      mode: 'spectate',
+      controlSources: {
+        p1: 'cpu',
+        p2: 'cpu',
+        p3: 'cpu',
+        p4: 'cpu',
+      },
     });
   });
 });

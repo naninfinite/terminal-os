@@ -1,7 +1,9 @@
 import type {
   ConnectLobbyState,
   TronCpuDifficulty,
+  TronControlSource,
   TronGameConfig,
+  TronMode,
   TronPlayerId,
   TronQuickMatchSize,
   TronSeatConfig,
@@ -34,6 +36,15 @@ const createClosedSeats = (): Record<TronPlayerId, TronSeatConfig> => ({
   p2: { playerId: 'p2', mode: 'closed', ownerClientId: null },
   p3: { playerId: 'p3', mode: 'closed', ownerClientId: null },
   p4: { playerId: 'p4', mode: 'closed', ownerClientId: null },
+});
+
+const createControlSources = (
+  overrides: Partial<Record<TronPlayerId, TronControlSource>> = {},
+): Record<TronPlayerId, TronControlSource> => ({
+  p1: overrides.p1 ?? 'human',
+  p2: overrides.p2 ?? 'human',
+  p3: overrides.p3 ?? 'human',
+  p4: overrides.p4 ?? 'human',
 });
 
 export const listActiveSeatIds = (lobby: ConnectLobbyState): TronPlayerId[] => (
@@ -251,6 +262,42 @@ export const canStartLobby = (lobby: ConnectLobbyState): boolean => {
   });
 };
 
-export const buildGameConfigFromLobby = (lobby: ConnectLobbyState): Pick<TronGameConfig, 'activePlayerIds'> => ({
+export const deriveTronControlSourcesFromLobby = (
+  lobby: ConnectLobbyState,
+): Record<TronPlayerId, TronControlSource> => {
+  const controlSources = createControlSources();
+
+  PLAYER_IDS.forEach((playerId) => {
+    const seat = lobby.seats[playerId];
+    if (seat.mode === 'cpu') {
+      controlSources[playerId] = 'cpu';
+      return;
+    }
+    if (seat.mode === 'local' || seat.mode === 'online') {
+      controlSources[playerId] = 'human';
+    }
+  });
+
+  return controlSources;
+};
+
+export const deriveTronModeFromLobby = (lobby: ConnectLobbyState): TronMode => {
+  const activeSeatIds = listActiveSeatIds(lobby);
+  const controlSources = deriveTronControlSourcesFromLobby(lobby);
+
+  if (activeSeatIds.length > 0 && activeSeatIds.every((playerId) => controlSources[playerId] === 'cpu')) {
+    return 'spectate';
+  }
+  if (activeSeatIds.every((playerId) => controlSources[playerId] === 'human')) {
+    return 'localMultiplayer';
+  }
+  return 'playerVsCpu';
+};
+
+export const buildGameConfigFromLobby = (
+  lobby: ConnectLobbyState,
+): Pick<TronGameConfig, 'activePlayerIds' | 'mode' | 'controlSources'> => ({
   activePlayerIds: listActiveSeatIds(lobby),
+  mode: deriveTronModeFromLobby(lobby),
+  controlSources: deriveTronControlSourcesFromLobby(lobby),
 });

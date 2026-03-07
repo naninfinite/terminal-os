@@ -20,6 +20,7 @@ describe('CONNECT', () => {
     expect(markup).toContain('1 LOCAL');
     expect(markup).toContain('START LOCAL');
     expect(markup).toContain('PLAY CPU');
+    expect(markup).toContain('SPECTATE CPU');
     expect(markup).toContain('ONLINE');
     expect(markup).toContain('JOIN ROOM');
     expect(markup).toContain('CONNECT.EXE');

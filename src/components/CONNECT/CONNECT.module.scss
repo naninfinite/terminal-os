@@ -175,6 +175,14 @@
   gap: 6px;
 }
 
+.debugPanel {
+  border: 1px solid rgb(102 207 255 / 0.22);
+  background: rgb(102 207 255 / 0.05);
+  padding: 6px 8px;
+  display: grid;
+  gap: 4px;
+}
+
 .metaRow {
   display: flex;
   align-items: center;

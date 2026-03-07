@@ -1,5 +1,5 @@
 export type ConnectDisplayMode = 'panel' | 'fullscreen';
-export type ConnectMatchType = 'idle' | 'local' | 'cpu' | 'online';
+export type ConnectMatchType = 'idle' | 'local' | 'cpu' | 'spectate' | 'online';
 export type ConnectRuntimeStatus =
   | 'idle'
   | 'queueing'
@@ -18,9 +18,12 @@ export type TronPlayerId = 'p1' | 'p2' | 'p3' | 'p4';
 export type TronSeatMode = 'closed' | 'cpu' | 'local' | 'online';
 export type TronQuickMatchSize = 2 | 4;
 export type TronDirection = 'up' | 'right' | 'down' | 'left';
+export type TronMode = 'playerVsCpu' | 'localMultiplayer' | 'spectate';
+export type TronControlSource = 'human' | 'cpu';
 export type TronRoundPhase = 'countdown' | 'running' | 'round_over' | 'match_over';
 export type TronRoundResultReason = 'wall' | 'trail' | 'same_cell' | 'swap' | 'disconnect' | 'abandon';
 export type TronCpuDifficulty = 'easy' | 'medium' | 'hard' | 'expert';
+export type TronCpuMode = 'escape' | 'attack' | 'fill';
 export type ConnectLobbySource = 'local_custom' | 'online_custom' | 'quick_match';
 export type ConnectLobbyPhase = 'setup' | TronRoundPhase;
 
@@ -33,6 +36,8 @@ export type TronGridPoint = {
   x: number;
   y: number;
 };
+
+export type TronOccupancyGrid = Uint8Array;
 
 export type TronQueuedTurn = {
   playerId: TronPlayerId;
@@ -92,6 +97,8 @@ export type TronGameConfig = {
   firstToScore: number;
   seed: number;
   activePlayerIds: TronPlayerId[];
+  mode: TronMode;
+  controlSources: Record<TronPlayerId, TronControlSource>;
   score?: Record<TronPlayerId, number>;
   round?: number;
 };
@@ -108,6 +115,8 @@ export type TronGameState = {
   round: number;
   phase: TronRoundPhase;
   activePlayerIds: TronPlayerId[];
+  mode: TronMode;
+  controlSources: Record<TronPlayerId, TronControlSource>;
   score: Record<TronPlayerId, number>;
   players: Record<TronPlayerId, TronPlayerState>;
   pendingInputs: TronQueuedTurn[];
@@ -127,11 +136,19 @@ export type TronCpuWeights = {
   reachableArea: number;
   liberties: number;
   corridorRisk: number;
+  chamberRisk: number;
   opponentPressure: number;
   cutoffPotential: number;
   centerBias: number;
   antiJitter: number;
+  crashDistance: number;
   forcedDeathRisk: number;
+};
+
+export type TronCpuModeThresholds = {
+  escapeLiberties: number;
+  escapeCrashDistance: number;
+  forcedDeathDepth: number;
 };
 
 export type TronCpuProfile = {
@@ -139,9 +156,39 @@ export type TronCpuProfile = {
   reactionDelayTicks: number;
   lookaheadDepth: number;
   rolloutCandidates: number;
+  safetyHorizon: number;
   randomness: number;
+  modeThresholds: TronCpuModeThresholds;
   weights: TronCpuWeights;
 };
+
+export type TronCpuCandidateDebug = {
+  direction: TronDirection;
+  immediateDeath: boolean;
+  forcedDeathRisk: number;
+  crashDistance: number;
+  reachableArea: number;
+  liberties: number;
+  corridorRisk: number;
+  chamberRisk: number;
+  opponentPressure: number;
+  cutoffPotential: number;
+  centerBias: number;
+  antiJitter: number;
+  rolloutScore: number;
+  totalScore: number;
+};
+
+export type TronCpuDecisionDebug = {
+  playerId: TronPlayerId;
+  difficulty: TronCpuDifficulty;
+  mode: TronCpuMode;
+  tick: number;
+  chosenDirection: TronDirection;
+  candidates: TronCpuCandidateDebug[];
+};
+
+export type TronCpuDebugByPlayer = Record<TronPlayerId, TronCpuDecisionDebug | null>;
 
 export type ConnectQueuePresence = {
   clientId: string;

@@ -38,6 +38,7 @@ const CONNECT: React.FC<ConnectProps> = ({ mode = 'panel' }) => {
   const {
     closeFullscreen,
     connectionState,
+    cpuDebug,
     cpuDifficulty,
     displayMode,
     error,
@@ -66,6 +67,7 @@ const CONNECT: React.FC<ConnectProps> = ({ mode = 'panel' }) => {
     setQuickMatchSize,
     startCpuMatch,
     startLocalMatch,
+    startSpectateMatch,
     startQuickMatch,
     status,
     canRequestRematch,
@@ -156,6 +158,9 @@ const CONNECT: React.FC<ConnectProps> = ({ mode = 'panel' }) => {
   }, [focusRoot, game, ownedPlayerIds, sendTurn]);
 
   const localControlHint = React.useMemo(() => {
+    if (matchMode === 'spectate' || (game && ownedPlayerIds.length === 0)) {
+      return 'SPECTATE MODE ACTIVE. ALL ACTIVE RIDERS ARE CPU-CONTROLLED.';
+    }
     if (bindings.length === 0) {
       return 'CONFIGURE A LOCAL MATCH TO ENABLE KEYBOARD CONTROL.';
     }
@@ -163,13 +168,26 @@ const CONNECT: React.FC<ConnectProps> = ({ mode = 'panel' }) => {
       return `${PLAYER_LABELS[bindings[0]!.playerId]}: WASD + ARROWS`;
     }
     return `${PLAYER_LABELS[bindings[0]!.playerId]}: WASD  |  ${PLAYER_LABELS[bindings[1]!.playerId]}: ARROWS`;
-  }, [bindings]);
+  }, [bindings, game, matchMode, ownedPlayerIds.length]);
 
   const statusLabel = STATUS_LABEL[status] ?? status.toUpperCase();
   const previewActivePlayerIds = PLAYER_IDS.slice(0, participantCount);
   const activePlayerIds = game?.activePlayerIds ?? previewActivePlayerIds;
   const showTouchControls = ownedPlayerIds.length === 1 && game != null && (game.phase === 'countdown' || game.phase === 'running');
   const winnerLabel = game?.roundResult?.winner ? PLAYER_LABELS[game.roundResult.winner] : 'DRAW';
+  const cpuDebugRows = React.useMemo(() => (
+    game?.activePlayerIds
+      .filter((playerId) => cpuDebug[playerId] != null)
+      .map((playerId) => {
+        const debug = cpuDebug[playerId]!;
+        const topCandidate = debug.candidates[0];
+        return {
+          playerId,
+          debug,
+          topCandidate,
+        };
+      }) ?? []
+  ), [cpuDebug, game?.activePlayerIds]);
 
   const getSeatMode = React.useCallback((playerId: TronPlayerId): TronSeatMode => {
     const seat = lobby?.seats[playerId];
@@ -259,6 +277,15 @@ const CONNECT: React.FC<ConnectProps> = ({ mode = 'panel' }) => {
                   {error ?? message ?? `${winnerLabel} READY.`}
                 </p>
               ) : null}
+              {(matchMode === 'spectate' || ownedPlayerIds.length === 0) && cpuDebugRows.length > 0 ? (
+                <div className={styles.debugPanel}>
+                  {cpuDebugRows.map(({ playerId, debug, topCandidate }) => (
+                    <p key={playerId} className={styles.noteText}>
+                      {`${PLAYER_LABELS[playerId]} ${debug.mode.toUpperCase()} ${debug.chosenDirection.toUpperCase()} | AREA ${Math.round(topCandidate?.reachableArea ?? 0)} | LIB ${Math.round(topCandidate?.liberties ?? 0)} | CRASH ${Math.round(topCandidate?.crashDistance ?? 0)} | COR ${Math.round(topCandidate?.corridorRisk ?? 0)} | CHM ${Math.round(topCandidate?.chamberRisk ?? 0)} | ROLL ${Math.round(topCandidate?.rolloutScore ?? 0)} | SCORE ${Math.round(topCandidate?.totalScore ?? 0)}`}
+                    </p>
+                  ))}
+                </div>
+              ) : null}
             </div>
           </div>
         ) : (
@@ -346,6 +373,17 @@ const CONNECT: React.FC<ConnectProps> = ({ mode = 'panel' }) => {
                   PLAY CPU
                 </button>
               </div>
+
+              <button
+                type="button"
+                className={styles.actionBtn}
+                onClick={() => {
+                  startSpectateMatch(cpuDifficulty);
+                  focusRoot();
+                }}
+              >
+                SPECTATE CPU
+              </button>
             </div>
 
             <div className={styles.controlGroup}>
